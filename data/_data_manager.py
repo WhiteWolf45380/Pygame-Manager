@@ -12,11 +12,14 @@ class DataManager:
     """
 
     def __init__(self):
-        self.__name = "DataManager"
+        pass
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
-        raise RuntimeError(f"[{self.__name}].{method} : {text}")
+        """
+        Lève une erreur
+        """
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     # ======================================== FICHIERS ========================================
     def load(self, path: str) -> dict:
@@ -29,7 +32,7 @@ class DataManager:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception as e:
+        except Exception as _:
             self._raise_error("load", f"Cannot load file at {path}")
 
     def save(self, datas: dict, path: str):

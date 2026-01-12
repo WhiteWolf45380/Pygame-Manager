@@ -18,8 +18,6 @@ class AudioManager:
     """
 
     def __init__(self):
-        self.__name = "AudioManager"
-
         # initialisation
         pygame.mixer.init()
         pygame.mixer.set_num_channels(0)
@@ -42,9 +40,9 @@ class AudioManager:
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str='', text: str=''):
         """
-        Raise une erreur
+        Lève une erreur
         """
-        raise RuntimeError(f"[{self.__name}].{method} : {text}")
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
     
     def __str__(self):
         """

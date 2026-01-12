@@ -12,13 +12,15 @@ class LanguagesManager:
     """
 
     def __init__(self, default_lang: str = "en"):
-        self.__name = "LanguagesManager"
         self.__lang = default_lang
         self.__translations = {}
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
-        raise RuntimeError(f"[{self.__name}].{method} : {text}")
+        """
+        Lève une erreur
+        """
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     # ======================================== LANGUES ========================================
     def load_language(self, lang: str, path: str):
