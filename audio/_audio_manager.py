@@ -76,7 +76,7 @@ class AudioManager:
         """
         if name in self.__groups:
             self._raise_error("create_group", f"Group {name} already exists")
-        if not isinstance(channels, int) and channels > 0:
+        if not isinstance(channels, int) or channels < 0:
             self._raise_error("create_group", "Channels number must be an integer")
         if not isinstance(volume, (int, float)):
             self._raise_error("create_group", "Group's volume must be a float")
@@ -93,7 +93,7 @@ class AudioManager:
         """
         if name not in self.__groups:
             self._raise_error("update_group_channels", f"Group {name} does not exist. If you want to create it, try : create_group(name: str)")
-        if not isinstance(channels, int) and channels > 0:
+        if not isinstance(channels, int) or channels < 0:
             self._raise_error("update_group_channels", "Channels number must be an integer")
         self.__groups[name]["channels"] = channels
         self._update_partition()
@@ -169,7 +169,7 @@ class AudioManager:
             self._raise_error("create_group", f"Sound's path must be a string")
         if not isinstance(volume, (int, float)):
             self._raise_error("create_group", f"Sound's volume must be a float")
-        if not isinstance(cooldown, float):
+        if not isinstance(cooldown, (int, float)):
             self._raise_error("create_group", f"Sound's cooldown must be a float")
         if not group in self.__groups:
             self._raise_error(f"create_group", f"Group {group} does not exist. If you want to create it, try : create_group(name: str, channels: int)")
@@ -219,7 +219,7 @@ class AudioManager:
         """
         if not name in self.__sounds:
             self._raise_error("update_sound_cooldown", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
-        if not isinstance(cooldown, float):
+        if not isinstance(cooldown, (int, float)):
             self._raise_error("update_sound_cooldown", "Sound's cooldown must be an integer")
         self.__sounds[name]["cooldown_duration"] = cooldown
 
@@ -351,7 +351,6 @@ class AudioManager:
             audio = random.choice(self.__sounds[sound]["audios"])
             audio.set_volume(self.__master_volume * self.__groups[group]["volume"] * self.__sounds[sound]["volume"])
             channel.play(audio)
-            print(channel)
             self.__sounds[sound]["cooldown"] = pygame.time.get_ticks()
         else:
             print(f"[AudioManager].play_sound : No free channel for {group} sound {sound}")
@@ -426,38 +425,48 @@ class AudioManager:
 """
 Exemple d'utilisation :
 
-import time
-from pygame_managers import AudioManager
+import pygame
+from audio_manager import AudioManager
 
-# Initialisation du gestionnaire audio
+pygame.init()
+
+# Initialisation
 audio = AudioManager()
 
 # Création de groupes
-audio.create_group("ui", channels=2, volume=1.0) # groupe pour l'ui avec deux canaux disponibles et un volume maximal
-audio.create_group("sfx", channels=4, volume=0.8) # groupe pour le sfx avec quatre canaux disponibles et un volume de 80%
+audio.create_group("ui", channels=2, volume=1.0)
+audio.create_group("sfx", channels=4, volume=0.8)
 
 # Ajout de sons
-audio.add_sound("shoot", "shoot.mp3", volume=1.0, cooldown=0.5, group="ui") # un son de tire avec volume maximal, délai d'une demi seconde et appartenant au groupe ui
-audio.add_sound("footstep", "footstep.mp3", volume=0.6, cooldown=0.2, group="sfx") # un son de pas de volume 60% , avec un délai de 0.2s et appartenant au groupe sfx
+audio.add_sound("shoot", "assets/sounds/shoot.mp3", volume=1.0, cooldown=0.5, group="ui")
+audio.add_sound("footstep", "assets/sounds/footstep.mp3", volume=0.6, cooldown=0.2, group="sfx")
 
-# Jouer un son
-audio.play_sound("shoot") # activation du son de tire
-time.sleep(1)
-audio.play_sound("footstep") # activation du son de pas
+# Ajouter des variations au son
+audio.set_sound_add("footstep", "assets/sounds/footstep2.mp3")
+audio.set_sound_add("footstep", "assets/sounds/footstep3.mp3")
+
+# Jouer des sons
+audio.play_sound("shoot")
+audio.play_sound("footstep")  # Joue une variation aléatoire
 
 # Ajouter de la musique
-audio.add_music("title_screen", "title_screen.mp3", volume=0.7) # ajout d'une musique d'écran titre de volume 70%
+audio.add_music("menu", "assets/music/menu_theme.mp3", volume=0.7)
+audio.add_music("game", "assets/music/game_theme.mp3", volume=0.8)
 
-# Jouer la musique en boucle
-audio.play_music("title_screen", loop=True, fade_ms=500) # activation de la musique avec répétition et fondu en ouverture de 0.5s
+# Jouer la musique en boucle avec fade
+audio.play_music("menu", loop=True, fade_ms=500)
+
+# Changer de musique
+audio.stop_music(fade_ms=1000)
+audio.play_music("game", loop=True, fade_ms=1000)
 
 # Modifier les volumes
-audio.update_master_volume(0.8) # volume global à 80%
-audio.update_music_volume(0.5) # volume musical à 50%
-audio.set_group_volume('ui', 0.4) # volume du groupe UI à 40%
+audio.update_master_volume(0.8)       # Volume global à 80%
+audio.update_music_volume(0.5)        # Volume musical à 50%
+audio.set_group_volume('ui', 0.4)     # Volume du groupe UI à 40%
+audio.set_sound_volume('shoot', 0.9)  # Volume spécifique du son
 
-# Arrêter tous les sons et la musique
+# Arrêter tout
 audio.stop_sounds()
 audio.stop_music(fade_ms=1000)
-
 """

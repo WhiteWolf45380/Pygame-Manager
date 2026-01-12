@@ -448,7 +448,7 @@ class ScreenManager:
         Args:
             - path (str) : chemin de sauvegarde
         """
-        if not isinstance(path, str) or path is None:
+        if not isinstance(path, str) and path is not None:
             self._raise_error('screenshot', 'Path type must be str')
         capture = self.__screen.copy()
         if path:
