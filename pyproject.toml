@@ -6,5 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "pygame_managers"
 version = "0.1.0"
 description = "Collection de managers pour Pygame"
-authors = [{name = "WhiteWolf45380"}]
+authors = [{ name = "WhiteWolf45380" }]
 dependencies = []
+
+[tool.setuptools]
+packages = ["pygame_managers"]
