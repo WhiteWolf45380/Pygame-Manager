@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import os
+from _sql_handler import SQLHandler
 
 
 class DataManager:
@@ -17,6 +18,7 @@ class DataManager:
         if not isinstance(base_path, str):
             self._raise_error('__init__', 'base_path must be a string')
         self.__base_path = Path(base_path)
+        self.__sql = SQLHandler()
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -30,6 +32,14 @@ class DataManager:
         if os.path.isabs(path):
             return Path(path)
         return self.__base_path / path
+    
+    # ======================================== GETTERS ========================================
+    @property
+    def sql(self):
+        """
+        Accès au gestionnaire SQL
+        """
+        return self.__sql
 
     # ======================================== FICHIERS ========================================
     def load(self, path: str) -> dict:
