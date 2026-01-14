@@ -7,7 +7,7 @@ name = "pygame_managers"
 version = "0.1.0"
 description = "Collection de managers pour Pygame"
 authors = [{ name = "WhiteWolf45380" }]
-dependencies = []
+dependencies = ["pygame"]
 
 [tool.setuptools]
 packages = ["pygame_managers"]

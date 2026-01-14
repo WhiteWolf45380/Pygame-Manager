@@ -1,8 +1,8 @@
-from managers.audio import AudioGate
-from managers.data import DataGate
-from managers.time import TimeGate
-from managers.languages import LanguagesGate
-from managers.screen import ScreenGate
+from .audio import AudioGate
+from .data import DataGate
+from .time import TimeGate
+from .languages import LanguagesGate
+from .screen import ScreenGate
 
 audio = AudioGate()
 data = DataGate()
