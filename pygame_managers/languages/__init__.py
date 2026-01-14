@@ -1,2 +1,2 @@
-from ._languages_manager import LanguagesManager
-__all__ = ["LanguagesManager"]
+from ._languages_manager import LanguagesGate
+__all__ = ["LanguagesGate"]

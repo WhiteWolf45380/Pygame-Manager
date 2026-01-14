@@ -1,2 +1,2 @@
-from ._screen_manager import ScreenManager
-__all__ = ["ScreenManager"]
+from ._screen_manager import ScreenGate
+__all__ = ["ScreenGate"]

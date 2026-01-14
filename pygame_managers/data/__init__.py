@@ -1,2 +1,2 @@
-from ._data_manager import DataManager
-__all__ = ["DataManager"]
+from ._data_manager import DataGate
+__all__ = ["DataGate"]
