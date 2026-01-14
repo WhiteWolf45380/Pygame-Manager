@@ -1,10 +1,11 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=65.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pygame_managers"
 version = "0.1.0"
-description = "Collection de managers Python pour Pygame"
-authors = [{ name = "WhiteWolf45380" }]
+description = "Collection de managers pour Pygame"
+authors = [{name = "WhiteWolf45380"}]
 dependencies = []
+packages = ["managers"]
