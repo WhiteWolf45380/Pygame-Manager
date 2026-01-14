@@ -9,5 +9,6 @@ description = "Collection de managers pour Pygame"
 authors = [{ name = "WhiteWolf45380" }]
 dependencies = ["pygame"]
 
-[tool.setuptools]
-packages = ["pygame_managers"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pygame_managers*"]
