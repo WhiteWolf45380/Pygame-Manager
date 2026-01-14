@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import os
-from .data import SQLHandler
+from ._sql import SQLHandler
 
 
 # ======================================== PORTAIL ========================================
