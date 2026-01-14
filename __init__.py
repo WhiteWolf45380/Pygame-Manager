@@ -1,9 +1,17 @@
-from managers.audio import AudioManager
-from managers.data import DataManager
-from managers.time import TimeManager
-from managers.languages import LanguagesManager
-from managers.screen import ScreenManager
-__all__ = ["AudioManager", "DataManager", "TimeManager", "LanguagesManager", "ScreenManager"]
+from managers.audio import AudioGate
+from managers.data import DataGate
+from managers.time import TimeGate
+from managers.languages import LanguagesGate
+from managers.screen import ScreenGate
+
+audio = AudioGate()
+data = DataGate()
+time = TimeGate()
+languages = LanguagesGate()
+screen = ScreenGate()
+
+__all__ = ["audio", "data", "time", "languages", "screen"]
+
 
 """
 Syntaxe d'import depuis GitHub :

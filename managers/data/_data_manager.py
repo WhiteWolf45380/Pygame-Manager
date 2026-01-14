@@ -4,6 +4,19 @@ import os
 from _sql_handler import SQLHandler
 
 
+# ======================================== PORTAIL ========================================
+class DataGate:
+    """
+    Portail d'accès au gestionnaire de données
+    """
+    def __init__(self):
+        self.__data = DataManager()
+    
+    def __getattr__(self, name):
+        return getattr(self.__data, name)
+
+
+# ======================================== GESTIONNAIRE ========================================
 class DataManager:
     """
     Gestionnaire de données

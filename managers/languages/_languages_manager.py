@@ -3,6 +3,20 @@ from pathlib import Path
 from typing import Optional
 
 
+
+# ======================================== PORTAIL ========================================
+class LanguagesGate:
+    """
+    Portail d'accès au gestionnaire des langues
+    """
+    def __init__(self):
+        self.__languages = LanguagesManager()
+    
+    def __getattr__(self, name):
+        return getattr(self.__languages, name)
+
+
+# ======================================== GESTIONNAIRE ========================================
 class LanguagesManager:
     """
     Gestionnaire de langues / traductions

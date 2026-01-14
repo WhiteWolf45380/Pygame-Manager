@@ -6,9 +6,39 @@ except ImportError:
     raise RuntimeError("[ScreenManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
 
 
+# ======================================== PORTAIL ========================================
+class ScreenGate:
+    """
+    Portail d'accès au gestionnaire de l'affichage
+    """
+    def __init__(self):
+        self.__screen = None
+
+    def __getattr__(self, name):
+        if self.__screen is None:
+            raise AttributeError(f"ScreenManager not initialized. Call 'create()' first.")
+        return getattr(self.__screen, name)
+
+    def create(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
+        """
+        Crée une instance de l'écran
+        """
+        if self.__screen is None:
+            self.__screen = ScreenManager(screen=screen, window=window)
+    
+    def close(self):
+        """
+        Ferme une instance de l'écran
+        """
+        if self.__screen:
+            self.__screen.close_window()
+            self.__screen = None
+
+
+# ======================================== GESTIONNAIRE ========================================
 class ScreenManager:
     """
-    Gestionnaire pygame de la fenêtre
+    Gestionnaire pygame de l'affichage
 
     Fonctionnalités:
     - gère semi-automatiquement l'écran et la fenêtre (nécessite de wrapper le dessin dans un with)

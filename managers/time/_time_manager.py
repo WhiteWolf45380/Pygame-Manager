@@ -4,6 +4,19 @@ except ImportError:
     raise RuntimeError("[AudioManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
 
 
+# ======================================== PORTAIL ========================================
+class TimeGate:
+    """
+    Portail d'accès au gestionnaire du temps
+    """
+    def __init__(self):
+        self.__time = TimeManager()
+    
+    def __getattr__(self, name):
+        return getattr(self.__time, name)
+
+
+# ======================================== GESTIONNAIRE ========================================
 class TimeManager:
     """
     Gestionnaire pygame du temps et des performances
