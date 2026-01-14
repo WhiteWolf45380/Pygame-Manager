@@ -1,2 +1,2 @@
-from ._screen_manager import ScreenGate
+from .screen import ScreenGate
 __all__ = ["ScreenGate"]

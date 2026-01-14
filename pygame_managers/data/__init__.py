@@ -1,2 +1,2 @@
-from ._data_manager import DataGate
+from .data import DataGate
 __all__ = ["DataGate"]
