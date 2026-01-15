@@ -76,14 +76,33 @@ class PygameManager :
             self.screen.close()
             pygame.quit()
 
-
 # instance principale
 pygame_manager = PygameManager()
-sys.modules[__name__] = pygame_manager
+
+# raccourcis
+screen = pygame_manager.screen
+audio = pygame_manager.audio
+data = pygame_manager.data
+languages = pygame_manager.languages
+time = pygame_manager.time
+inputs = pygame_manager.inputs
+
+init = pygame_manager.init
+run = pygame_manager.run
+stop = pygame_manager.stop
 
 # export
 __all__ = [
-    "pygame_manager",
+    "screen",
+    "audio",
+    "data",
+    "languages",
+    "time",
+    "input"
+
+    "init",
+    "run",
+    "stop"
 ]
 
 
