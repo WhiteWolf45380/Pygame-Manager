@@ -124,15 +124,13 @@ class ScreenManager:
         """
         Bloque tout accès externe aux attributs privés manglés
         """
-        if name.startswith(f'__{super().__class__.__name__}_'):
-            raise AttributeError(f"Access to {name} is forbidden")
         return super().__getattribute__(name)
     
     def __getattr__(self, name):
         """
         Proxy automatique vers la surface virtuelle
         """
-        if name in self._SURFACE_BLACKLIST or name.startswith('_'):
+        if name in self._SURFACE_BLACKLIST:
             raise AttributeError(f"{self.__class__.__name__}: access to Surface.{name} is forbidden")
         return getattr(self.__screen, name)
     
