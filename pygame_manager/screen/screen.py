@@ -19,6 +19,14 @@ class ScreenGate:
             raise AttributeError(f"ScreenManager not initialized. Call 'create()' first.")
         return getattr(self.__screen, name)
 
+    def __enter__(self):
+        """Délègue au manager"""
+        return self._manager.__enter__()
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Délègue au manager"""
+        return self._manager.__exit__(exc_type, exc_val, exc_tb)
+
     def create(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
         """
         Crée une instance de l'écran
