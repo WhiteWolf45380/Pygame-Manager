@@ -26,7 +26,6 @@ class DataManager:
     - gestion de plusieurs fichiers de données
     - accès simple aux valeurs (get / set)
     """
-
     def __init__(self, base_path: str="data"):
         if not isinstance(base_path, str):
             self._raise_error('__init__', 'base_path must be a string')
