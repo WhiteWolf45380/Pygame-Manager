@@ -194,6 +194,13 @@ class ScreenManager:
                 self.__window.blit(self.__mouse_icon_scaled, (mx, my))
 
     # ======================================== GETTERS ========================================
+    @property
+    def opened(self) -> bool:
+        """
+        Vérifie que la fenêtre soit ouverte
+        """
+        return self.__opened
+
     def get_screen_size(self) -> tuple[int, int]:
         """
         Renvoie les dimensions de l'écran virtuel

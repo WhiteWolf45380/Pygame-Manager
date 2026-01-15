@@ -41,13 +41,34 @@ class TimeManager:
         """
         return self.__dt
     
+    @property
+    def dt(self):
+        """
+        Renvoie le delta time (temps écoulé depuis la dernière frame) en secondes
+        """
+        return self.__dt
+    
     def get_fps(self):
         """
         Renvoie le nombre actuel de frames par seconde
         """
         return self.__current_fps
     
+    @property
+    def fps(self):
+        """
+        Renvoie le nombre actuel de frames par seconde
+        """
+        return self.__current_fps
+    
     def get_fps_limit(self):
+        """
+        Renvoie la limite de frames par seconde
+        """
+        return self.__max_fps
+    
+    @property
+    def fps_limits(self):
         """
         Renvoie la limite de frames par seconde
         """

@@ -55,11 +55,12 @@ class PygameManager :
         while self.running:
             self.time.tick()
             with self.screen:
-                # entrées utilisateur
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        self.running = False
-                    self.inputs.check(event)
+                if self.screen.opened:
+                    # entrées utilisateur
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            self.running = False
+                        self.inputs.check(event)
                 
                 # mise à jour
                 update()
