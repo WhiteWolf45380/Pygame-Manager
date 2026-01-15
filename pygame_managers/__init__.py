@@ -67,6 +67,9 @@ class PygameManager :
         self.stop()
     
     def stop(self):
+        """
+        Fermeture du programme pygame
+        """
         pygame.quit()
 
 
