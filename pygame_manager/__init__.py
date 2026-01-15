@@ -63,6 +63,9 @@ class PygameManager :
                 
                 # mise à jour
                 update()
+
+                if not self.running:
+                    return
         
         self.stop()
     

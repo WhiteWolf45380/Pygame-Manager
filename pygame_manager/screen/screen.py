@@ -116,26 +116,28 @@ class ScreenManager:
         """
         Méthode appelée au début du with
         """
-        self._update_screen()
-        self._update_mouse()
+        if self.__opened:
+            self._update_screen()
+            self._update_mouse()
 
     def _flip(self):
         """
         Méthode appelée à la fin du with
         """
-        # redimensionnement
-        if not self.__smooth_rendering:                                                                                                      # rendu pixelisé
-            self.__screen_resized = pygame.transform.scale(self.__screen, (self.__screen_resized_width, self.__screen_resized_height))
-        else:                                                                                                                                # rendu vectoriel
-            self.__screen_resized = pygame.transform.smoothscale(self.__screen, (self.__screen_resized_width, self.__screen_resized_height))
-        self.__window.fill((0, 0, 0))                                                                                                        # bandes noires
-        self.__window.blit(self.__screen_resized, (self.__screen_resized_x_offset, self.__screen_resized_y_offset))
+        if self.__opened:
+            # redimensionnement
+            if not self.__smooth_rendering:                                                                                                      # rendu pixelisé
+                self.__screen_resized = pygame.transform.scale(self.__screen, (self.__screen_resized_width, self.__screen_resized_height))
+            else:                                                                                                                                # rendu vectoriel
+                self.__screen_resized = pygame.transform.smoothscale(self.__screen, (self.__screen_resized_width, self.__screen_resized_height))
+            self.__window.fill((0, 0, 0))                                                                                                        # bandes noires
+            self.__window.blit(self.__screen_resized, (self.__screen_resized_x_offset, self.__screen_resized_y_offset))
 
-        # affichage curseur
-        self._draw_mouse()
+            # affichage curseur
+            self._draw_mouse()
 
-        # actualisation
-        pygame.display.flip()
+            # actualisation
+            pygame.display.flip()
     
     def _update_screen(self):
         """
@@ -406,8 +408,9 @@ class ScreenManager:
         Ferme une instance de l'écran
         """
         if self.__opened:
-            self.close_window()
             self.__opened = False
+            pygame.display.quit()
+            pygame.quit()
 
     def resize_window(self, size : tuple[int, int]=(0, 0), resizable: bool=True):
         """
@@ -469,13 +472,6 @@ class ScreenManager:
         if path:
             pygame.image.save(capture, path)
         return capture
-
-    def close_window(self):
-        """
-        Fermeture de la fenêtre
-        """
-        pygame.display.quit()
-        pygame.quit()
 
 
 """
