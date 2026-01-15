@@ -1,4 +1,5 @@
 import pygame
+import sys
 
 
 class PygameManager :
@@ -16,7 +17,7 @@ class PygameManager :
         self.audio = AudioGate()
         self.data = DataGate()
         self.languages = LanguagesGate()
-        self.inputs = InputsGate
+        self.inputs = InputsGate()
         
         self._initialized = False
         self.running = False
@@ -31,7 +32,7 @@ class PygameManager :
         """
         Méthode d'initialisation des éléments pygame
         """
-        if not self.initialized:
+        if not self._initialized:
             if not pygame.get_init():
                 pygame.init()
             self.screen.create()
@@ -70,29 +71,19 @@ class PygameManager :
         """
         Fermeture du programme pygame
         """
-        pygame.quit()
+        if self.running:
+            self.running = False
+            self.screen.close()
+            pygame.quit()
 
 
 # instance principale
 pygame_manager = PygameManager()
-
-# raccourcis pour imports partiels
-screen = pygame_manager.screen
-time = pygame_manager.time
-audio = pygame_manager.audio
-data = pygame_manager.data
-languages = pygame_manager.languages
-inputs = pygame_manager.inputs
+sys.modules[__name__] = pygame_manager
 
 # export
 __all__ = [
     "pygame_manager",
-    "screen",
-    "time", 
-    "audio",
-    "data",
-    "languages",
-    "inputs"
 ]
 
 
