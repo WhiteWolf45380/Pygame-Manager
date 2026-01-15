@@ -3,7 +3,7 @@ requires = ["setuptools>=65.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pygame_managers"
+name = "pygame_manager"
 version = "0.1.3"
 description = "Collection de managers pour Pygame"
 authors = [{ name = "WhiteWolf45380" }]
@@ -11,4 +11,4 @@ dependencies = ["pygame"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["pygame_managers*"]
+include = ["pygame_manager*"]
