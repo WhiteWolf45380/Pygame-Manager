@@ -5,18 +5,6 @@ except ImportError:
     raise RuntimeError("[AudioManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
 
 
-# ======================================== PORTAIL ========================================
-class AudioGate:
-    """
-    Portail d'accès au gestionnaire audio
-    """
-    def __init__(self):
-        self.__audio = AudioManager()
-    
-    def __getattr__(self, name):
-        return getattr(self.__audio, name)
-
-
 # ======================================== GESTIONNAIRE ========================================
 class AudioManager:
     """

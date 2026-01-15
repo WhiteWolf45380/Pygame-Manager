@@ -1,15 +1,3 @@
-# ======================================== PORTAIL ========================================
-class InputsGate:
-    """
-    Portail d'accès au gestionnaire des entrées utilisateur
-    """
-    def __init__(self):
-        self.__inputs = InputsManager()
-    
-    def __getattr__(self, name):
-        return getattr(self.__inputs, name)
-
-
 # ======================================== GESTIONNAIRE ========================================
 class InputsManager:
     """

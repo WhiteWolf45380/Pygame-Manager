@@ -1,2 +1,2 @@
-from .inputs import InputsGate
-__all__ = ["InputsGate"]
+from .inputs import InputsManager
+__all__ = ["InputsManager"]

@@ -6,45 +6,6 @@ except ImportError:
     raise RuntimeError("[ScreenManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
 
 
-# ======================================== PORTAIL ========================================
-class ScreenGate:
-    """
-    Portail d'accès au gestionnaire de l'affichage
-    """
-    def __init__(self):
-        self.__screen = None
-
-    def __getattr__(self, name):
-        if self.__screen is None:
-            raise AttributeError(f"ScreenManager not initialized. Call 'create()' first.")
-        return getattr(self.__screen, name)
-
-    def __enter__(self):
-        """Délègue au manager"""
-        if self.__screen:
-            return self.__screen.__enter__()
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Délègue au manager"""
-        if self.__screen:
-            return self.__screen.__exit__(exc_type, exc_val, exc_tb)
-
-    def create(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
-        """
-        Crée une instance de l'écran
-        """
-        if self.__screen is None:
-            self.__screen = ScreenManager(screen=screen, window=window)
-    
-    def close(self):
-        """
-        Ferme une instance de l'écran
-        """
-        if self.__screen:
-            self.__screen.close_window()
-            self.__screen = None
-
-
 # ======================================== GESTIONNAIRE ========================================
 class ScreenManager:
     """
@@ -60,6 +21,7 @@ class ScreenManager:
         # initialisation
         if not pygame.get_init():
             pygame.init()
+        self.__opened = True
         
         # écran virtuel
         self.__screen_width = screen[0]
@@ -432,6 +394,21 @@ class ScreenManager:
         pygame.mouse.set_visible(value and self.__mouse_icon is None)
     
     # ======================================== METHODES DYNAMIQUES ========================================
+    def create(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
+        """
+        Crée une instance de l'écran
+        """
+        if not self.__opened:
+            self.__init__(screen=screen, window=window)
+    
+    def close(self):
+        """
+        Ferme une instance de l'écran
+        """
+        if self.__opened:
+            self.close_window()
+            self.__opened = False
+
     def resize_window(self, size : tuple[int, int]=(0, 0), resizable: bool=True):
         """
         Force le redimensionnement de la fenêtre

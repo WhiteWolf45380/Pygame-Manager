@@ -5,19 +5,19 @@ import sys
 class PygameManager :
 
     def __init__(self):
-        from .audio import AudioGate
-        from .data import DataGate
-        from .time import TimeGate
-        from .languages import LanguagesGate
-        from .screen import ScreenGate
-        from.inputs import InputsGate
+        from .audio import AudioManager
+        from .data import DataManager
+        from .time import TimeManager
+        from .languages import LanguagesManager
+        from .screen import ScreenManager
+        from.inputs import InputsManager
 
-        self.screen = ScreenGate()
-        self.time = TimeGate()
-        self.audio = AudioGate()
-        self.data = DataGate()
-        self.languages = LanguagesGate()
-        self.inputs = InputsGate()
+        self.screen = ScreenManager()
+        self.time = TimeManager()
+        self.audio = AudioManager()
+        self.data = DataManager()
+        self.languages = LanguagesManager()
+        self.inputs = InputsManager()
         
         self._initialized = False
         self.running = False
@@ -38,7 +38,6 @@ class PygameManager :
             self.screen.create()
             self._initialized = True
         return self
-    
     
     def run(self, update: callable):
         """
