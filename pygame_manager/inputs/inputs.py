@@ -22,7 +22,7 @@ class InputsManager:
     def __init__(self):
         pass
 
-    def check(event):
+    def check(self, event):
         """
         Vérifie les actions associées à l'entrée
 
