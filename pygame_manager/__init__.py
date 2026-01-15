@@ -49,7 +49,7 @@ class PygameManager :
         """
         if not self._initialized:
             self._raise_error('run', 'PygameManager is not initialized. Call pygame_manager.init() first.')
-        if not isinstance(update, callable):
+        if not callable(update):
             self._raise_error('run', 'update must be callable')
 
         self.running = True
