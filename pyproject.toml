@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pygame_manager"
-version = "0.2.6"
+version = "0.2.7"
 description = "Collection de managers pour Pygame"
 authors = [{ name = "WhiteWolf45380" }]
 dependencies = ["pygame", "easygui"]
@@ -12,3 +12,6 @@ dependencies = ["pygame", "easygui"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["pygame_manager*"]
+
+[tool.setuptools.package-data]
+"pygame_manager" = ["screen/_loading_frames/*.png"]
