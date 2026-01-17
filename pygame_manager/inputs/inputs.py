@@ -1,3 +1,6 @@
+import pygame
+
+
 # ======================================== GESTIONNAIRE ========================================
 class InputsManager:
     """
@@ -10,13 +13,39 @@ class InputsManager:
     def __init__(self):
         self.__listeners = {}
 
+    # ======================================== METHODES FONCTIONNELLES ========================================
+    def _raise_error(self, method: str, text: str):
+        """
+        Lève une erreur
+
+        Args :
+            - method (str) : méthode dans laquelle l'erreur survient
+            - text (str) : message d'erreur
+        """
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+
     # ======================================== METHODES INTERACTIVES ========================================
-    def add_listener(self, event_type: int, callback: callable, condition: callable=None, once: bool=False, one_frame: bool=False, priority: int=0):
+    @staticmethod
+    def get_id(event):
+        """
+        Abstraction du type d'input en int unique
+        
+        Args :
+            - event (pygame.event.Event) : événement en tout genre
+        """
+        if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
+            return event.button
+        elif event.type in [pygame.KEYDOWN, pygame.KEYUP]:
+            return event.key
+        else:
+            return event.type
+
+    def add_listener(self, event_id: int, callback: callable, condition: callable=None, once: bool=False, one_frame: bool=False, priority: int=0):
         """
         Ajoute un listener sur une entrée utilisateur
 
         Args :
-            - event_type (int) : événement utilisateur correspondant
+            - event_id (int) : événement utilisateur correspondant
             - callback (calable) : fonction associée
             - condition (callable) : condition supplémentaire
             - once (bool) : n'éxécute l'action qu'une fois
@@ -31,34 +60,36 @@ class InputsManager:
             "priority": priority,
         }
 
-        if event_type not in self.__listeners:
-            self.__listeners[event_type] = [listener]
+        if event_id not in self.__listeners:
+            self.__listeners[event_id] = [listener]
             return
-        for i, l in enumerate(self.__listeners[event_type]):
+        for i, l in enumerate(self.__listeners[event_id]):
             if priority > l["priority"]:
-                self.__listeners[event_type].insert(i, listener)
+                self.__listeners[event_id].insert(i, listener)
                 return
-        self.__listeners[event_type].append(listener)
+        self.__listeners[event_id].append(listener)
 
-    def remove_listener(self, event_type: int, callback: callable):
+    def remove_listener(self, event_id: int, callback: callable):
         """
         Supprime un listener sur une entrée utilisateur
 
         Args :
-            - event_type (int) : entrée utilisateur
+            - event_id (int) : entrée utilisateur
             - callback (callable) : fonction associée
         """
-        self.__listeners[event_type] = list(filter(lambda l: l["callback"] != callback, self.__listeners[event_type]))
+        if event_id in self.__listeners:
+            self.__listeners[event_id] = [l for l in self.__listeners[event_id] if l["callback"] != callback]
 
-    def check(self, event: int):
+    def check(self, event):
         """
         Vérifie les actions associées à l'entrée
 
         Args :
             - event : événement pygame / entrée utilisateur
         """
+        event_id = self.get_id(event)
         to_remove = []
-        for listener in self.__listeners.get(event, []):
+        for listener in self.__listeners.get(event_id, []):
             if listener["one_frame"]:
                 to_remove.append(listener)
             
@@ -71,4 +102,4 @@ class InputsManager:
                 to_remove.append(listener)
 
         for listener in to_remove:
-            self.__listeners[event].remove(listener)
+            self.__listeners[event_id].remove(listener)
