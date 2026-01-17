@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 import os
+import sys
 from ._sql import SQLHandler
+from ._io import InputOutputHandler
 
 
 # ======================================== GESTIONNAIRE ========================================
@@ -19,6 +21,7 @@ class DataManager:
             self._raise_error('__init__', 'base_path must be a string')
         self.__base_path = Path(base_path)
         self.__sql = SQLHandler()
+        self.__io = InputOutputHandler()
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -40,6 +43,13 @@ class DataManager:
         Accès au gestionnaire SQL
         """
         return self.__sql
+    
+    @property
+    def io(self):
+        """
+        Accès au gestionnaire des entrées/sorties utilisateur
+        """
+        return self.__io
 
     # ======================================== FICHIERS ========================================
     def load(self, path: str) -> dict:
@@ -158,6 +168,16 @@ class DataManager:
         if not isinstance(pattern, str):
             self._raise_error('list_files', 'path must be a string')
         return [str(p.relative_to(self.__base_path)) for p in self.__base_path.glob(pattern)]
+    
+    @staticmethod
+    def get_path(relative_path, folder=False):
+        """Obtention du chemin absolu des assets"""
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS if not folder else os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+
+        return os.path.join(base_path, relative_path)
 
 
 """
