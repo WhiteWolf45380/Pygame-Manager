@@ -26,7 +26,7 @@ class LoadingHandler:
         for file in sorted(os.listdir(frames_dir)):
             if file.endswith(".png"):
                 path = os.path.join(frames_dir, file)
-                image = pygame.image.load(path).convert_alpha()
+                image = pygame.image.load(path)
                 # redimensionner
                 image = pygame.transform.scale(image, self.__icon_size)
                 self.__frames.append(image)
@@ -110,7 +110,7 @@ class LoadingHandler:
         for file in sorted(os.listdir(frames_dir)):
             if file.endswith(".png"):
                 path = os.path.join(frames_dir, file)
-                image = pygame.image.load(path).convert_alpha()
+                image = pygame.image.load(path)
                 image = pygame.transform.scale(image, self.__icon_size)
                 self.__frames.append(image)
 
