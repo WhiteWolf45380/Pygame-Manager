@@ -4,6 +4,7 @@ try:
     import pygame
 except ImportError:
     raise RuntimeError("[ScreenManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
+from ._loading import LoadingHandler
 
 
 # ======================================== GESTIONNAIRE ========================================
@@ -22,6 +23,7 @@ class ScreenManager:
         if not pygame.get_init():
             pygame.init()
         self.__opened = True
+        self.__loading = LoadingHandler(self)
         
         # écran virtuel
         self.__screen_width = screen[0]
@@ -194,6 +196,13 @@ class ScreenManager:
                 self.__window.blit(self.__mouse_icon_scaled, (mx, my))
 
     # ======================================== GETTERS ========================================
+    @property
+    def loading(self) -> object:
+        """
+        Accès au gestionnaire de l'animation de chargement
+        """
+        return self.__loading
+
     @property
     def opened(self) -> bool:
         """

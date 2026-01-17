@@ -28,14 +28,46 @@ class PygameManager :
         """
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
     
-    def init(self):
+    def init(self, loader: callable=None):
         """
         Méthode d'initialisation des éléments pygame
+
+        Args :
+            - loader (callable) : fonction de chargement
         """
         if not self._initialized:
+            # initialisation minimale
             if not pygame.get_init():
                 pygame.init()
             self.screen.create()
+
+            # initialisation progressive
+            if loader:
+                if hasattr(loader, "__iter__") and not hasattr(loader, "__call__"): # si c'est un générateur
+                    gen = loader
+                else: # si c'est une fonction normale
+                    def wrapper():
+                        loader()
+                        yield
+                    gen = wrapper()
+
+                while True:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            self.stop()
+                            return
+
+                    # mise à jour de l'écran de chargement
+                    self.screen.loading.update()
+
+                    # avancement du loader
+                    try:
+                        next(gen)
+                    except StopIteration:
+                        break
+
+                    pygame.display.flip()
+
             self._initialized = True
         return self
     
