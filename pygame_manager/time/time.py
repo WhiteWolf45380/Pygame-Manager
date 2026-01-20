@@ -23,6 +23,7 @@ class TimeManager:
         self.__current_fps = 0.0 # nombre actuel de fps (en frames)
         self.__max_fps = max_fps # nombre maximal de fps
         self.__time_scale = 1.0 # vitesse d'éxécution du jeu
+        self.__frame_count = 0 # nombre de frames écoulées
 
         # stocke les débuts d’animations
         self.__start_times = {}
@@ -35,6 +36,19 @@ class TimeManager:
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
     
     # ======================================== GETTERS ========================================
+    def get_ticks(self):
+        """
+        Renvoie le temps écoulé depuis le début du programme (en ms)
+        """
+        return pygame.time.get_ticks()
+    
+    @property
+    def frame_count(self):
+        """
+        Renvoie le nombre de frames écoulées depuis le début du programme
+        """
+        return self.__frame_count
+
     def get_dt(self):
         """
         Renvoie le delta time (temps écoulé depuis la dernière frame) en secondes
@@ -104,6 +118,9 @@ class TimeManager:
         """
         À appeler à chaque frame, en premier
         """
+        # frame actuelle
+        self.__frame_count += 1
+
         # temps brut écoulé depuis la dernière frame
         raw_dt = self.__clock.tick(self.__max_fps) / 1000.0
 
