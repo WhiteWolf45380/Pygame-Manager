@@ -100,7 +100,6 @@ class PygameManager :
                 
                 # mise à jour
                 update()
-                self.states.update_current()
 
                 if not self.running:
                     return
