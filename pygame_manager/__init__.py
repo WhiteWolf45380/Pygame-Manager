@@ -148,4 +148,6 @@ __all__ = [
 """
 Syntaxe d'import depuis GitHub :
 pip install git+https://github.com/WhiteWolf45380/pygame_managers.git
+
+pip install https://github.com/WhiteWolf45380/Pygame-Manager/archive/refs/heads/main.zip
 """
