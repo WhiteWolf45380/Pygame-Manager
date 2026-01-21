@@ -209,6 +209,10 @@ class ScreenManager:
         Vérifie que la fenêtre soit ouverte
         """
         return self.__opened
+    
+    @property
+    def surface(self):
+        return self.__screen
 
     def get_screen_size(self) -> tuple[int, int]:
         """
