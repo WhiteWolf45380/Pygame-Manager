@@ -47,9 +47,9 @@ class PygameManager :
 
             # initialisation progressive
             if loader:
-                if hasattr(loader, "__iter__") and not hasattr(loader, "__call__"): # si c'est un générateur
+                if hasattr(loader, "__iter__") and not hasattr(loader, "__call__"):
                     gen = loader
-                else: # si c'est une fonction normale
+                else:
                     def wrapper():
                         loader()
                         yield
@@ -61,16 +61,14 @@ class PygameManager :
                             self.stop()
                             return
 
-                    # mise à jour de l'écran de chargement
-                    self.screen.loading.update()
-
                     # avancement du loader
                     try:
                         next(gen)
                     except StopIteration:
                         break
 
-                    pygame.display.flip()
+                    # mise à jour de l'écran de chargement (fait déjà le flip)
+                    self.screen.loading.update()
 
             self._initialized = True
         return self
@@ -139,9 +137,9 @@ __all__ = [
     "data",
     "languages",
     "time",
-    "input",
+    "inputs",
     "settings",
-    "states"
+    "states",
 
     "init",
     "run",
