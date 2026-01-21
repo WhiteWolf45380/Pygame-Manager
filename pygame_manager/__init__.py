@@ -12,6 +12,7 @@ class PygameManager :
         from .screen import ScreenManager
         from.inputs import InputsManager
         from .settings import SettingsManager
+        from .states import StatesManager
 
         self.screen = ScreenManager()
         self.time = TimeManager()
@@ -20,6 +21,7 @@ class PygameManager :
         self.languages = LanguagesManager()
         self.inputs = InputsManager()
         self.settings = SettingsManager()
+        self.states = StatesManager()
         
         self._initialized = False
         self.running = False
@@ -98,6 +100,7 @@ class PygameManager :
                 
                 # mise à jour
                 update()
+                self.states.update_current()
 
                 if not self.running:
                     return
@@ -124,6 +127,7 @@ languages = pygame_manager.languages
 time = pygame_manager.time
 inputs = pygame_manager.inputs
 settings = pygame_manager.settings
+states = pygame_manager.states
 
 init = pygame_manager.init
 run = pygame_manager.run
@@ -137,7 +141,8 @@ __all__ = [
     "languages",
     "time",
     "input",
-    "settings"
+    "settings",
+    "states"
 
     "init",
     "run",
