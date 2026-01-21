@@ -211,7 +211,7 @@ class ScreenManager:
         return self.__opened
     
     @property
-    def surface(self):
+    def surface(self) -> pygame.Surface:
         return self.__screen
 
     def get_screen_size(self) -> tuple[int, int]:
@@ -221,18 +221,39 @@ class ScreenManager:
         return (self.__screen_width, self.__screen_height)
     
     @property
-    def width(self):
+    def width(self) -> int:
         """
         Renvoie la largeur de l'écran virtuel
         """
         return self.__screen_width
     
     @property
-    def height(self):
+    def height(self) -> int:
         """
         Renvoie la hauteur de l'écran virtuel
         """
         return self.__screen_height
+    
+    @property
+    def center(self) -> tuple[float]:
+        """
+        Renvoie les coordonnées du centre de l'écran
+        """
+        return (self.__screen_width / 2, self.__screen_height / 2)
+    
+    @property
+    def center_x(self) -> float:
+        """
+        Renvoie la coordonnée horizontale du centre de l'écran
+        """
+        return self.__screen_width / 2
+    
+    @property
+    def center_y(self) -> float:
+        """
+        Renvoie la coordonnée verticale du centre de l'écran
+        """
+        return self.__screen_height / 2
 
     def get_window_size(self) -> tuple[int, int]:
         """
