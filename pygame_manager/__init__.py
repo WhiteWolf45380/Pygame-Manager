@@ -11,6 +11,7 @@ class PygameManager :
         from .languages import LanguagesManager
         from .screen import ScreenManager
         from.inputs import InputsManager
+        from .settings import SettingsManager
 
         self.screen = ScreenManager()
         self.time = TimeManager()
@@ -18,6 +19,7 @@ class PygameManager :
         self.data = DataManager()
         self.languages = LanguagesManager()
         self.inputs = InputsManager()
+        self.settings = SettingsManager()
         
         self._initialized = False
         self.running = False
@@ -121,6 +123,7 @@ data = pygame_manager.data
 languages = pygame_manager.languages
 time = pygame_manager.time
 inputs = pygame_manager.inputs
+settings = pygame_manager.settings
 
 init = pygame_manager.init
 run = pygame_manager.run
@@ -133,7 +136,8 @@ __all__ = [
     "data",
     "languages",
     "time",
-    "input"
+    "input",
+    "settings"
 
     "init",
     "run",
