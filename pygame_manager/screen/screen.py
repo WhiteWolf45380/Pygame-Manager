@@ -215,6 +215,20 @@ class ScreenManager:
         Renvoie les dimensions de l'écran virtuel
         """
         return (self.__screen_width, self.__screen_height)
+    
+    @property
+    def width(self):
+        """
+        Renvoie la largeur de l'écran virtuel
+        """
+        return self.__screen_width
+    
+    @property
+    def height(self):
+        """
+        Renvoie la hauteur de l'écran virtuel
+        """
+        return self.__screen_height
 
     def get_window_size(self) -> tuple[int, int]:
         """
