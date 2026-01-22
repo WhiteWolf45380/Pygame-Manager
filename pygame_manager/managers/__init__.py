@@ -12,6 +12,6 @@ for _, module_name, _ in pkgutil.iter_modules(package.__path__):
     # récupération des classes finissant par "Manager"
     for attr_name in dir(module):
         attr = getattr(module, attr_name)
-        if attr_name.endswith("_manager"):
+        if attr_name.endswith(("Manager", "_manager")):
             globals()[attr_name] = attr
             __all__.append(attr_name)

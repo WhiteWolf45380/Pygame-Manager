@@ -1,2 +1,2 @@
-from .screen import screen_manager
-__all__ = ["screen_manager"]
+from .screen import ScreenManager, screen_manager
+__all__ = ["ScreenManager", "screen_manager"]

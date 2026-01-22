@@ -1,2 +1,2 @@
-from .audio import audio_manager
-__all__ = ["audio_manager"]
+from .audio import AudioManager, audio_manager
+__all__ = ["AudioManager", "audio_manager"]

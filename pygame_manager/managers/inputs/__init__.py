@@ -1,2 +1,2 @@
-from .inputs import inputs_manager
-__all__ = ["inputs_manager"]
+from .inputs import InputsManager, inputs_manager
+__all__ = ["InputsManager", "inputs_manager"]

@@ -1,2 +1,2 @@
-from .states import states_manager
-__all__ = ["states_manager"]
+from .states import StatesManager, states_manager
+__all__ = ["StatesManager", "states_manager"]
