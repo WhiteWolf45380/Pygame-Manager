@@ -131,9 +131,9 @@ class InputsManager:
 
         # maintient / relâchement
         if up:
-            self.__step.append(event_id)
+            self.__pressed[event_id] = False
         else:
-            self.__pressed[event_id] = True
+            self.__step.append(event_id)
         
         # listeners
         to_remove = []
