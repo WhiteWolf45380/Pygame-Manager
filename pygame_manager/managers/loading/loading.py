@@ -5,15 +5,13 @@ import os
 class LoadingManager:
     """Gestionnaire de l'animation de chargement."""
 
-    def __init__(self, screen: pygame.Surface, folder_path: str = "_loading_frames", text: str = "Chargement...", icon_size=(50, 50)):
+    def __init__(self, folder_path: str = "_loading_frames", text: str = "Chargement...", icon_size=(50, 50)):
         """
         Args:
-            screen : surface pygame sur laquelle dessiner
             folder_path : chemin relatif au dossier contenant les frames PNG
             text : texte à afficher
             icon_size : taille (width, height) des frames
         """
-        self._screen = screen
         self._icon_size = icon_size
 
         # déterminer le chemin absolu des frames
@@ -40,11 +38,8 @@ class LoadingManager:
     def _raise_error(self, method: str, text: str):
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
-    def update(self):
+    def update(self, screen: pygame.Surface):
         """Met à jour l'écran de chargement."""
-        if not self._screen:
-            self._raise_error("update", "Screen non défini")
-
         # fond noir
         self._screen.fill((0, 0, 0))
 

@@ -8,7 +8,6 @@ class Engine:
             manager_class = getattr(managers, manager_name)
             setattr(self, manager_name[:-7].lower(), manager_class())
 
-        self._loader = None  # le loader sera optionnel
         self._initialized = False
         self.running = False
 
@@ -53,7 +52,7 @@ class Engine:
 
                 # mise à jour de l'écran de chargement
                 if hasattr(self, "loading"):
-                    self.loading.update()
+                    self.loading.update(self.screen.surface)
 
         self._initialized = True
         return self
