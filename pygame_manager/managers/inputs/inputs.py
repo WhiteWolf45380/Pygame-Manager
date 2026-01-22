@@ -11,7 +11,9 @@ class InputsManager:
         - ajouter des listeners à certaines entrées
     """
     def __init__(self):
-        self.__listeners = {}
+        self.__listeners = {}       # ensemble des listeners
+        self.__step = []            # touches qui viennent d'être pressées
+        self.__pressed = {}         # touches pressées
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -39,8 +41,43 @@ class InputsManager:
             return event.key
         else:
             return event.type
+    
+    @property
+    def MOUSELEFT(self):
+        """Renvoie l'id correspondant au bouton gauche de la souris"""
+        return 1
+    
+    @property
+    def MOUSEWHEEL(self):
+        """Renvoie l'id correspondant au bouton central de la souris"""
+        return 2
+    
+    @property
+    def MOUSERIGHT(self):
+        """Renvoie l'id correspondant au bouton droit de la souris"""
+        return 3
+    
+    @property
+    def MOUSEWHEELUP(self):
+        """Renvoie l'id correspondant au scroll vers la haut"""
+        return 4
+    
+    @property
+    def MOUSEWHEELDOWN(self):
+        """Renvoie l'id correspondant au scroll vers le bas"""
+        return 5
+    
+    @property
+    def MOUSEBACKWARD(self):
+        """Renvoie l'id correspondant au bouton droit de la souris"""
+        return 8
+    
+    @property
+    def MOUSEFORWARD(self):
+        """Renvoie l'id correspondant au premier latéral de la souris"""
+        return 9
 
-    def add_listener(self, event_id: int, callback: callable, up: bool=False,condition: callable=None, once: bool=False, one_frame: bool=False, priority: int=0):
+    def add_listener(self, event_id: int, callback: callable, up: bool=False,condition: callable=None, once: bool=False, one_frame: bool=False, repeat: bool=False, priority: int=0):
         """
         Ajoute un listener sur une entrée utilisateur
 
@@ -51,6 +88,7 @@ class InputsManager:
             - condition (callable) : condition supplémentaire
             - once (bool) : n'éxécute l'action qu'une fois
             - one_frame (bool) : supprime automatiquement le lister à la fin de la frame
+            - repeat (bool) : le maintient du boutton répète l'action
             - priority (int) : niveau de priorité du listener si plusieurs ont été associés au même événement
         """
         listener = {
@@ -59,6 +97,7 @@ class InputsManager:
             "condition": condition,
             "once": once,
             "one_frame": one_frame,
+            "repeat": repeat,
             "priority": priority,
         }
 
@@ -82,7 +121,7 @@ class InputsManager:
         if event_id in self.__listeners:
             self.__listeners[event_id] = [l for l in self.__listeners[event_id] if l["callback"] != callback]
 
-    def check(self, event):
+    def check_event(self, event):
         """
         Vérifie les actions associées à l'entrée
 
@@ -91,7 +130,14 @@ class InputsManager:
         """
         event_id = self.get_id(event)
         up = event.type in [pygame.MOUSEBUTTONUP, pygame.KEYUP]
+
+        # maintient / relâchement
+        if up:
+            self.step.append(event_id)
+        else:
+            self.__pressed[event_id] = True
         
+        # listeners
         to_remove = []
         for listener in self.__listeners.get(event_id, []):
             if listener["one_frame"]:
@@ -105,8 +151,34 @@ class InputsManager:
             if listener["once"] and not listener["one_frame"]:
                 to_remove.append(listener)
 
+        # suppression du listener
         for listener in to_remove:
             self.__listeners[event_id].remove(listener)
+    
+    def check_pressed(self):
+        """
+        Vérifie les listeners de maintient
+        """
+        for event_id, listener in self.__listeners.items():
+            if listener["repeat"] and not self.__pressed[event_id]:
+                if listener["condition"] and not listener["condition"]():
+                    continue
+                listener["callback"]()
+        
+        # ajout des nouvelles touches pressées
+        for event_id in self.__step:
+            self.__pressed[event_id] = True
+    
+    def check_all(self):
+        """
+        Vérifie l'ensemble des listeners
+        """
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            self.check(event)
+        self.check_pressed()
+        return True
     
     def is_pressed(self, event_id: int) -> bool:
         """

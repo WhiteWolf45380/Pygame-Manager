@@ -48,10 +48,7 @@ class Engine:
 
             with self.screen:
                 if self.screen.opened:
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            self.__running = False
-                        self.inputs.check(event)
+                    self.__running = self.inputs.check_all()
 
                 self.inputs.check_listeners()
                 update()
