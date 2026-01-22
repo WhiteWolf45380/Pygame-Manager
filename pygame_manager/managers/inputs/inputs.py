@@ -7,8 +7,8 @@ class InputsManager:
     Gestionnaire des entrées utilisateur
 
     Fonctionnalités :
-        - éxécuter une fonction prédéfinie de gestion des entrées
-        - ajouter des listeners à certaines entrées
+        éxécuter une fonction prédéfinie de gestion des entrées
+        ajouter des listeners à certaines entrées
     """
     def __init__(self):
         self.__listeners = {}       # ensemble des listeners
@@ -21,8 +21,8 @@ class InputsManager:
         Lève une erreur
 
         Args :
-            - method (str) : méthode dans laquelle l'erreur survient
-            - text (str) : message d'erreur
+            method (str) : méthode dans laquelle l'erreur survient
+            text (str) : message d'erreur
         """
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
@@ -33,7 +33,7 @@ class InputsManager:
         Abstraction du type d'input en int unique
         
         Args :
-            - event (pygame.event.Event) : événement en tout genre
+            event (pygame.event.Event) : événement en tout genre
         """
         if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
             return event.button
@@ -82,14 +82,14 @@ class InputsManager:
         Ajoute un listener sur une entrée utilisateur
 
         Args :
-            - event_id (int) : événement utilisateur correspondant
-            - callback (calable) : fonction associée
-            - up (bool) : action lorsque la touche est relâchée
-            - condition (callable) : condition supplémentaire
-            - once (bool) : n'éxécute l'action qu'une fois
-            - one_frame (bool) : supprime automatiquement le lister à la fin de la frame
-            - repeat (bool) : le maintient du boutton répète l'action
-            - priority (int) : niveau de priorité du listener si plusieurs ont été associés au même événement
+            event_id (int) : événement utilisateur correspondant
+            callback (callable) : fonction associée
+            up (bool) : action lorsque la touche est relâchée
+            condition (callable) : condition supplémentaire
+            once (bool) : n'éxécute l'action qu'une fois
+            one_frame (bool) : supprime automatiquement le lister à la fin de la frame
+            repeat (bool) : le maintient du boutton répète l'action
+            priority (int) : niveau de priorité du listener si plusieurs ont été associés au même événement
         """
         listener = {
             "callback": callback,
@@ -115,8 +115,8 @@ class InputsManager:
         Supprime un listener sur une entrée utilisateur
 
         Args :
-            - event_id (int) : entrée utilisateur
-            - callback (callable) : fonction associée
+            event_id (int) : entrée utilisateur
+            callback (callable) : fonction associée
         """
         if event_id in self.__listeners:
             self.__listeners[event_id] = [l for l in self.__listeners[event_id] if l["callback"] != callback]
@@ -126,7 +126,7 @@ class InputsManager:
         Vérifie les actions associées à l'entrée
 
         Args :
-            - event : événement pygame / entrée utilisateur
+            event : événement pygame / entrée utilisateur
         """
         event_id = self.get_id(event)
         up = event.type in [pygame.MOUSEBUTTONUP, pygame.KEYUP]
@@ -187,7 +187,7 @@ class InputsManager:
         Vérifie si une touche ou un bouton est actuellement enfoncé
 
         Args :
-            - event_id (int) : identifiant unifié de l'entrée
+            event_id (int) : identifiant unifié de l'entrée
         """
         # clavier
         pressed_keys = pygame.key.get_pressed()
