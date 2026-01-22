@@ -1,2 +1,2 @@
 from .api import *
-__version__ = "0.3.8"
+from ._version import __version__
