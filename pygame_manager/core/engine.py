@@ -12,8 +12,8 @@ class Engine:
             manager_class = getattr(managers, manager_name)
             setattr(self, manager_name[:-7].lower(), manager_class())
 
-        self._initialized = False
-        self.running = False
+        self.__initialized = False
+        self.__running = False
 
     def init(self, loader: callable = None):
         """
@@ -22,7 +22,7 @@ class Engine:
         Args :
             - loader (callable) : fonction d'initialisation supplémentaire
         """
-        if self._initialized:
+        if self.__initialized:
             return self
 
         self.screen.create()
@@ -54,7 +54,7 @@ class Engine:
                 if hasattr(self, "loading"):
                     self.loading.update(self.screen.surface)
 
-        self._initialized = True
+        self.__initialized = True
         return self
 
 
