@@ -16,7 +16,7 @@ class StatesManager:
         self.__active_states = {}
 
         # super-classe
-        self.State = State
+        self.State = None
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def __repr__(self):
@@ -287,3 +287,5 @@ class State:
     def is_active(self) -> bool:
         """Vérifie si cet état est actif"""
         return self.manager.is_active(self.name)
+
+states_manager.State = State
