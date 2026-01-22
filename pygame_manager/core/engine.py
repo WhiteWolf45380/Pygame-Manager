@@ -15,45 +15,20 @@ class Engine:
         self.__initialized = False
         self.__running = False
 
-    def init(self, loader: callable = None):
+    def init(self):
         """
         Initialise Pygame et lance le loader progressif si fourni
 
         Args :
             - loader (callable) : fonction d'initialisation supplémentaire (mettre des yield entre les étapes)
         """
-        if self.__initialized:
+        if self.__initialized: # déjà initialisé
             return self
 
+        # création de la fenêtre
         self.screen.create()
 
-        # transformer loader en générateur
-        if loader:
-            if hasattr(loader, "__iter__") and not callable(loader):
-                gen = loader
-            else:
-                # wrapper pour transformer fonction simple en générateur
-                def wrapper():
-                    loader()
-                    yield
-                gen = wrapper()
-
-            # boucle de chargement progressive
-            while True:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        self.stop()
-                        return
-
-                try:
-                    next(gen) # avancement du loader
-                except StopIteration:
-                    break
-
-                # mise à jour de l'écran de chargement
-                if hasattr(self, "loading"):
-                    self.loading.update(self.screen.surface)
-
+        # confirmation
         self.__initialized = True
         return self
 
