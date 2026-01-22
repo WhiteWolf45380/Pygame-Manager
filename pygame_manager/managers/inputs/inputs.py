@@ -77,26 +77,24 @@ class InputsManager:
         """Renvoie l'id correspondant au premier latéral de la souris"""
         return 9
 
-    def add_listener(self, event_id: int, callback: callable, up: bool=False,condition: callable=None, once: bool=False, one_frame: bool=False, repeat: bool=False, priority: int=0):
+    def add_listener(self, event_id: int, callback: callable, up: bool=False,condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0):
         """
         Ajoute un listener sur une entrée utilisateur
 
-        Args :
+        Args:
             event_id (int) : événement utilisateur correspondant
             callback (callable) : fonction associée
-            up (bool) : action lorsque la touche est relâchée
-            condition (callable) : condition supplémentaire
-            once (bool) : n'éxécute l'action qu'une fois
-            one_frame (bool) : supprime automatiquement le lister à la fin de la frame
-            repeat (bool) : le maintient du boutton répète l'action
-            priority (int) : niveau de priorité du listener si plusieurs ont été associés au même événement
+            up (bool, optional) : action lorsque la touche est relâchée
+            condition (callable, optional) : condition supplémentaire
+            once (bool, optional) : n'éxécute l'action qu'une fois
+            repeat (bool, optional) : le maintient du boutton répète l'action
+            priority (int, optional) : niveau de priorité du listener si plusieurs ont été associés au même événement
         """
         listener = {
             "callback": callback,
             "up": up,
             "condition": condition,
             "once": once,
-            "one_frame": one_frame,
             "repeat": repeat,
             "priority": priority,
         }
@@ -139,16 +137,13 @@ class InputsManager:
         
         # listeners
         to_remove = []
-        for listener in self.__listeners.get(event_id, []):
-            if listener["one_frame"]:
-                to_remove.append(listener)
-            
+        for listener in self.__listeners.get(event_id, []):            
             if listener["condition"] and not listener["condition"]() or up != listener["up"]:
                 continue
 
             listener["callback"]()
 
-            if listener["once"] and not listener["one_frame"]:
+            if listener["once"]:
                 to_remove.append(listener)
 
         # suppression du listener
