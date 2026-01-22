@@ -133,7 +133,7 @@ class InputsManager:
 
         # maintient / relâchement
         if up:
-            self.step.append(event_id)
+            self.__step.append(event_id)
         else:
             self.__pressed[event_id] = True
         
