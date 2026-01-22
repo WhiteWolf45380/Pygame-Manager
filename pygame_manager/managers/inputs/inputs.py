@@ -159,11 +159,13 @@ class InputsManager:
         """
         Vérifie les listeners de maintient
         """
-        for event_id, listener in self.__listeners.items():
-            if listener["repeat"] and not self.__pressed[event_id]:
-                if listener["condition"] and not listener["condition"]():
-                    continue
-                listener["callback"]()
+        for event_id, listeners in self.__listeners.items():
+            if self.__pressed[event_id]:
+                for listener in listeners:
+                    if listener["repeat"]:
+                        if listener["condition"] and not listener["condition"]():
+                            continue
+                        listener["callback"]()
         
         # ajout des nouvelles touches pressées
         for event_id in self.__step:
