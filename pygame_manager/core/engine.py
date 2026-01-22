@@ -1,7 +1,7 @@
 import pygame
 from pygame_manager import managers
 
-class PygameEngine:
+class Engine:
     def __init__(self):
         # instanciation auto des managers
         for manager_name in managers.__all__:
