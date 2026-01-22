@@ -1,6 +1,6 @@
-from pygame_manager.core.engine import PygameEngine
+from pygame_manager.core.engine import Engine
 
-_engine = PygameEngine()
+_engine = Engine()
 
 # génération automatique des raccourcis pour tous les managers
 globals().update({
