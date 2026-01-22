@@ -14,7 +14,6 @@ stop = _engine.stop
 
 # exports
 __all__ = [name for name in _engine.__dict__ if not name.startswith("_")] + ["init", "run", "stop"]
-print(__all__)
 
 
 """
