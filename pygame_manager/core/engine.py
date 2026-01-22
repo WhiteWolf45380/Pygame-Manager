@@ -32,7 +32,6 @@ class Engine:
         self.__initialized = True
         return self
 
-
     def run(self, update):
         """
         Lance la boucle d'éxécution
@@ -54,6 +53,7 @@ class Engine:
                             self.__running = False
                         self.inputs.check(event)
 
+                self.inputs.check_listeners()
                 update()
 
             if not self.__running:

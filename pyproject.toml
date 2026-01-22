@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pygame_manager"
-version = "0.50.4"
+version = "0.50.5"
 description = "Collection de managers pour Pygame"
 authors = [{ name = "WhiteWolf45380" }]
 dependencies = ["pygame", "easygui"]
