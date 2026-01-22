@@ -520,6 +520,10 @@ class ScreenManager:
         return capture
 
 
+# ======================================== INSTANCE ========================================
+screen_manager = ScreenManager()
+
+
 """
 Exemple d'utilisation :
 

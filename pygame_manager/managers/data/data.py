@@ -180,6 +180,10 @@ class DataManager:
         return os.path.join(base_path, relative_path)
 
 
+# ======================================== INSTANCE ========================================
+data_manager = DataManager()
+
+
 """
 Exemple d'utilisation :
 

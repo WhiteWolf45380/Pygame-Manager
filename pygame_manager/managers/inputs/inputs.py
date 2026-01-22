@@ -199,3 +199,7 @@ class InputsManager:
 
         # autres types
         return False
+    
+
+# ======================================== INSTANCE ========================================
+inputs_manager = InputsManager

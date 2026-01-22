@@ -1,2 +1,2 @@
 from .engine import Engine
-__all__ = ["PygameEngine"]
+__all__ = ["Engine"]

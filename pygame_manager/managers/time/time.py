@@ -211,6 +211,10 @@ class TimeManager:
         self.__start_times.pop(anim_id, None)
 
 
+# ======================================== INSTANCE ========================================
+time_manager = TimeManager()
+
+
 """
 Exemple d'utilisation :
 

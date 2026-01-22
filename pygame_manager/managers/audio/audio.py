@@ -422,6 +422,9 @@ class AudioManager:
         pygame.mixer.music.set_volume(self.__master_volume * self.__music_volume * self.__musics[self.__current_music]["volume"])
 
 
+# ======================================== INSTANCE ========================================
+audio_manager = AudioManager()
+
 """
 Exemple d'utilisation :
 

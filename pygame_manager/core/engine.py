@@ -9,8 +9,8 @@ class Engine:
     
         # instanciation auto des managers
         for manager_name in managers.__all__:
-            manager_class = getattr(managers, manager_name)
-            setattr(self, manager_name[:-7].lower(), manager_class())
+            manager_instance = getattr(managers, manager_name)
+            setattr(self, manager_name[:-8].lower(), manager_instance)
 
         self.__initialized = False
         self.__running = False

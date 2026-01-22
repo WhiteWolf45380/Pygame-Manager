@@ -94,3 +94,7 @@ class SettingsManager:
         if name not in self.__settings:
             self._raise_error('remove', f'Setting {name} doest not exist')
         del self.__settings[name]
+
+
+# ======================================== INSTANCE ========================================
+settings_manager = SettingsManager()

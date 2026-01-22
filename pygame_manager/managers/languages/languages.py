@@ -121,6 +121,10 @@ class LanguagesManager:
             return f"[Format error in '{key}': {e}]"
         
 
+# ======================================== INSTANCE ========================================
+languages_manager = LanguagesManager()
+
+
 """
 Exemple d'utilisation :
 

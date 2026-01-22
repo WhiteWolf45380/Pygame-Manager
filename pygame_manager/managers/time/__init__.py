@@ -1,2 +1,2 @@
-from .time import TimeManager
-__all__ = ["TimeManager"]
+from .time import time_manager
+__all__ = ["time_manager"]

@@ -21,7 +21,7 @@ class StatesManager:
         else:
             active = 'None'
         return f"<StatesManager: {len(self.__dict)} states | Active: [{active}]>"
-    
+
     def _raise_error(self, method: str, text: str):
         """Lève une erreur"""
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
@@ -31,6 +31,33 @@ class StatesManager:
         layers_to_remove = [l for l in self.__active_states.keys() if l > layer]
         for l in layers_to_remove:
             del self.__active_states[l]
+    
+    # ======================================== GETTERS ========================================
+    def get_states(self) -> list:
+        """Retourne la liste de tous les états disponibles"""
+        return list(self.__dict.keys())
+
+    def get_active_states(self) -> list:
+        """Retourne la liste des états actifs (triés par layer)"""
+        sorted_layers = sorted(self.__active_states.keys())
+        return [self.__active_states[layer] for layer in sorted_layers]
+
+    def get_active_by_layer(self, layer: int) -> str | None:
+        """Retourne l'état actif sur un layer donné"""
+        return self.__active_states.get(layer)
+
+    def get_layer(self, name: str) -> int:
+        """Retourne le layer d'un état"""
+        if name not in self.__dict:
+            self._raise_error('get_layer', f'State "{name}" does not exist')
+        return self.__dict[name]["layer"]
+
+    def is_active(self, name: str) -> bool:
+        """Vérifie si un état est actif"""
+        if name not in self.__dict:
+            return False
+        layer = self.__dict[name]["layer"]
+        return self.__active_states.get(layer) == name
 
     # ======================================== METHODES INTERACTIVES ========================================
     def add(self, name: str, update: callable, layer: int = 0):
@@ -77,30 +104,26 @@ class StatesManager:
             old_layer = self.__dict[name]["layer"]
             self.__dict[name]["layer"] = layer
             
+            # Si l'état était actif, le déplacer vers le nouveau layer
             if old_layer in self.__active_states and self.__active_states[old_layer] == name:
                 del self.__active_states[old_layer]
                 self.__active_states[layer] = name
+                # Nettoyer les layers supérieurs au nouveau layer
                 self._clear_upper_layers(layer)
 
     def activate(self, name: str):
         """
-        Active un état
-    
+        Active un état (remplace l'état sur le même layer et désactive les layers supérieurs)
+
         Args :
             - name (str) : nom de l'état à activer
         """
         if name not in self.__dict:
             self._raise_error('activate', f'State "{name}" does not exist')
+        
         layer = self.__dict[name]["layer"]
         self.__active_states[layer] = name
         self._clear_upper_layers(layer)
-
-    def activate_exclusive(self, name: str):
-        """Active uniquement cet état"""
-        if name not in self.__dict:
-            self._raise_error('activate_exclusive', f'State "{name}" does not exist')
-        layer = self.__dict[name]["layer"]
-        self.__active_states = {layer: name}
 
     def deactivate(self, name: str):
         """
@@ -111,13 +134,14 @@ class StatesManager:
         """
         if name not in self.__dict:
             return
+        
         layer = self.__dict[name]["layer"]
         if layer in self.__active_states and self.__active_states[layer] == name:
             del self.__active_states[layer]
             self._clear_upper_layers(layer)
 
     def deactivate_layer(self, layer: int):
-        """Désactive l'état sur un layer spécifique"""
+        """Désactive l'état sur un layer spécifique (et tous les layers supérieurs)"""
         if layer in self.__active_states:
             del self.__active_states[layer]
             self._clear_upper_layers(layer)
@@ -126,39 +150,66 @@ class StatesManager:
         """Désactive tous les états"""
         self.__active_states = {}
 
-    # ======================================== GETTERS ========================================
-    def get_states(self) -> list:
-        """Retourne la liste de tous les états disponibles"""
-        return list(self.__dict.keys())
-
-    def get_active_states(self) -> list:
-        """Retourne la liste des états actifs"""
-        sorted_layers = sorted(self.__active_states.keys())
-        return [self.__active_states[layer] for layer in sorted_layers]
-
-    def get_active_by_layer(self, layer: int) -> str | None:
-        """Retourne l'état actif sur un layer donné"""
-        return self.__active_states.get(layer)
-
-    def get_layer(self, name: str) -> int:
-        """Retourne le layer d'un état"""
-        if name not in self.__dict:
-            self._raise_error('get_layer', f'State "{name}" does not exist')
-        return self.__dict[name]["layer"]
-
-    def is_active(self, name: str) -> bool:
-        """Vérifie si un état est actif"""
-        if name not in self.__dict:
-            return False
-        layer = self.__dict[name]["layer"]
-        return self.__active_states.get(layer) == name
-
     # ======================================== UPDATE ========================================
-    def update_current(self):
+    def update(self):
         """
         Exécute les fonctions update de tous les états actifs
+        (dans l'ordre des layers, du plus bas au plus haut)
         """
         sorted_layers = sorted(self.__active_states.keys())
         for layer in sorted_layers:
             state_name = self.__active_states[layer]
             self.__dict[state_name]["update"]()
+
+
+# ======================================== INSTANCE ========================================
+states_manager = StatesManager()
+
+
+# ======================================== SUPER-CLASSE ========================================
+class State:
+    """
+    Classe de base pour les états
+    
+    S'enregistre automatiquement dans StatesManager lors de l'instanciation
+    """
+    def __init__(self, name: str, manager: StatesManager, layer: int = 0):
+        """
+        Args :
+            - name (str) : nom de l'état
+            - manager (StatesManager) : gestionnaire d'états
+            - layer (int) : niveau de priorité
+        """
+        self.name = name
+        self.layer = layer
+        self.manager = manager
+        
+        # Auto-registration
+        self.manager.add(self.name, self.update, self.layer)
+    
+    def update(self, *args, **kwargs):
+        """
+        Méthode appelée chaque frame quand l'état est actif
+        À override dans les sous-classes
+        """
+        pass
+    
+    def on_enter(self):
+        """Appelé quand l'état devient actif"""
+        pass
+    
+    def on_exit(self):
+        """Appelé quand l'état devient inactif"""
+        pass
+    
+    def activate(self):
+        """Active cet état"""
+        self.manager.activate(self.name)
+    
+    def deactivate(self):
+        """Désactive cet état"""
+        self.manager.deactivate(self.name)
+    
+    def is_active(self) -> bool:
+        """Vérifie si cet état est actif"""
+        return self.manager.is_active(self.name)
