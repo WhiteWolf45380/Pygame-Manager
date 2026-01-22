@@ -20,7 +20,7 @@ class Engine:
         Initialise Pygame et lance le loader progressif si fourni
 
         Args :
-            - loader (callable) : fonction d'initialisation supplémentaire
+            - loader (callable) : fonction d'initialisation supplémentaire (mettre des yield entre les étapes)
         """
         if self.__initialized:
             return self
@@ -79,7 +79,7 @@ class Engine:
                             self.__running = False
                         self.inputs.check(event)
 
-                update(self.time.dt)
+                update()
 
             if not self.__running:
                 break
