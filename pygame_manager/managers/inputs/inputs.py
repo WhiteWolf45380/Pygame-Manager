@@ -160,7 +160,7 @@ class InputsManager:
         Vérifie les listeners de maintient
         """
         for event_id, listeners in self.__listeners.items():
-            if self.__pressed[event_id]:
+            if self.__pressed.get(event_id, False):
                 for listener in listeners:
                     if listener["repeat"]:
                         if listener["condition"] and not listener["condition"]():
