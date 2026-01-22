@@ -49,8 +49,6 @@ class Engine:
             with self.screen:
                 if self.screen.opened:
                     self.__running = self.inputs.check_all()
-
-                self.inputs.check_listeners()
                 update()
 
             if not self.__running:
