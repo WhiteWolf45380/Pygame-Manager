@@ -11,8 +11,12 @@ class StatesManager:
         - callbacks on_enter/on_exit
     """
     def __init__(self):
+        # gestion des états
         self.__dict = {}
         self.__active_states = {}
+
+        # super-classe
+        self.State = State
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def __repr__(self):
