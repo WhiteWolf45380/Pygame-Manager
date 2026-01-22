@@ -176,7 +176,7 @@ class InputsManager:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
-            self.check(event)
+            self.check_event(event)
         self.check_pressed()
         return True
     
