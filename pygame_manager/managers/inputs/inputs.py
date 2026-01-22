@@ -202,4 +202,4 @@ class InputsManager:
     
 
 # ======================================== INSTANCE ========================================
-inputs_manager = InputsManager
+inputs_manager = InputsManager()
