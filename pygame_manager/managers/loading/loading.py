@@ -41,18 +41,18 @@ class LoadingManager:
     def update(self, screen: pygame.Surface):
         """Met à jour l'écran de chargement."""
         # fond noir
-        self._screen.fill((0, 0, 0))
+        screen.fill((0, 0, 0))
 
         # afficher le texte
         text_rect = self._text_surface.get_rect(topleft=(20, 20))
-        self._screen.blit(self._text_surface, text_rect)
+        screen.blit(self._text_surface, text_rect)
 
         # afficher la frame actuelle
         frame = self._frames[self._current_frame]
         rect = frame.get_rect(
-            bottomright=(self._screen.get_width() - 20, self._screen.get_height() - 20)
+            bottomright=(screen.get_width() - 20, screen.get_height() - 20)
         )
-        self._screen.blit(frame, rect)
+        screen.blit(frame, rect)
 
         # passer à la frame suivante
         self._current_frame = (self._current_frame + 1) % len(self._frames)
