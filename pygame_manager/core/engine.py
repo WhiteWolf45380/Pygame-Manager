@@ -1,10 +1,9 @@
 import pygame
 from pygame_manager import managers
-from managers.loading import LoadingManager
 
 class PygameEngine:
     def __init__(self):
-        # … instanciation auto des managers
+        # instanciation auto des managers
         for manager_name in managers.__all__:
             manager_class = getattr(managers, manager_name)
             setattr(self, manager_name[:-7].lower(), manager_class())
@@ -48,13 +47,13 @@ class PygameEngine:
                         return
 
                 try:
-                    next(gen)  # avance la fonction loader
+                    next(gen) # avancement du loader
                 except StopIteration:
                     break
 
-                # mettre à jour le loader (instance déjà existante)
+                # mise à jour de l'écran de chargement
                 if hasattr(self, "loading"):
-                    self.loading.update()  # la frame + texte + animation
+                    self.loading.update()
 
         self._initialized = True
         return self
