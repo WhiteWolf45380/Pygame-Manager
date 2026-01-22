@@ -259,7 +259,7 @@ class State:
         self.manager = states_manager
         
         # auto-registration
-        self.manager.register(self, self.layer)
+        self.manager.register(self)
     
     def update(self, *args, **kwargs):
         """
