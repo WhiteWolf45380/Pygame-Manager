@@ -165,7 +165,7 @@ class InputsManager:
         # ajout des nouvelles touches pressées
         for event_id in self.__step:
             self.__pressed[event_id] = True
-        self.__pressed = []
+        self.__step = []
     
     def check_all(self):
         """
