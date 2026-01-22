@@ -3,6 +3,10 @@ from pygame_manager import managers
 
 class Engine:
     def __init__(self):
+        # initialisation minimale
+        if not pygame.get_init():
+            pygame.init()
+    
         # instanciation auto des managers
         for manager_name in managers.__all__:
             manager_class = getattr(managers, manager_name)
@@ -20,10 +24,6 @@ class Engine:
         """
         if self._initialized:
             return self
-
-        # initialisation minimale
-        if not pygame.get_init():
-            pygame.init()
 
         self.screen.create()
 
