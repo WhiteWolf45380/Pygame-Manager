@@ -1,60 +1,64 @@
 import pygame
 from pygame_manager import managers
+from managers.loading import LoadingManager
 
-
-class Engine:
+class PygameEngine:
     def __init__(self):
-        # instanciation automatique des managers
+        # … instanciation auto des managers
         for manager_name in managers.__all__:
             manager_class = getattr(managers, manager_name)
-            # attribut accessible en minuscule
             setattr(self, manager_name[:-7].lower(), manager_class())
 
-        self.__initialized = False
-        self.__running = False
+        self._loader = None  # le loader sera optionnel
+        self._initialized = False
+        self.running = False
 
-    def _raise_error(self, method: str, text: str):
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
-
-    def init(self, loader: callable=None):
+    def init(self, loader: callable = None):
         """
-        Chargement des différents objets
+        Initialise Pygame et lance le loader progressif si fourni
 
         Args :
-            - loader (callable) : fonction de chargement supplémentaire
+            - loader (callable) : fonction d'initialisation supplémentaire
         """
-        if self.__initialized:
+        if self._initialized:
             return self
 
+        # initialisation minimale
         if not pygame.get_init():
             pygame.init()
 
         self.screen.create()
 
+        # transformer loader en générateur
         if loader:
             if hasattr(loader, "__iter__") and not callable(loader):
                 gen = loader
             else:
+                # wrapper pour transformer fonction simple en générateur
                 def wrapper():
                     loader()
                     yield
                 gen = wrapper()
 
+            # boucle de chargement progressive
             while True:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         self.stop()
-                        return self
+                        return
 
                 try:
-                    next(gen)
+                    next(gen)  # avance la fonction loader
                 except StopIteration:
                     break
 
-                self.screen.loading.update()
+                # mettre à jour le loader (instance déjà existante)
+                if hasattr(self, "loading"):
+                    self.loading.update()  # la frame + texte + animation
 
-        self.__initialized = True
+        self._initialized = True
         return self
+
 
     def run(self, update):
         """
