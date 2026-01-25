@@ -26,6 +26,9 @@ class StatesManager:
         else:
             active = 'None'
         return f"<StatesManager: {len(self.__dict)} states | Active: [{active}]>"
+    
+    def __getitem__(self, key):
+        return self.__dict.get(key)
 
     def _raise_error(self, method: str, text: str):
         """Lève une erreur"""
