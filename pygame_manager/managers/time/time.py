@@ -140,7 +140,7 @@ class TimeManager:
         self.__frame_count += 1
 
         # temps brut écoulé depuis la dernière frame
-        raw_dt = self.__clock.tick(self.__max_fps if cap else None) / 1000.0
+        raw_dt = (self.__clock.tick(self.__max_fps) if cap else self.__clock.tick()) / 1000.0
 
         # clamp pour éviter les pics de dt trop grands ou nuls
         self.__dt = max(0.001, min(raw_dt, 0.07)) * self.__time_scale # entre 15 et 1000 fps
