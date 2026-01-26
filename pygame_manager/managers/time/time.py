@@ -22,6 +22,7 @@ class TimeManager:
         self.__dt = 0.0  # temps écoulé depuis la dernière boucle (en secondes)
         self.__current_fps = 0.0 # nombre actuel de fps (en frames)
         self.__max_fps = max_fps # nombre maximal de fps
+        self.__fps_buffer = [] # buffer de fps pour une moyenne lissée
         self.__time_scale = 1.0 # vitesse d'éxécution du jeu
         self.__frame_count = 0 # nombre de frames écoulées
 
@@ -74,6 +75,23 @@ class TimeManager:
         Renvoie le nombre actuel de frames par seconde
         """
         return self.__current_fps
+    
+    def get_smoothfps(self):
+        """
+        Renvoie le nombre lissé de frames par seconde
+        """
+        if len(self.__fps_buffer) == 0:
+            return self.__current_fps
+        return sum(self.__fps_buffer) / len(self.__fps_buffer)
+    
+    @property
+    def smoothfps(self):
+        """
+        Renvoie le nombre lissé de frames par seconde
+        """
+        if len(self.__fps_buffer) == 0:
+            return self.__current_fps
+        return sum(self.__fps_buffer) / len(self.__fps_buffer)
     
     def get_fps_limit(self):
         """
@@ -130,6 +148,9 @@ class TimeManager:
         # calcul des fps
         if self.__dt > 0:
             self.__current_fps = round(1.0 / self.__dt)
+            self.__fps_buffer.append(self.__current_fps)
+            if len(self.__fps_buffer) > 10:
+                self.__fps_buffer.pop(0)
 
         return self.__dt
 
