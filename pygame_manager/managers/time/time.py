@@ -132,7 +132,7 @@ class TimeManager:
         self.__time_scale = t
     
     # ======================================== METHODES DYNAMIQUES ========================================
-    def tick(self) -> float:
+    def tick(self, cap: bool=True) -> float:
         """
         À appeler à chaque frame, en premier
         """
@@ -140,7 +140,7 @@ class TimeManager:
         self.__frame_count += 1
 
         # temps brut écoulé depuis la dernière frame
-        raw_dt = self.__clock.tick(self.__max_fps) / 1000.0
+        raw_dt = self.__clock.tick(self.__max_fps if cap else None) / 1000.0
 
         # clamp pour éviter les pics de dt trop grands ou nuls
         self.__dt = max(0.001, min(raw_dt, 0.07)) * self.__time_scale # entre 15 et 1000 fps

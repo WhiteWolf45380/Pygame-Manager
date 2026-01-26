@@ -48,12 +48,13 @@ class Engine:
         self.__running = True
 
         while self.__running:
-            self.time.tick()
+            self.time.tick(cap=(not self.screen.vsync))
 
             with self.screen:
                 if self.screen.opened:
                     self.__running = self.inputs.check_all()
                 update()
+                self.states.update()
 
             if not self.__running:
                 break
