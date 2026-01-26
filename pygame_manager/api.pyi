@@ -6,6 +6,7 @@ from pygame_manager.managers.screen import ScreenManager
 from pygame_manager.managers.settings import SettingsManager
 from pygame_manager.managers.states import StatesManager
 from pygame_manager.managers.time import TimeManager
+from pygame_manager.managers.geometry import GeometryManager
 from typing import List
 
 # === Engine lifecycle ===
@@ -22,5 +23,6 @@ screen: ScreenManager
 settings: SettingsManager
 states: StatesManager
 time: TimeManager
+geometry: GeometryManager
 
 __all__: List[str]

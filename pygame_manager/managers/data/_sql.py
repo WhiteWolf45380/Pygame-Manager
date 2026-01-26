@@ -7,8 +7,8 @@ class SQLHandler:
     Gestionnaire SQL
 
     Fonctionnalités : 
-        - manipulation de Bases De Données
-        - envoie de requêtes SQL
+        manipulation de Bases De Données
+        envoie de requêtes SQL
     """
     def __init__(self):
         self.__path = None

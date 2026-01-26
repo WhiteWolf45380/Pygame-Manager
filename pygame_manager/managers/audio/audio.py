@@ -10,11 +10,11 @@ class AudioManager:
     """
     Gestionnaire audio pour Pygame
 
-    Fonctionnalités :
-    - Création et gestion de groupes de sons (channels, volume)
-    - Ajout et manipulation de sons avec variations et cooldown
-    - Gestion des musiques (play, stop, volume)
-    - Volumes globaux et par groupe
+    Fonctionnalités:
+        Création et gestion de groupes de sons (channels, volume)
+        Ajout et manipulation de sons avec variations et cooldown
+        Gestion des musiques (play, stop, volume)
+        Volumes globaux et par groupe
     """
 
     def __init__(self):
@@ -70,9 +70,9 @@ class AudioManager:
         Crée un groupe de sons
 
         Args:
-            - name (str) : Nom du groupe
-            - channels (int) : Nombre de canaux alloués
-            - volume (float) entre 0 et 1 : volume de tous les sons du groupe
+            name (str) : Nom du groupe
+            channels (int) : Nombre de canaux alloués
+            volume (float) entre 0 et 1 : volume de tous les sons du groupe
         """
         if name in self.__groups:
             self._raise_error("create_group", f"Group {name} already exists")
@@ -88,8 +88,8 @@ class AudioManager:
         Modifie la taille d'un groupe de sons
 
         Args:
-            - name (str) : Nom du groupe
-            - channels (int) : Nombre de canaux alloués
+            name (str) : Nom du groupe
+            channels (int) : Nombre de canaux alloués
         """
         if name not in self.__groups:
             self._raise_error("update_group_channels", f"Group {name} does not exist. If you want to create it, try : create_group(name: str)")
@@ -103,8 +103,8 @@ class AudioManager:
         Modifie le volume d'un groupe de sons
 
         Args:
-            - name (str) : Nom du groupe
-            - volume (float) entre 0 et 1 : volume de tous les sons du groupe
+            name (str) : Nom du groupe
+            volume (float) entre 0 et 1 : volume de tous les sons du groupe
         """
         if name not in self.__groups:
             self._raise_error("update_group_volume", f"Group {name} does not exist. If you want to create it, try : create_group(name: str)")
@@ -117,7 +117,7 @@ class AudioManager:
         Supprime un groupe de sons
 
         Args:
-            - name (str) : Nom du groupe
+            name (str) : Nom du groupe
         """
         if name not in self.__groups:
             self._raise_error("delete_group", f"Group {name} does not exist")
@@ -155,11 +155,11 @@ class AudioManager:
         Ajoute un nouveau son
 
         Args:
-            - name (str) : Nom unique du son
-            - path (str) : chemin d'accès au son
-            - volume (float) entre 0 et 1 : volume de tous les sons du groupe
-            - cooldown (float) : délai minimal entre les utilisations du son (en secondes)
-            - group (str) : le groupe auquel appartient le son
+            name (str) : Nom unique du son
+            path (str) : chemin d'accès au son
+            volume (float) entre 0 et 1 : volume de tous les sons du groupe
+            cooldown (float) : délai minimal entre les utilisations du son (en secondes)
+            group (str) : le groupe auquel appartient le son
         """
         if name in self.__sounds:
             self._raise_error("create_group", f"Group {name} already exists. If you want to remove it, try : remove_sound(name: str)")
@@ -186,8 +186,8 @@ class AudioManager:
         Ajoute des variations à un son
 
         Args:
-            - name (str) : Nom du son
-            - path (str) : chemin d'accès au son
+            name (str) : Nom du son
+            path (str) : chemin d'accès au son
         """
         if not name in self.__sounds:
             self._raise_error("update_sound_add", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
@@ -200,8 +200,8 @@ class AudioManager:
         Modifie le volume d'un son
 
         Args:
-            - name (str) : Nom du son
-            - volume (float) entre 0 et 1 : volume de tous les sons du groupe
+            name (str) : Nom du son
+            volume (float) entre 0 et 1 : volume de tous les sons du groupe
         """
         if not name in self.__sounds:
             self._raise_error("update_sound_volume", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
@@ -214,8 +214,8 @@ class AudioManager:
         Modifie le délai d'un son
         
         Args:
-            - name (str) : Nom du son
-            - cooldown (float) : délai minimal entre les utilisations du son (en secondes)
+            name (str) : Nom du son
+            cooldown (float) : délai minimal entre les utilisations du son (en secondes)
         """
         if not name in self.__sounds:
             self._raise_error("update_sound_cooldown", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
@@ -228,8 +228,8 @@ class AudioManager:
         Modifie le groupe d'un son
 
         Args:
-            - name (str) : Nom du son
-            - group (str) : le groupe auquel appartient le son
+            name (str) : Nom du son
+            group (str) : le groupe auquel appartient le son
         """
         if not name in self.__sounds:
             self._raise_error("update_sound_group", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
@@ -242,7 +242,7 @@ class AudioManager:
         Supprime un son
 
         Args:
-            - name (str) : Nom du son
+            name (str) : Nom du son
         """
         if not name in self.__sounds:
             self._raise_error("remove_sound", f"Sound {name} doest not exist")
@@ -264,9 +264,9 @@ class AudioManager:
         Ajoute une nouvelle musique
 
         Args:
-            - name (str) : Nom unique de la musique
-            - path (str) : chemin d'accès à la musique
-            - volume (float) : volume de la musique
+            name (str) : Nom unique de la musique
+            path (str) : chemin d'accès à la musique
+            volume (float) : volume de la musique
         """
         if name in self.__musics:
             self._raise_error("add_music", f"Music {name} already exists. If you want to remove it, try : remove_music(name: str)")
@@ -286,8 +286,8 @@ class AudioManager:
         Modifie le chemin d'une musique
 
         Args:
-            - name (str) : Nom unique de la musique
-            - path (str) : chemin d'accès à la musique
+            name (str) : Nom unique de la musique
+            path (str) : chemin d'accès à la musique
         """
         if not name in self.__musics:
             self._raise_error("remove_music", f"Music {name} does not exist")
@@ -300,8 +300,8 @@ class AudioManager:
         Modifie le volume d'une musique
 
         Args:
-            - name (str) : Nom unique de la musique
-            - volume (float) : volume de la musique
+            name (str) : Nom unique de la musique
+            volume (float) : volume de la musique
         """
         if not name in self.__musics:
             self._raise_error("remove_music", f"Music {name} does not exist")
@@ -314,7 +314,7 @@ class AudioManager:
         Supprime une musique
 
         Args:
-            - name (str) : Nom unique de la musique
+            name (str) : Nom unique de la musique
         """
         if not name in self.__musics:
             self._raise_error("remove_music", f"Music {name} does not exist")
@@ -339,7 +339,7 @@ class AudioManager:
         Joue un son si possible
 
         Args:
-            - sound (str) : nom du son
+            sound (str) : nom du son
         """
         if not sound in self.__sounds:
             self._raise_error("play_sound", f"No Sound named {sound}")
@@ -366,9 +366,9 @@ class AudioManager:
         Joue une musique
 
         Args:
-            - name (str) : nom de la musique
-            - loop (bool) : répétition de la musique
-            - fade_ms (float) : fondu en ouverture en millisecondes
+            name (str) : nom de la musique
+            loop (bool) : répétition de la musique
+            fade_ms (float) : fondu en ouverture en millisecondes
         """
         if not name in self.__musics:
             self._raise_error("play_music", f"Music {name} doest not exist. If you want to create it, try : create_music(name: str, path: str)")
@@ -382,7 +382,7 @@ class AudioManager:
         Arrête la musique jouée
 
         Args:
-            - fade_ms : fondu en fermeture en millisecondes
+            fade_ms : fondu en fermeture en millisecondes
         """
         if fade_ms == 0:
             pygame.mixer.music.stop()
@@ -394,7 +394,7 @@ class AudioManager:
         Modifie le volume général
 
         Args:
-            - volume (float) : volume général entre 0 et 1
+            volume (float) : volume général entre 0 et 1
         """
         if not isinstance(volume, (int, float)):
             self._raise_error("set_master_volume", "Master volume must be a float")
@@ -406,7 +406,7 @@ class AudioManager:
         Modifie le volume musical
 
         Args:
-            - volume (float) : volume musical entre 0 et 1
+            volume (float) : volume musical entre 0 et 1
         """
         if not isinstance(volume, (int, float)):
             self._raise_error("set_music_volume", "Music's volume must be a float")

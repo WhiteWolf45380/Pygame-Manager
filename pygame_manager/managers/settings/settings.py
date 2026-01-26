@@ -3,9 +3,9 @@ class SettingsManager:
     Gestionnaire des paramètres
 
     Fonctionnalités :
-        - créer des paramètres
-        - accéder à des paramètres
-        - modifier des paramètres
+        créer des paramètres
+        accéder à des paramètres
+        modifier des paramètres
     """
     def __init__(self):
         self.__settings = {}
@@ -16,6 +16,11 @@ class SettingsManager:
         Lève une erreur
         """
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+    
+    def __getitem__(self, key):
+        if key not in self.__settings:
+            self._raise_error("__getitem__", f"Setting {key} does not exist")
+        return self.__settings[key]
     
     def __getattr__(self, name):
         try:
@@ -29,8 +34,8 @@ class SettingsManager:
         Création d'un paramètre
 
         Args :
-            - name (str) : nom du paramètre
-            - value (object) : valeur du paramètre
+            name (str) : nom du paramètre
+            value (object) : valeur du paramètre
         """
         if not isinstance(name, str):
             self._raise_error('create', 'Setting name must be a string object')
@@ -43,8 +48,8 @@ class SettingsManager:
         Renvoie la valeur d'un paramètre
 
         Args :
-            - name (str) : nom du paramètre
-            - fallback (object) : renvoie si le paramètre n'est pas trouvé
+            name (str) : nom du paramètre
+            fallback (object) : renvoie si le paramètre n'est pas trouvé
         """
         if name not in self.__settings:
             return fallback
@@ -55,9 +60,9 @@ class SettingsManager:
         Renvoie la valeur d'un paramètre
 
         Args :
-            - name (str) : nom du paramètre
-            - index (int) : indice dans la paramètre de type liste
-            - fallback (object) : renvoie si le paramètre n'est pas trouvé
+            name (str) : nom du paramètre
+            index (int) : indice dans la paramètre de type liste
+            fallback (object) : renvoie si le paramètre n'est pas trouvé
         """
         if name not in self.__settings or index >= len(self.__settings[name]):
             return fallback
@@ -68,10 +73,10 @@ class SettingsManager:
         Modification d'un paramètre
 
         Args :
-            - name (str) : nom du paramètre
-            - value (object) : valeur du paramètre
-            - index (int) : indice dans un paramètre de type list
-            - f (bool) : forcer la création  du paramètre si nécessaire
+            name (str) : nom du paramètre
+            value (object) : valeur du paramètre
+            index (int) : indice dans un paramètre de type list
+            f (bool) : forcer la création  du paramètre si nécessaire
         """
         if not isinstance(name, str):
             self._raise_error('create', 'Setting name must be a string object')

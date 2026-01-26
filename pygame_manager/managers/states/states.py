@@ -28,6 +28,8 @@ class StatesManager:
         return f"<StatesManager: {len(self.__dict)} states | Active: [{active}]>"
     
     def __getitem__(self, key):
+        if key not in self.__dict:
+            self._raise_error('__getitem__', f'State {key} does not exist')
         return self.__dict.get(key)["state_obj"]
 
     def _raise_error(self, method: str, text: str):
@@ -84,7 +86,7 @@ class StatesManager:
         Enregistre un objet état
 
         Args :
-            - state_obj : objet State avec attributs name, layer et méthode update
+            state_obj : objet State avec attributs name, layer et méthode update
         """
         if not hasattr(state_obj, 'name') or not isinstance(state_obj.name, str):
             self._raise_error('register', 'State object must have a "name" attribute (str)')
@@ -107,8 +109,8 @@ class StatesManager:
         Modifie un état existant
 
         Args :
-            - name (str) : nom de l'état
-            - layer (int, optional) : nouveau layer
+            name (str) : nom de l'état
+            layer (int, optional) : nouveau layer
         """
         if not isinstance(name, str):
             self._raise_error('set', 'State name must be a string object')
@@ -133,7 +135,7 @@ class StatesManager:
         Active un état (remplace l'état sur le même layer et désactive les layers supérieurs)
 
         Args :
-            - name (str) : nom de l'état à activer
+            name (str) : nom de l'état à activer
         """
         if name not in self.__dict:
             self._raise_error('activate', f'State "{name}" does not exist')
@@ -163,7 +165,7 @@ class StatesManager:
         Désactive un état (et tous les layers supérieurs)
 
         Args :
-            - name (str) : nom de l'état à désactiver
+            name (str) : nom de l'état à désactiver
         """
         if name not in self.__dict:
             return
@@ -184,7 +186,7 @@ class StatesManager:
         Change d'état en mode exclusif (désactive tout sauf cet état)
         
         Args :
-            - name (str) : nom de l'état à activer
+            name (str) : nom de l'état à activer
         """
         if name not in self.__dict:
             self._raise_error('switch', f'State "{name}" does not exist')
@@ -243,7 +245,7 @@ states_manager = StatesManager()
 
 
 # ======================================== SUPER-CLASSE ========================================
-class State:
+class StateObject:
     """
     Classe de base pour les états
     
@@ -291,4 +293,4 @@ class State:
         """Vérifie si cet état est actif"""
         return self.manager.is_active(self.name)
 
-states_manager.State = State
+states_manager.State = StateObject

@@ -10,9 +10,9 @@ class TimeManager:
     Gestionnaire pygame du temps et des performances
 
     Fonctionnalités:
-    - gérer les performances et la vitesse d'éxécution
-    - adapter les valeurs au temps
-    - adapter les animations au temps
+        gérer les performances et la vitesse d'éxécution
+        adapter les valeurs au temps
+        adapter les animations au temps
     """
     def __init__(self, max_fps: int=60):
         # clock pygame
@@ -94,7 +94,7 @@ class TimeManager:
         Fixe une limite de fps
 
         Args:
-            - n (int) : nombre de fps
+            n (int) : nombre de fps
         """
         if not isinstance(n, int):
             self._raise_error("set_fps_limit", "fps limit must be an integer")
@@ -105,7 +105,7 @@ class TimeManager:
         modifie l'écoulement du temps pour des effets d'accélération ou de slow-motion
 
         Args:
-            - t (float) : le coefficient d'écoulement du temps
+            t (float) : le coefficient d'écoulement du temps
         """
         if not isinstance(t, (int, float)):
             self._raise_error("set_time_scale", "Time coefficient must be a float")
@@ -138,7 +138,7 @@ class TimeManager:
         Adapte une valeur dépendante du temps au framerate (ex: vitesse)
 
         Args:
-            - value_per_second : nombre par seconde voulu
+            value_per_second : nombre par seconde voulu
         """
         return value_per_second * self.__dt
     
@@ -159,12 +159,12 @@ class TimeManager:
         Retourne la frame à afficher pour une animation donnée
 
         Args:
-            - anim_id (str) : nom unique de l'animation
-            - anim_duration (float) : durée de l'animation en secondes
-            - frame_count (int) : nombre total de frames de l'animation
-            - loop (bool) : répétition de l'animation lorsqu'elle se termine
-            - start (bool) : forcer le retour à la première frame
-            - forced_frame (int) : forcer le saut vers une frame donnée
+            anim_id (str) : nom unique de l'animation
+            anim_duration (float) : durée de l'animation en secondes
+            frame_count (int) : nombre total de frames de l'animation
+            loop (bool) : répétition de l'animation lorsqu'elle se termine
+            start (bool) : forcer le retour à la première frame
+            forced_frame (int) : forcer le saut vers une frame donnée
         """
         # erreur d'entrée
         if anim_duration <= 0 or frame_count <= 0:

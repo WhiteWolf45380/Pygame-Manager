@@ -12,9 +12,9 @@ class DataManager:
     Gestionnaire de données
 
     Fonctionnalités :
-    - chargement et sauvegarde de fichiers JSON
-    - gestion de plusieurs fichiers de données
-    - accès simple aux valeurs (get / set)
+        chargement et sauvegarde de fichiers JSON
+        gestion de plusieurs fichiers de données
+        accès simple aux valeurs (get / set)
     """
     def __init__(self, base_path: str="data"):
         if not isinstance(base_path, str):
@@ -57,7 +57,7 @@ class DataManager:
         Charge un fichier JSON en mémoire
 
         Args:
-            - path (str) : chemin d'accès au fichier
+            path (str) : chemin d'accès au fichier
         """
         if not isinstance(path, str):
             self._raise_error('load', 'path must be a string')
@@ -77,10 +77,10 @@ class DataManager:
         Sauvegarde un fichier JSON sur le disque
 
         Args:
-            - data (dict) : données à stocker
-            - path (str) : chemin d'accès au fichier
-            - create_dirs (bool) : création ou non des fichiers parents
-            - indent (int) : indentation du JSON
+            data (dict) : données à stocker
+            path (str) : chemin d'accès au fichier
+            create_dirs (bool) : création ou non des fichiers parents
+            indent (int) : indentation du JSON
         """
         if not isinstance(path, str):
             self._raise_error('save', 'path must be a string')
@@ -117,9 +117,9 @@ class DataManager:
         Récupère une valeur spécifique dans un fichier
         
         Args:
-            - path (str) : chemin du fichier
-            - key (str) : clé à récupérer (supporte "parent.child.value")
-            - default (object) : valeur par défaut si non trouvée
+            path (str) : chemin du fichier
+            key (str) : clé à récupérer (supporte "parent.child.value")
+            default (object) : valeur par défaut si non trouvée
         """
         if not isinstance(path, str):
             self._raise_error('get', 'path must be a string')
@@ -142,9 +142,9 @@ class DataManager:
         Définit une valeur dans un fichier
         
         Args:
-            - path (str) : chemin du fichier
-            - key (str) : clé (supporte "parent.child.value")
-            - value (object) : nouvelle valeur
+            path (str) : chemin du fichier
+            key (str) : clé (supporte "parent.child.value")
+            value (object) : nouvelle valeur
         """
         if not isinstance(path, str):
             self._raise_error('set', 'path must be a string')

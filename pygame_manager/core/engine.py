@@ -20,8 +20,8 @@ class Engine:
         """
         Initialise Pygame et lance le loader progressif si fourni
 
-        Args :
-            - loader (callable) : fonction d'initialisation supplémentaire (mettre des yield entre les étapes)
+        Args:
+            loader (callable) : fonction d'initialisation supplémentaire (mettre des yield entre les étapes)
         """
         if self.__initialized: # déjà initialisé
             return self

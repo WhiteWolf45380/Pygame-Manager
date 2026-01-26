@@ -9,41 +9,19 @@ except ImportError:
 class InputOutputHandler:
     """Gestion des entrées/sorties utilisateur"""
     @staticmethod
-    def select_file(
-        title: str = "Select a file",
-        default: Optional[Path] = None,
-        filetypes: Optional[Iterable[str]] = None,
-    ) -> Optional[Path]:
+    def select_file(title: str = "Select a file", default: Optional[Path] = None, filetypes: Optional[Iterable[str]] = None) -> Optional[Path]:
         """Sélection d'un fichier"""
-        path = easygui.fileopenbox(
-            title=title,
-            default=str(default) if default else None,
-            filetypes=list(filetypes) if filetypes else None,
-        )
+        path = easygui.fileopenbox(title=title, default=str(default) if default else None, filetypes=list(filetypes) if filetypes else None,)
         return Path(path) if path else None
 
     @staticmethod
-    def select_directory(
-        title: str = "Select a directory",
-        default: Optional[Path] = None,
-    ) -> Optional[Path]:
+    def select_directory(title: str = "Select a directory", default: Optional[Path] = None) -> Optional[Path]:
         """Sélection d'un dossier"""
-        path = easygui.diropenbox(
-            title=title,
-            default=str(default) if default else None,
-        )
+        path = easygui.diropenbox(title=title, default=str(default) if default else None)
         return Path(path) if path else None
 
     @staticmethod
-    def save_file(
-        title: str = "Save file as",
-        default: Optional[Path] = None,
-        filetypes: Optional[Iterable[str]] = None,
-    ) -> Optional[Path]:
+    def save_file(title: str = "Save file as", default: Optional[Path] = None, filetypes: Optional[Iterable[str]] = None) -> Optional[Path]:
         """Sauvegarde d'un fichier"""
-        path = easygui.filesavebox(
-            title=title,
-            default=str(default) if default else None,
-            filetypes=list(filetypes) if filetypes else None,
-        )
+        path = easygui.filesavebox(title=title, default=str(default) if default else None, filetypes=list(filetypes) if filetypes else None)
         return Path(path) if path else None

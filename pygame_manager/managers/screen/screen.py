@@ -12,10 +12,10 @@ class ScreenManager:
     Gestionnaire pygame de l'affichage
 
     Fonctionnalités:
-    - gère semi-automatiquement l'écran et la fenêtre (nécessite de wrapper le dessin dans un with)
-    - supporte la quasi totalité des méthodes de pygame.Surface
-    - facilite grandement le paramètrage et la maintenance de la fenêtre
-    - permet un transformation automatique de l'écran virtuel vers la fenêtre réel
+        gère semi-automatiquement l'écran et la fenêtre (nécessite de wrapper le dessin dans un with)
+        supporte la quasi totalité des méthodes de pygame.Surface
+        facilite grandement le paramètrage et la maintenance de la fenêtre
+        permet un transformation automatique de l'écran virtuel vers la fenêtre réel
     """
     def __init__(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
         # initialisation
@@ -316,7 +316,7 @@ class ScreenManager:
         Convertit les positions de la fenêtre à l'écran virtuel
 
         Args :
-            - pos (tuple[float, float]) : position sur la fenêtre
+            pos (tuple[float, float]) : position sur la fenêtre
         """
         if not isinstance(pos, tuple) or not all(isinstance(e, (int, float)) for e in pos):
             self._raise_error('window_to_screen', 'Position must be a tuple containing int or float values')
@@ -331,7 +331,7 @@ class ScreenManager:
         Convertit les positions de l'écran virtuel à la fenêtre
 
         Args :
-            - pos (tuple[float, float]) : position sur l'écran virtuel
+            pos (tuple[float, float]) : position sur l'écran virtuel
         """
         if not isinstance(pos, tuple) or not all(isinstance(e, (int, float)) for e in pos):
             self._raise_error('screen_to_window', 'Position must be a tuple containing int or float values')
@@ -346,7 +346,7 @@ class ScreenManager:
         Renvoie une vue partielle de l'écran
 
         Args :
-            - rect (pygame.Rect) : position et dimension de la vue
+            rect (pygame.Rect) : position et dimension de la vue
         """
         return self.__screen.subsurface(rect).copy()
 
@@ -356,7 +356,7 @@ class ScreenManager:
         Fixe le titre de la fenêtre
 
         Args :
-            - caption (str) : nouveau titre de la fenêtre
+            caption (str) : nouveau titre de la fenêtre
         """
         if not isinstance(caption, str):
             self._raise_error('set_caption', 'Window caption type must be str')    
@@ -367,7 +367,7 @@ class ScreenManager:
         Fixe le logo de la fenêtre
 
         Args :
-            - icon (pygame.Surface) : nouveau logo de la fenêtre
+            icon (pygame.Surface) : nouveau logo de la fenêtre
         """
         if not isinstance(icon, pygame.Surface):
             self._raise_error('set_icon', 'Window icon must be a Surface object')    
@@ -378,7 +378,7 @@ class ScreenManager:
         Fixe la possibilité de redimensionner la fenêtre
 
         Args :
-            - value (bool) : activation ou non du redimensionnement
+            value (bool) : activation ou non du redimensionnement
         """
         if not isinstance(value, bool):
             self._raise_error('set_window_resizable', 'resizable parameter must be a boolean')
@@ -392,7 +392,7 @@ class ScreenManager:
         Fixe le type de rendu
         
         Args :
-            - value (bool) : activation ou non du rendu vectoriel
+            value (bool) : activation ou non du rendu vectoriel
         """
         if not isinstance(value, bool):
             self._raise_error('set_smooth_rendering', 'Value type must be boolean')
@@ -403,8 +403,8 @@ class ScreenManager:
         Fixe le logo de la souris
 
         Args :
-            - icon (pygame.Surface) : nouvelle image de la souris
-            - centered (bool) : icon du curseur centré ou non
+            icon (pygame.Surface) : nouvelle image de la souris
+            centered (bool) : icon du curseur centré ou non
         """
         if icon is None:
             self.__mouse_icon = None
@@ -423,7 +423,7 @@ class ScreenManager:
         Fixe le maintient du curseur dans la fenêtre
 
         Args :
-            - value (bool) : maintient ou non du curseur
+            value (bool) : maintient ou non du curseur
         """
         if not isinstance(value, bool):
             self._raise_error('set_mouse_grab', 'Value type must be boolean')
@@ -434,7 +434,7 @@ class ScreenManager:
         Fixe la visibilité du curseur
 
         Args :
-            - value (bool) : curseur visible ou non
+            value (bool) : curseur visible ou non
         """
         if not isinstance(value, bool):
             self._raise_error('set_mouse_visible', 'Value type must be boolean')
@@ -463,8 +463,8 @@ class ScreenManager:
         Force le redimensionnement de la fenêtre
 
         Args :
-            - size (tuple[int, int]) : nouvelles dimensions de la fenêtre
-            - resizable (bool) : fenêtre redimensionnable ou non
+            size (tuple[int, int]) : nouvelles dimensions de la fenêtre
+            resizable (bool) : fenêtre redimensionnable ou non
         """
         if not (isinstance(size, tuple) and all(isinstance(e, int) for e in size)):
             self._raise_error('resize_window', 'Window size must be a tuple containing int values')
@@ -480,7 +480,7 @@ class ScreenManager:
         Bascule entre mode fenêtré et plein écran
 
         Args :
-            - fullscreen (bool) : mise sur une position forcée
+            fullscreen (bool) : mise sur une position forcée
         """
         if fullscreen is None:                                                                                              # alternance
             self.__fullscreen = not self.__fullscreen
@@ -501,7 +501,7 @@ class ScreenManager:
         Nettoie l'écran virtuel en le remplissant d'une couleur
 
         Args:
-            - color (tuple[int, int, int]) : couleur de remplissage
+            color (tuple[int, int, int]) : couleur de remplissage
         """
         self.__screen.fill(color)
 
@@ -510,7 +510,7 @@ class ScreenManager:
         Prend une capture de l'écran virtuel
         
         Args:
-            - path (str) : chemin de sauvegarde
+            path (str) : chemin de sauvegarde
         """
         if not isinstance(path, str) and path is not None:
             self._raise_error('screenshot', 'Path type must be str')

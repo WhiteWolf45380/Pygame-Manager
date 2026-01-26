@@ -9,9 +9,9 @@ class LanguagesManager:
     Gestionnaire de langues / traductions
 
     Fonctionnalités :
-    - chargement de fichiers JSON
-    - changement de langue à chaud
-    - récupération de traductions avec variables
+        chargement de fichiers JSON
+        changement de langue à chaud
+        récupération de traductions avec variables
     """
 
     def __init__(self, default_lang: str = "en", fallback_lang: str="en"):
@@ -32,8 +32,8 @@ class LanguagesManager:
         Charge un fichier de traduction JSON
 
         Args:
-            - lang (str) : code de langue (ex: "en", "fr")
-            - path (str) : chemin du fichier JSON
+            lang (str) : code de langue (ex: "en", "fr")
+            path (str) : chemin du fichier JSON
         """
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -46,8 +46,8 @@ class LanguagesManager:
         Charge toutes les langues d'un dossier
         
         Args:
-            - directory (str) : dossier contenant les fichiers
-            - pattern (str) : format des fichiers (ex: "lang_{lang}.json")
+            directory (str) : dossier contenant les fichiers
+            pattern (str) : format des fichiers (ex: "lang_{lang}.json")
         """
         folder = Path(directory)
         
@@ -67,8 +67,8 @@ class LanguagesManager:
         Change la langue active
         
         Args:
-            - lang (str) : code de langue
-            - fallback (bool) : utiliser la langue de secours si non trouvée
+            lang (str) : code de langue
+            fallback (bool) : utiliser la langue de secours si non trouvée
         """
         if lang not in self.__translations:
             if fallback and self.__fallback_lang in self.__translations:
@@ -95,9 +95,9 @@ class LanguagesManager:
         Traduit une clé
         
         Args:
-            - key (str) : clé de traduction
-            - lang (str) : langue spécifique (None = langue actuelle)
-            - kwargs : variables de formatage
+            key (str) : clé de traduction
+            lang (str) : langue spécifique (None = langue actuelle)
+            kwargs : variables de formatage
         """
         target_lang = lang or self.__lang
         
