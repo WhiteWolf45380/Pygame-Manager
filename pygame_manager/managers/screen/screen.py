@@ -48,6 +48,7 @@ class ScreenManager:
 
         # paramètres
         self.__smooth_rendering = True                                                                              # utilisation du smoothscale pour le redimensionnement
+        self.__vsync = False                                                                                        # utilisation de la vsync (anti tearing)
 
         # curseur
         self.__mouse_icon = None                                                                                    # logo du curseur
@@ -310,52 +311,19 @@ class ScreenManager:
         Vérifie la visibilité du curseur
         """
         return self.__mouse_visible
-
-    def window_to_screen(self, pos: tuple[float, float]) -> tuple[float, float]:
-        """
-        Convertit les positions de la fenêtre à l'écran virtuel
-
-        Args :
-            pos (tuple[float, float]) : position sur la fenêtre
-        """
-        if not isinstance(pos, tuple) or not all(isinstance(e, (int, float)) for e in pos):
-            self._raise_error('window_to_screen', 'Position must be a tuple containing int or float values')
-        x, y = pos
-        return (
-            (x - self.__screen_resized_x_offset) / self.scale,
-            (y - self.__screen_resized_y_offset) / self.scale
-        )
     
-    def screen_to_window(self, pos: tuple[float, float]) -> tuple[float, float]:
+    def get_vsync(self) -> bool:
         """
-        Convertit les positions de l'écran virtuel à la fenêtre
-
-        Args :
-            pos (tuple[float, float]) : position sur l'écran virtuel
+        Vérifie l'utilisation de la vsync
         """
-        if not isinstance(pos, tuple) or not all(isinstance(e, (int, float)) for e in pos):
-            self._raise_error('screen_to_window', 'Position must be a tuple containing int or float values')
-        x, y = pos
-        return (
-            x * self.scale + self.__screen_resized_x_offset,
-            y * self.scale + self.__screen_resized_y_offset
-        )
-    
-    def subsurface(self, rect: pygame.Rect) -> pygame.Surface:
-        """
-        Renvoie une vue partielle de l'écran
-
-        Args :
-            rect (pygame.Rect) : position et dimension de la vue
-        """
-        return self.__screen.subsurface(rect).copy()
+        return self.__vsync
 
     # ======================================== SETTERS ========================================
     def set_caption(self, caption: str):
         """
         Fixe le titre de la fenêtre
 
-        Args :
+        Args:
             caption (str) : nouveau titre de la fenêtre
         """
         if not isinstance(caption, str):
@@ -366,7 +334,7 @@ class ScreenManager:
         """
         Fixe le logo de la fenêtre
 
-        Args :
+        Args:
             icon (pygame.Surface) : nouveau logo de la fenêtre
         """
         if not isinstance(icon, pygame.Surface):
@@ -377,7 +345,7 @@ class ScreenManager:
         """
         Fixe la possibilité de redimensionner la fenêtre
 
-        Args :
+        Args:
             value (bool) : activation ou non du redimensionnement
         """
         if not isinstance(value, bool):
@@ -391,7 +359,7 @@ class ScreenManager:
         """
         Fixe le type de rendu
         
-        Args :
+        Args:
             value (bool) : activation ou non du rendu vectoriel
         """
         if not isinstance(value, bool):
@@ -402,7 +370,7 @@ class ScreenManager:
         """
         Fixe le logo de la souris
 
-        Args :
+        Args:
             icon (pygame.Surface) : nouvelle image de la souris
             centered (bool) : icon du curseur centré ou non
         """
@@ -422,7 +390,7 @@ class ScreenManager:
         """
         Fixe le maintient du curseur dans la fenêtre
 
-        Args :
+        Args:
             value (bool) : maintient ou non du curseur
         """
         if not isinstance(value, bool):
@@ -433,13 +401,25 @@ class ScreenManager:
         """
         Fixe la visibilité du curseur
 
-        Args :
+        Args:
             value (bool) : curseur visible ou non
         """
         if not isinstance(value, bool):
             self._raise_error('set_mouse_visible', 'Value type must be boolean')
         self.__mouse_visible = value
         pygame.mouse.set_visible(value and self.__mouse_icon is None)
+
+    def set_vsync(self, value: bool):
+        """
+        Fixe l'utilisation de la vsync
+
+        Args:
+            value (bool) : vsync activée ou non
+        """
+        if not isinstance(value, bool):
+            self._raise_error('set_vsync', 'Value type must be boolean')
+        self.__vsync = value
+        self.recreate()
     
     # ======================================== METHODES DYNAMIQUES ========================================
     def create(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
@@ -448,6 +428,15 @@ class ScreenManager:
         """
         if not self.__opened:
             self.__init__(screen=screen, window=window)
+    
+    def recreate(self):
+        """
+        Recrée une instance de l'écran
+        """
+        size = (0, 0) if self.__fullscreen else (self.__window_width, self.__window_height)
+        behavior = pygame.FULLSCREEN if self.__fullscreen else pygame.RESIZABLE
+        vsync = int(self.__vsync)
+        self.__window = pygame.display.set_mode(size, behavior, vsync=vsync)
     
     def close(self):
         """
@@ -504,6 +493,45 @@ class ScreenManager:
             color (tuple[int, int, int]) : couleur de remplissage
         """
         self.__screen.fill(color)
+
+    def window_to_screen(self, pos: tuple[float, float]) -> tuple[float, float]:
+        """
+        Convertit les positions de la fenêtre à l'écran virtuel
+
+        Args :
+            pos (tuple[float, float]) : position sur la fenêtre
+        """
+        if not isinstance(pos, tuple) or not all(isinstance(e, (int, float)) for e in pos):
+            self._raise_error('window_to_screen', 'Position must be a tuple containing int or float values')
+        x, y = pos
+        return (
+            (x - self.__screen_resized_x_offset) / self.scale,
+            (y - self.__screen_resized_y_offset) / self.scale
+        )
+    
+    def screen_to_window(self, pos: tuple[float, float]) -> tuple[float, float]:
+        """
+        Convertit les positions de l'écran virtuel à la fenêtre
+
+        Args :
+            pos (tuple[float, float]) : position sur l'écran virtuel
+        """
+        if not isinstance(pos, tuple) or not all(isinstance(e, (int, float)) for e in pos):
+            self._raise_error('screen_to_window', 'Position must be a tuple containing int or float values')
+        x, y = pos
+        return (
+            x * self.scale + self.__screen_resized_x_offset,
+            y * self.scale + self.__screen_resized_y_offset
+        )
+    
+    def subsurface(self, rect: pygame.Rect) -> pygame.Surface:
+        """
+        Renvoie une vue partielle de l'écran
+
+        Args :
+            rect (pygame.Rect) : position et dimension de la vue
+        """
+        return self.__screen.subsurface(rect).copy()
 
     def screenshot(self, path: str = None) -> pygame.Surface:
         """
