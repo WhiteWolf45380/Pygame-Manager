@@ -82,7 +82,7 @@ class TimeManager:
         """
         if len(self.__fps_buffer) == 0:
             return self.__current_fps
-        return sum(self.__fps_buffer) / len(self.__fps_buffer)
+        return round(sum(self.__fps_buffer) / len(self.__fps_buffer))
     
     @property
     def smoothfps(self):
@@ -91,7 +91,7 @@ class TimeManager:
         """
         if len(self.__fps_buffer) == 0:
             return self.__current_fps
-        return sum(self.__fps_buffer) / len(self.__fps_buffer)
+        return round(sum(self.__fps_buffer) / len(self.__fps_buffer))
     
     def get_fps_limit(self):
         """
@@ -149,7 +149,7 @@ class TimeManager:
         if self.__dt > 0:
             self.__current_fps = round(1.0 / self.__dt)
             self.__fps_buffer.append(self.__current_fps)
-            if len(self.__fps_buffer) > 10:
+            if len(self.__fps_buffer) > 30:
                 self.__fps_buffer.pop(0)
 
         return self.__dt
