@@ -29,6 +29,9 @@ class Engine:
         # création de la fenêtre
         self.screen.create()
 
+        # toggle fullscreen
+        self.inputs.add_listener(pygame.K_F11, self.screen.toggle_fullscreen)
+
         # confirmation
         self.__initialized = True
         return self

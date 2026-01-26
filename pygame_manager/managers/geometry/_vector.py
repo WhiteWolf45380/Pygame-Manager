@@ -90,27 +90,27 @@ class VectorObject:
     @x.setter
     def x(self, x) :
         """Fixe la composante x du vecteur"""
-        if not isinstance(x, (int, float)):
+        if not isinstance(x, (int, float, np.float32)):
             self._raise_error('set_x', 'Component must be an integer or float')
         self._v[0] = x
 
     @y.setter
     def y(self, y):
         """Fixe la composante y du vecteur"""
-        if not isinstance(y, (int, float)):
+        if not isinstance(y, (int, float, np.float32)):
             self._raise_error('set_y', 'Component must be an integer or float')
         self._v[1] = y
 
     @z.setter
     def z(self, z: int|float):
         """Fixe la composante z du vecteur"""
-        if not isinstance(z, (int, float)):
+        if not isinstance(z, (int, float, np.float32)):
             self._raise_error('set_z', 'Component must be an integer or float')
         self._v[2] = z
 
     def __setitem__(self, i, x):
         """Fixe la composante de rang i du vecteur"""
-        if not isinstance(x, (int, float)):
+        if not isinstance(x, (int, float, np.float32)):
             self._raise_error('__setitem__', 'Component must be an integer or float')
         self._v[i] = x
 
@@ -131,19 +131,19 @@ class VectorObject:
     
     def __mul__(self, other: int|float) -> object:
         """Multiplication par un scalaire"""
-        if not isinstance(other, (int, float)):
+        if not isinstance(other, (int, float, np.float32)):
             self._raise_error('__mul__', 'Invalid multiplication')
         return VectorObject(*(self.array * other))
     
     def __rmul__(self, other: int|float) -> object:
         """Multiplication par un scalaire (inversé)"""
-        if not isinstance(other, (int, float)):
+        if not isinstance(other, (int, float, np.float32)):
             self._raise_error('__rmul__', 'Invalid multiplication')
         return VectorObject(*(self.array * other))
     
     def __truediv__(self, other: int|float) -> object:
         """Division par un scalaire"""
-        if not isinstance(other, (int, float)):
+        if not isinstance(other, (int, float, np.float32)):
             self._raise_error('__truediv__', 'Invalid division')
         return VectorObject(*(self.array / other))
     
@@ -158,6 +158,10 @@ class VectorObject:
         if not isinstance(other, VectorObject):
             self._raise_error('__xor__', 'Invalid cross product')
         return self.cross(other)
+    
+    def __pos__(self) -> object:
+        """Copie"""
+        return VectorObject(*self.array)
 
     def __neg__(self) -> object:
         """Opposé"""
@@ -178,7 +182,7 @@ class VectorObject:
     
     def __contains__(self, x: int|float) -> bool:
         """Vérifie que le vecteur contient une composante spécifique"""
-        if not isinstance(x, (int, float)):
+        if not isinstance(x, (int, float, np.float32)):
             self._raise_error('__contains__', 'Value must be an integer or float')
         return x in tuple(self._v)
     
