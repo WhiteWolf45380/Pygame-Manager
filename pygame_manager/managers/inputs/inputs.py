@@ -77,7 +77,7 @@ class InputsManager:
         """Renvoie l'id correspondant au premier latéral de la souris"""
         return 9
 
-    def add_listener(self, event_id: int, callback: callable, up: bool=False,condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0, *args, **kwargs):
+    def add_listener(self, event_id: int, callback: callable, args: list=[], kwargs: dict={}, up: bool=False,condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0):
         """
         Ajoute un listener sur une entrée utilisateur
 
