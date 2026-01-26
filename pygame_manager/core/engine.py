@@ -48,7 +48,7 @@ class Engine:
         self.__running = True
 
         while self.__running:
-            self.time.tick(cap=(not self.screen.vsync))
+            self.time.tick(cap=(not self.screen.get_vsync()))
 
             with self.screen:
                 if self.screen.opened:
