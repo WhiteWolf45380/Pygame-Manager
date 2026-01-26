@@ -77,7 +77,7 @@ class InputsManager:
         """Renvoie l'id correspondant au premier latéral de la souris"""
         return 9
 
-    def add_listener(self, event_id: int, callback: callable, up: bool=False,condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0):
+    def add_listener(self, event_id: int, callback: callable, up: bool=False,condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0, *args, **kwargs):
         """
         Ajoute un listener sur une entrée utilisateur
 
@@ -97,6 +97,8 @@ class InputsManager:
             "once": once,
             "repeat": repeat,
             "priority": priority,
+            "args": args,
+            "kwargs": kwargs,
         }
 
         if event_id not in self.__listeners:
@@ -141,7 +143,7 @@ class InputsManager:
             if listener["condition"] and not listener["condition"]() or up != listener["up"]:
                 continue
 
-            listener["callback"]()
+            listener["callback"](*listener["args"], **listener["kwargs"])
 
             if listener["once"]:
                 to_remove.append(listener)
@@ -160,7 +162,7 @@ class InputsManager:
                     if listener["repeat"]:
                         if listener["condition"] and not listener["condition"]():
                             continue
-                        listener["callback"]()
+                        listener["callback"](*listener["args"], **listener["kwargs"])
         
         # ajout des nouvelles touches pressées
         for event_id in self.__step:
