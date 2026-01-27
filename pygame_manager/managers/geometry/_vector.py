@@ -86,11 +86,6 @@ class VectorObject:
            self._raise_error('normalized', 'Cannot normalize null vector')
         return VectorObject(*(self / self.norm))
     
-    @property
-    def angle(self) -> float:
-        """Renvoie l'angle du vecteur par rapport au Vecteur(1, 0) dans un repère (0, i, -j)"""
-        return math.atan2(-self.y, self.x)
-    
     # ======================================== SETTERS ========================================
     @x.setter
     def x(self, x) :
