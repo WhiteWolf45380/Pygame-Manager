@@ -2,7 +2,7 @@ import numpy as np
 import math
 
 
-# ======================================== GESTIONNAIRE ========================================
+# ======================================== OBJET ========================================
 class VectorObject:
     """
     Gestionnaire vectoriel
@@ -39,31 +39,31 @@ class VectorObject:
        return hash(self.to_tuple())
     
     # ======================================== GETTERS ========================================
-    @property
-    def array(self) -> np.array:
-        """Renvoie le vecteur sous forme d'array numpy"""
-        return self._v
-
-    @property
-    def x(self) -> float:
-        """Renvoie la composante x du vecteur"""
-        return self._v[0]
-    
-    @property
-    def y(self) -> float:
-        """Renvoie la composante y du vecteur"""
-        return self._v[1]
-    
-    @property
-    def z(self) -> float:
-        """Renvoie la composante z du vecteur"""
-        return self._v[2]
-    
-    def __getitem__(self, i) -> float:
+    def __getitem__(self, i: int) -> float:
         """Renvoie la composante de rang i du vecteur"""
         if i >= len(self._v):
             return 0.0
         return self._v[i]
+
+    @property
+    def x(self) -> float:
+        """Renvoie la composante x du vecteur"""
+        return self[0]
+    
+    @property
+    def y(self) -> float:
+        """Renvoie la composante y du vecteur"""
+        return self[1]
+    
+    @property
+    def z(self) -> float:
+        """Renvoie la composante z du vecteur"""
+        return self[2]
+    
+    @property
+    def array(self) -> np.array:
+        """Renvoie le vecteur sous forme d'array numpy"""
+        return self._v
     
     @property
     def dim(self) -> int:
@@ -87,32 +87,27 @@ class VectorObject:
         return VectorObject(*(self / self.norm))
     
     # ======================================== SETTERS ========================================
-    @x.setter
-    def x(self, x) :
-        """Fixe la composante x du vecteur"""
-        if not isinstance(x, (int, float, np.float32)):
-            self._raise_error('set_x', 'Component must be an integer or float')
-        self._v[0] = x
-
-    @y.setter
-    def y(self, y):
-        """Fixe la composante y du vecteur"""
-        if not isinstance(y, (int, float, np.float32)):
-            self._raise_error('set_y', 'Component must be an integer or float')
-        self._v[1] = y
-
-    @z.setter
-    def z(self, z: int|float):
-        """Fixe la composante z du vecteur"""
-        if not isinstance(z, (int, float, np.float32)):
-            self._raise_error('set_z', 'Component must be an integer or float')
-        self._v[2] = z
-
-    def __setitem__(self, i, x):
+    def __setitem__(self, i: int, x: int|float|np.float32):
         """Fixe la composante de rang i du vecteur"""
         if not isinstance(x, (int, float, np.float32)):
             self._raise_error('__setitem__', 'Component must be an integer or float')
+        self.reshape(-i)
         self._v[i] = x
+
+    @x.setter
+    def x(self, x: int|float|np.float32) :
+        """Fixe la composante x du vecteur"""
+        self[0] = x
+
+    @y.setter
+    def y(self, y: int|float|np.float32):
+        """Fixe la composante y du vecteur"""
+        self[1] = y
+
+    @z.setter
+    def z(self, z: int|float|np.float32):
+        """Fixe la composante z du vecteur"""
+        self[2] = z
 
     # ======================================== OPERATIONS ========================================
     def __add__(self, other: object) -> object:
@@ -125,7 +120,7 @@ class VectorObject:
     def __sub__(self, other: object) -> object:
         """Soustraction vectorielle"""
         if not isinstance(other, VectorObject):
-            self._raise_error('__add__', 'Invalid substraction')
+            self._raise_error('__sub__', 'Invalid substraction')
         u, v = self.equalized(self, other)
         return VectorObject(*(u.array - v.array))
     
@@ -181,10 +176,10 @@ class VectorObject:
         return self.to_tuple() != other.to_tuple()
     
     def __contains__(self, x: int|float) -> bool:
-        """Vérifie que le vecteur contient une composante spécifique"""
+        """Vérifie que le vecteur contienne une composante spécifique"""
         if not isinstance(x, (int, float, np.float32)):
             self._raise_error('__contains__', 'Value must be an integer or float')
-        return x in tuple(self._v)
+        return x in self.to_tuple()
     
     # ======================================== PREDICATS ========================================
     def is_null(self):
@@ -197,11 +192,11 @@ class VectorObject:
         """
         Vérifie que le vecteur ne soit pas nul
         """
-        return not self.is_null
+        return not self.is_null()
     
     def is_orthogonal(self, other: object) -> bool:
         """
-        Vérifie l'orthogonalité avecun autre vecteur
+        Vérifie l'orthogonalité avec un autre vecteur
 
         Args:
             other (VectorObject) : second vecteur
@@ -227,36 +222,41 @@ class VectorObject:
         return VectorObject(*self.array)
     
     def to_tuple(self):
-        """Renvoie les composantes du vecteurs en tuple"""
+        """Renvoie les composantes du vecteur en tuple"""
         return tuple(self.array)
     
     def to_list(self):
-        """Renvoie les composantes du vecteurs en liste"""
+        """Renvoie les composantes du vecteur en liste"""
         return list(self.array)
     
     def normalize(self):
         """Normalise le vecteur"""
-        self._v = self.normalized
+        self._v = self.normalized.array()
     
-    def reshape(self, dim: int=-1):
+    def reshape(self, dim: int=0):
         """
         Fixe la dimension
 
         Args:
             dim (int) : dimension souhaitée
+                < 0 : au moins |dim| éléments
+                = 0 : reshape automatique (suppression des zéros de fin)
+                > 0 : strictement dim éléments
         """
-        if not isinstance(dim, int) or (dim <= 0 and dim != -1):
+        if not isinstance(dim, int):
             self._raise_error('reshape', 'Dimension must be a positive integer')
-        if dim == -1:
-            self._v = self._v[: np.max(np.nonzero(self._v)[0]) + 1] if np.any(self._v != 0) else np.array([0])
-        elif dim <= self.dim:
+        if dim == 0:            # réduction automatique
+            self._v = self._v[: np.max(np.nonzero(self._v)[0]) + 1] if np.any(self._v != 0) else np.array([0.0])
+        elif dim < 0:           # au moins dim
+            if self.dim < abs(dim): self.reshape(abs(dim))
+        elif dim <= self.dim:   # réduction strictement à dim
             self._v = np.array(self._v[:dim])
-        else:
+        else:                   # augmentation strictement à dim
             self._v = np.concatenate([self._v, np.zeros(dim - len(self))])
 
     def equalized(self, *vectors: tuple[object]) -> tuple:
         """
-        Egalise les dimensions des deux vecteurs
+        Egalise les dimensions de plusieurs vecteurs
 
         Args:
             vectors (tuple[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
@@ -322,11 +322,11 @@ class VectorObject:
         return (self.dot(other) / other.dot(other)) * other
     
     def distance(self, other: object) -> float:
-        """D
-        istance euclidienne entre deux vecteurs
+        """
+        Distance euclidienne entre deux vecteurs
         
         Args:
-            other (VectorObject) : vecteur à projeter
+            other (VectorObject) : second vecteur
         """
         if not isinstance(other, VectorObject):
             return self._raise_error('distance', 'Invalid distance')
