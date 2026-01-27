@@ -234,6 +234,10 @@ class VectorObject:
         """Renvoie les composantes du vecteurs en liste"""
         return list(self.array)
     
+    def normalize(self):
+        """Normalise le vecteur"""
+        self._v = self.normalized
+    
     def reshape(self, dim: int=-1):
         """
         Fixe la dimension
