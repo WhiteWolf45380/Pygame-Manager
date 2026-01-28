@@ -26,10 +26,6 @@ class VectorObject:
         """Représentation du vecteur"""
         return f"Vector({', '.join(map(str, self._v))})"
     
-    def __len__(self) -> int:
-        """Renvoie la dimension du vecteur"""
-        return self._v.shape[0]
-    
     def __iter__(self) -> iter:
         """Itération sur le vecteur"""
         return iter(self._v)
@@ -67,6 +63,10 @@ class VectorObject:
     
     @property
     def dim(self) -> int:
+        """Renvoie la dimension du vecteur"""
+        return self._v.shape[0]
+    
+    def __len__(self) -> int:
         """Renvoie la dimension du vecteur"""
         return self._v.shape[0]
     
@@ -259,12 +259,11 @@ class VectorObject:
         Egalise les dimensions de plusieurs vecteurs
 
         Args:
-            vectors (Iterable[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
+            vectors (tuple[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
         """
         if not all(isinstance(v, VectorObject) for v in vectors):
             self._raise_error('equalized', 'Vectors must be VectorObjects')
-        if self not in vectors:
-            vectors = (self, *vectors)
+        vectors = (self, *vectors)
         dim = max(vectors, key=lambda v: v.dim).dim
         equalized_vectors = []
         for vector in vectors:

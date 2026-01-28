@@ -21,10 +21,6 @@ class PointObject:
         """Représentation du point"""
         return f"Point({', '.join(map(str, self._pos))})"
     
-    def __len__(self) -> int:
-        """Renvoie la dimension du point"""
-        return len(self._pos)
-    
     def __iter__(self) -> iter:
         """Itération sur le point"""
         return iter(self._pos)
@@ -57,6 +53,10 @@ class PointObject:
     
     @property
     def dim(self) -> int:
+        """Renvoie la dimension du point"""
+        return len(self._pos)
+    
+    def __len__(self) -> int:
         """Renvoie la dimension du point"""
         return len(self._pos)
     
@@ -190,12 +190,11 @@ class PointObject:
         Egalise les dimensions du point et de plusieurs autres points
 
         Args:
-            points (Iterable[PointObject]) : ensemble des points à mettre sur la même dimension
+            points (tuple[PointObject]) : ensemble des points à mettre sur la même dimension
         """
         if not all(isinstance(p, PointObject) for p in points):
             self._raise_error('equalized', 'Points must be PointObjects')
-        if self not in points:
-            points = (self, *points)
+        points = (self, *points)
         dim = max(points, key=lambda p: p.dim).dim
         equalized_points = []
         for point in points:
