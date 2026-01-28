@@ -10,7 +10,7 @@ class PointObject:
     def __init__(self, *coos):
         if len(coos) == 0:
             self._raise_error('__init__', 'Point must have at least 1 coordinate')
-        self._pos = coos
+        self._pos = list(coos)
     
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -98,7 +98,7 @@ class PointObject:
 
     def __neg__(self) -> object:
         """Opposé"""
-        return PointObject(*(-x for x in self._pos))
+        return PointObject(*(-c for c in self._pos))
     
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, other: object) -> bool:
@@ -120,30 +120,48 @@ class PointObject:
         return x in self.to_tuple()
     
     # ======================================== PREDICATS ========================================
-    def is_origin(self):
+    def is_origin(self) -> bool:
         """
         Vérifie que le point soit l'origine du repère
         """
-        return all(x == 0 for x in self._pos)
+        return all(c == 0 for c in self._pos)
     
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """
         Vérifie que le vecteur ne soit pas l'origine du repère
         """
         return not self.is_origin()
     
-     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self):
+    def is_aligned(self, *points):
+        """
+        Vérifie que les points soient alignés
+        """
+        if not all(isinstance(p, PointObject) for p in points):
+            self._raise_error('aligned', 'Points must be PointObjects')
+        if len(points) < 2:
+            return True
+        all_points = self.equalized(*points)
+        vector0 = all_points[1] - all_points[0]
+        if vector0.is_null():
+            return all((p - all_points[0]).is_null() for p in all_points[2:])
+        return all(vector0.is_collinear(p - all_points[0]) for p in all_points[2:])
+    
+    # ======================================== METHODES INTERACTIVES ========================================
+    def copy(self) -> object:
         """Renvoie une copie du point"""
         return PointObject(*self._pos)
     
-    def to_tuple(self):
+    def to_tuple(self) -> tuple:
         """Renvoie les coordonnées du point en tuple"""
         return tuple(self._pos)
     
-    def to_list(self):
+    def to_list(self) -> list:
         """Renvoie les coordonnées du point en liste"""
         return list(self._pos)
+    
+    def to_vector(self) -> VectorObject:
+        """Renvoie le vecteur 0 -> self"""
+        return VectorObject(*self)
     
     def reshape(self, dim: int=0):
         """
@@ -167,20 +185,43 @@ class PointObject:
         else:                   # augmentation strictement à dim
             self._pos.extend([0] * (dim - len(self._pos)))
 
-    def equalized(self, *points: tuple[object]) -> tuple:
+    def equalized(self, *points: tuple[object] | list[object]) -> tuple[object]:
         """
-        Egalise les dimensions de plusieurs points
+        Egalise les dimensions du point et de plusieurs autres points
 
         Args:
-            points (tuple[PointObject]) : ensemble des points à mettre sur la même dimension
+            points (Iterable[PointObject]) : ensemble des points à mettre sur la même dimension
         """
-        dim = max(points, key=lambda v: v.dim).dim
+        if not all(isinstance(p, PointObject) for p in points):
+            self._raise_error('equalized', 'Points must be PointObjects')
+        if self not in points:
+            points = (self, *points)
+        dim = max(points, key=lambda p: p.dim).dim
         equalized_points = []
         for point in points:
             p = point.copy()
             p.reshape(dim)
             equalized_points.append(p)
         return tuple(equalized_points)
+    
+    def equalized_with_vectors(self, *vectors: tuple[VectorObject] | list[VectorObject]) -> tuple[VectorObject]:
+        """
+        Egalise les dimensions du point avec plusieurs vecteurs
+
+        Args:
+            vectors (Iterable[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
+        """
+        if not all(isinstance(v, VectorObject) for v in vectors):
+            self._raise_error('equalized_with_vectors', 'Vectors must be VectorObjects')
+        if self not in vectors:
+            vectors = (self, *vectors)
+        dim = max(vectors, key=lambda v: v.dim).dim
+        equalized_vectors = []
+        for vector in vectors:
+            v = vector.copy()
+            v.reshape(dim)
+            equalized_vectors.append(v)
+        return tuple(equalized_vectors)
     
     def distance(self, other: object) -> float:
         """
@@ -190,7 +231,7 @@ class PointObject:
             other (PointObject) : second point
         """
         if not isinstance(other, PointObject):
-            return self._raise_error('distance', 'Invalid distance')
+            return self._raise_error('distance', 'Other must be a PointObject')
         return (self - other).norm
     
     def to(self, other: object) -> VectorObject:
@@ -201,8 +242,8 @@ class PointObject:
             other (PointObject) : le point d'arrivé
         """
         if not isinstance(other, PointObject):
-            self._raise_error('to', 'Invalid vectorisation')
-        A, B = self.equalized(self, other)
+            self._raise_error('to', 'Other must be a PointObject')
+        A, B = self.equalized(other)
         return VectorObject(*(b - a for a, b in zip(A, B)))
     
     def translate(self, vector: VectorObject) -> object:
@@ -213,7 +254,58 @@ class PointObject:
             vector (VectorObject) : vecteur de translation
         """
         if not isinstance(vector, VectorObject):
-            self._raise_error('translate', 'Invalid translation')
-        if vector.dim > self.dim:
-            self._raise_error('translate', 'Point.dim must be >= Vector.dim')
-        return PointObject(*tuple(self[i] + vector[i] for i in range(self.dim)))
+            self._raise_error('translate', 'Vector must be a VectorObject')
+        A, u = self.equalized_with_vectors(vector)
+        return PointObject(*tuple(A[i] + u[i] for i in range(A.dim)))
+    
+    def midpoint(self, other: object) -> object:
+        """
+        Renvoie le point central entre self et other
+
+        Args:
+            other (PointObject) : second point
+        """
+        if not isinstance(other, PointObject):
+            self._raise_error('midpoint', 'Other must be a PointObject')
+        A, B = self.equalized(other)
+        return PointObject(*((A[i] + B[i]) / 2 for i in range(A.dim)))
+    
+    def barycenter(self, *points: tuple[object] | list[object], weights: list[float] | tuple[float] | None = None) -> object:
+        """
+        Calcule le barycentre du point à plusieurs points
+        
+        Args:
+            points : points à inclure dans le barycentre
+            weights: poids associés à chaque point (défaut: poids égaux)
+        """
+        if not points:
+            return self.copy()       
+        if not all(isinstance(p, PointObject) for p in points):
+            self._raise_error('barycenter', 'Points must be PointObjects')
+        
+        if self not in points:
+            points = (self, *points)
+        n = len(points)
+        
+        if weights is None:     # poids égaux par défaut
+            weights = [1.0] * n
+        else:                   # pondération par des poids spécifiques
+            weights = list(weights)
+            if len(weights) != n:
+                self._raise_error('barycenter', f'Need {n} weights, got {len(weights)}. Perhaps you forgot self weight as first weight')
+            if any(not isinstance(w, (int, float)) for w in weights):
+                self._raise_error('barycenter', 'Weights must be numbers')
+        
+        total_weight = sum(weights)
+        if total_weight == 0:
+            self._raise_error('barycenter', 'Total weight cannot be zero')
+        
+        equalized_points = self.equalized(*points)
+        dim = equalized_points[0].dim
+        barycenter_coords = []
+        
+        for i in range(dim):
+            coord = sum(weights[j] * equalized_points[j][i] for j in range(n)) / total_weight
+            barycenter_coords.append(coord)
+        
+        return PointObject(*barycenter_coords)

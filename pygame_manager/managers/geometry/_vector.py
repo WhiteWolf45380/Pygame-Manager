@@ -73,7 +73,7 @@ class VectorObject:
     @property
     def norm(self) -> float:
         """Renvoie la norme du vecteur"""
-        return math.sqrt(sum(x**2 for x in self._v))
+        return math.sqrt(sum(c**2 for c in self._v))
     
     def __abs__(self):
         """Renvoie la norme du vecteur"""
@@ -114,14 +114,14 @@ class VectorObject:
         """addition vectorielle"""
         if not isinstance(other, VectorObject):
             self._raise_error('__add__', 'Invalid addition')
-        u, v = self.equalized(self, other)
+        u, v = self.equalized(other)
         return VectorObject(*(u.array + v.array))
 
     def __sub__(self, other: object) -> object:
         """Soustraction vectorielle"""
         if not isinstance(other, VectorObject):
             self._raise_error('__sub__', 'Invalid substraction')
-        u, v = self.equalized(self, other)
+        u, v = self.equalized(other)
         return VectorObject(*(u.array - v.array))
     
     def __mul__(self, other: int|float) -> object:
@@ -182,13 +182,13 @@ class VectorObject:
         return x in self.to_tuple()
     
     # ======================================== PREDICATS ========================================
-    def is_null(self):
+    def is_null(self) -> bool:
         """
         Vérifie que le vecteur soit nul
         """
         return np.all(self._v == 0)
     
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """
         Vérifie que le vecteur ne soit pas nul
         """
@@ -217,21 +217,21 @@ class VectorObject:
         return np.isclose(abs(self.dot(other)), self.norm * other.norm)
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self):
+    def copy(self) -> object:
         """Renvoie une copie du vecteur"""
         return VectorObject(*self.array)
     
-    def to_tuple(self):
+    def to_tuple(self) -> tuple:
         """Renvoie les composantes du vecteur en tuple"""
         return tuple(self.array)
     
-    def to_list(self):
+    def to_list(self) -> list:
         """Renvoie les composantes du vecteur en liste"""
         return list(self.array)
     
     def normalize(self):
         """Normalise le vecteur"""
-        self._v = self.normalized.array()
+        self._v = self.normalized.array
     
     def reshape(self, dim: int=0):
         """
@@ -254,13 +254,17 @@ class VectorObject:
         else:                   # augmentation strictement à dim
             self._v = np.concatenate([self._v, np.zeros(dim - len(self))])
 
-    def equalized(self, *vectors: tuple[object]) -> tuple:
+    def equalized(self, *vectors: tuple[object] | list[object]) -> tuple:
         """
         Egalise les dimensions de plusieurs vecteurs
 
         Args:
-            vectors (tuple[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
+            vectors (Iterable[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
         """
+        if not all(isinstance(v, VectorObject) for v in vectors):
+            self._raise_error('equalized', 'Vectors must be VectorObjects')
+        if self not in vectors:
+            vectors = (self, *vectors)
         dim = max(vectors, key=lambda v: v.dim).dim
         equalized_vectors = []
         for vector in vectors:
@@ -278,7 +282,7 @@ class VectorObject:
         """
         if not isinstance(other, VectorObject):
             self._raise_error('dot', 'Invalid dot')
-        u, v = self.equalized(self, other)
+        u, v = self.equalized(other)
         return np.dot(u.array, v.array)
     
     def cross(self, other: object) -> object:
@@ -290,7 +294,7 @@ class VectorObject:
         """
         if not isinstance(other, VectorObject):
             self._raise_error('cross', 'Invalid dot')
-        u, v = self.equalized(self, other)
+        u, v = self.equalized(other)
         return VectorObject(*np.cross(u.array, v.array))
     
     def angle_with(self, other: object, degrees: bool=False) -> float:
