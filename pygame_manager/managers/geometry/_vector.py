@@ -15,6 +15,8 @@ class VectorObject:
     def __init__(self, *components):
         if len(components) == 0:
             self._raise_error('__init__', 'Vector must have at least 1 component')
+        if not all(isinstance(c, (int, float)) for c in components):
+            self._raise_error('__init__', 'components arguments must be Integer or Float')
         self._v = np.array(components, dtype=np.float32)
 
     # ======================================== METHODES FONCTIONNELLES ========================================
@@ -33,6 +35,36 @@ class VectorObject:
     def __hash__(self):
        """Renvoie le vecteur hashable"""
        return hash(self.to_tuple())
+    
+    @staticmethod
+    def _compute_rank(matrix: list[list[float]], epsilon: float = 1e-10) -> int:
+        """Calcule le rang d'une matrice par élimination de Gauss"""
+        if not matrix or not matrix[0]:
+            return 0
+        
+        m = [row[:] for row in matrix]
+        rows = len(m)
+        cols = len(m[0])
+        
+        rank = 0
+        for col in range(cols):
+            pivot_row = None
+            for row in range(rank, rows):
+                if abs(m[row][col]) > epsilon:
+                    pivot_row = row
+                    break
+            
+            if pivot_row is None: # colonne nulle
+                continue
+            
+            m[rank], m[pivot_row] = m[pivot_row], m[rank]     
+            for row in range(rank + 1, rows):
+                if abs(m[row][col]) > epsilon:
+                    factor = m[row][col] / m[rank][col]
+                    for c in range(cols):
+                        m[row][c] -= factor * m[rank][c]
+            rank += 1
+        return rank
     
     # ======================================== GETTERS ========================================
     def __getitem__(self, i: int) -> float:
@@ -215,6 +247,33 @@ class VectorObject:
         if self.is_null() or other.is_null():
            return True
         return np.isclose(abs(self.dot(other)), self.norm * other.norm)
+    
+    def is_coplanar(self, *vectors: tuple[object]) -> bool:
+        """
+        Vérifie si les vecteurs sont coplanaires (dans un même plan)
+        
+        Args:
+            vectors: vecteurs à tester avec self
+        """
+        if not all(isinstance(v, VectorObject) for v in vectors):
+            self._raise_error("is_coplanar", "all arguments must be VectorObject")
+        
+        all_vectors = (self, *vectors)
+        equalized = self.equalized(*vectors)
+        dim = equalized[0].dim
+        
+        # toujours coplanaire en 1D / 2D
+        if dim <= 2 or len(vectors) < 3:
+            return True
+        
+        # produit mixte pour 3D
+        if dim == 3 and len(all_vectors) == 3:
+            v1, v2, v3 = equalized
+            return abs(v1.dot(v2.cross(v3))) < 1e-10
+        
+        # Méthode générale : élimination de Gauss
+        matrix = [[v[i] for v in equalized] for i in range(dim)]
+        return self._compute_rank(matrix) <= 2
 
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self) -> object:
@@ -263,7 +322,8 @@ class VectorObject:
         """
         if not all(isinstance(v, VectorObject) for v in vectors):
             self._raise_error('equalized', 'Vectors must be VectorObjects')
-        vectors = (self, *vectors)
+        if self not in vectors:
+            vectors = (self, *vectors)
         dim = max(vectors, key=lambda v: v.dim).dim
         equalized_vectors = []
         for vector in vectors:

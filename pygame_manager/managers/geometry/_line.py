@@ -7,7 +7,7 @@ class LineObject:
     """
     Object géométrique : Droite
     """
-    __slots__ = ["_point", "_vector"]
+    __slots__ = ["_origin", "_vector"]
     def __init__(self, point: PointObject, vector: VectorObject):
         if not isinstance(point, PointObject):
             self._raise_error("__init__", "point argument must be PointObject")
@@ -45,6 +45,16 @@ class LineObject:
     def get_vector(self) -> VectorObject:
         """Renvoie un vecteur directeur de la droite"""
         return self._vector
+    
+    def get_cartesian_equation(self) -> dict:
+        """Renvoie l'équation cartésienne en 2D : ax + by + c = 0"""
+        line = self.copy().reshape(2)
+        u, v = line._vector.x, line._vector.y
+        x0, y0 = line._origin.x, line._origin.y
+        # vecteur normal (-v, u)
+        a, b = -v, u
+        c = -(a * x0 + b * y0)
+        return {"a": a, "b": b, "c": c}
 
     # ======================================== SETTERS ========================================
     def set_origin(self, point: PointObject):
@@ -59,7 +69,7 @@ class LineObject:
             self._raise_error("set_vector", "vector argument must be VectorObject")
         if vector.is_null():
             self._raise_error("set_vector", "direction vector cannot be null vector")
-        self._origin, self._vector = self._origin.equalized_with_vectors(self._vector)
+        self._origin, self._vector = self._origin.equalized_with_vectors(vector)
     
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, line: object) -> bool:
@@ -83,16 +93,22 @@ class LineObject:
         """Vérifie qu'un point soit compris dans la droite"""
         if not isinstance(point, PointObject):
             self._raise_error("contains", "point argument must be PointObject")
-        A, B = self.equalized(self._origin, point)
+        A, B = self._origin.equalized(point)
         return self._vector.is_collinear(B - A)
     
     def is_orthogonal(self, line: object) -> bool:
-        """Vérifie que la droite soit orthogonale à une autre"""
+        """Vérifie si deux droites sont orthogonales"""
         return self._vector.is_orthogonal(line.get_vector())
     
     def is_parallel(self, line: object) -> bool:
-        """Vérifie que la droite soit parallèle à une autre"""
+        """Vérifie si deux droites sont parallèles"""
         return self._vector.is_collinear(line.get_vector())
+    
+    def is_secant(self, line: object) -> bool:
+        """Vérifie si deux droites sont sécantes"""
+        if not isinstance(line, LineObject):
+            return False
+        return not self.is_parallel(line) and self.intersect(line) is not None
 
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self):
@@ -114,7 +130,26 @@ class LineObject:
         self._origin.reshape(dim)
         self._vector.reshape(dim)
 
-    def equalized(self, *objects: tuple[PointObject | VectorObject]) -> tuple[PointObject | VectorObject]:
+    def equalized(self, *lines: tuple[object]) -> tuple[object]:
+        """
+        Egalise les dimensions de la droite et plusieurs autres droites
+
+        Args:
+            lines (tuple[LineObject]) : ensemble des droites à mettre sur la même dimension
+        """
+        if not all(isinstance(d, LineObject) for d in lines):
+            self._raise_error('equalized', 'lines arguments must be LineObject')
+        if self not in lines:
+            lines = (self, *lines)
+        dim = max(lines, key=lambda l: l.dim).dim
+        equalized_lines = []
+        for line in lines:
+            l = line.copy()
+            l.reshape(dim)
+            equalized_lines.append(l)
+        return tuple(equalized_lines)
+
+    def equalized_with_objects(self, *objects: tuple[PointObject | VectorObject]) -> tuple[PointObject | VectorObject]:
         """
         Egalise les dimensions de la droite et de plusieurs autres points ou vecteurs
 
@@ -122,9 +157,9 @@ class LineObject:
             objects (tuple[PointObject|VectorObject]) : ensemble des objets géométriques à mettre sur la même dimension
         """
         if not all(isinstance(o, (PointObject, VectorObject)) for o in objects):
-            self._raise_error('equalized', 'objects argument must be Point or Vector Objects')
+            self._raise_error('equalized_with_objects', 'objects arguments must be PointObject or VectorObject')
         objects = (self, *objects)
-        dim = max(objects, key=lambda p: p.dim).dim
+        dim = max(objects, key=lambda o: o.dim).dim
         equalized_objects = []
         for obj in objects:
             o = obj.copy()
@@ -132,11 +167,17 @@ class LineObject:
             equalized_objects.append(o)
         return tuple(equalized_objects)
     
+    def point(self, t: float) -> PointObject:
+        """Renvoie le point de paramètre t : A + t*u"""
+        if not isinstance(t, (int, float)):
+            self._raise_error("point", "t must be a number")
+        return self._origin + self._vector * t
+    
     def project(self, point: PointObject) -> PointObject:
         """Renvoie le projeté d'un point sur la droite"""
         if not isinstance(point, PointObject):
             self._raise_error("project", "point argument must be PointObject")
-        d, P = self.equalized(point)
+        d, P = self.equalized_with_objects(point)
         A, v = d.get_origin(), d.get_vector()
         AP = P - A
         return A + (AP.dot(v) / v.dot(v)) * v
@@ -147,34 +188,46 @@ class LineObject:
             self._raise_error("distance", "point argument must be PointObject")
         return point.distance(self.project(point))
 
-    def intersect(self, line: object) -> PointObject:
+    def intersection(self, line: object) -> PointObject:
         """Renvoie le point d'intersection de deux droites"""
         if not isinstance(line, LineObject):
             self._raise_error("intersect", "line argument must be LineObject")
         
+        # si parallèles, pas d'intersection unique
         if self.is_parallel(line):
-            if self == line:
-                self._raise_error("intersect", "lines are coincident (infinite intersections)")
-            return None
+            return
         
         d1, d2 = self.equalized(line)
-        A1, u1 = d1.get_origin(), d1.get_vector()
-        A2, u2 = d2.get_origin(), d2.get_vector()
-        
-        # Système : A1 + t*u1 = A2 + s*u2
-        # En 2D : résolution simple
-        if d1.dim == 2:
-            # u1.x * t - u2.x * s = A2.x - A1.x
-            # u1.y * t - u2.y * s = A2.y - A1.y
-            det = u1[0] * (-u2[1]) - u1[1] * (-u2[0])
-            if abs(det) < 1e-10:
-                self._raise_error("intersect", "lines do not intersect in 2D")
-            
-            dx = A2[0] - A1[0]
-            dy = A2[1] - A1[1]
-            t = (dx * (-u2[1]) - dy * (-u2[0])) / det
-            return A1 + u1 * t
-        
-        # En dimension > 2 : pas toujours d'intersection (droites non coplanaires)
-        # Il faudrait vérifier la coplanarité et résoudre le système
-        self._raise_error("intersect", "intersection in dimension > 2 not yet implemented")
+        P1, u1 = d1.get_origin(), d1.get_vector()
+        P2, u2 = d2.get_origin(), d2.get_vector()
+
+        v = P2 - P1
+        if not v.is_coplanar(u1, u2):   # droites non coplanaires
+            return None
+
+        for i in range(d1.dim):
+            for j in range(i + 1, d1.dim):             
+                det = u1[i] * (-u2[j]) - u1[j] * (-u2[i])
+                
+                if abs(det) > 1e-10:  # système non dégénéré
+                    t = (v[i] * (-u2[j]) - v[j] * (-u2[i])) / det
+                    return P1 + u1 * t
+                
+    def angle_with(self, line: object) -> float:
+        """Renvoie l'angle entre deux droites (en radians)"""
+        if not isinstance(line, LineObject):
+            self._raise_error("angle_with", "line argument must be LineObject")
+        return self._vector.angle_with(line.get_vector())
+
+    def symmetry(self, point: PointObject) -> PointObject:
+        """Renvoie le symétrique d'un point par rapport à la droite"""
+        if not isinstance(point, PointObject):
+            self._raise_error("symmetry", "point argument must be PointObject")
+        H = self.project(point)
+        return H + (H - point)
+
+    def translate(self, vector: VectorObject):
+        """Translate la droite selon un vecteur"""
+        if not isinstance(vector, VectorObject):
+            self._raise_error("translate", "vector argument must be VectorObject")
+        self._origin = self._origin + vector

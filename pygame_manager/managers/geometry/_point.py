@@ -10,6 +10,8 @@ class PointObject:
     def __init__(self, *coos):
         if len(coos) == 0:
             self._raise_error('__init__', 'Point must have at least 1 coordinate')
+        if not all(isinstance(c, (int, float)) for c in coos):
+            self._raise_error('__init__', 'coos arguments must be Integer or Float')
         self._pos = list(coos)
     
     # ======================================== METHODES FONCTIONNELLES ========================================
@@ -146,6 +148,13 @@ class PointObject:
             return all((p - all_points[0]).is_null() for p in all_points[2:])
         return all(vector0.is_collinear(p - all_points[0]) for p in all_points[2:])
     
+    def is_close_to(self, point: object):
+        """
+        Vérifie que les points sont à epsilon près similaires
+        """
+        p1, p2 = self.equalized(point)
+        return all(abs(p2[k] - p1[k]) < 1e-10 for k in range(p1.dim))
+    
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self) -> object:
         """Renvoie une copie du point"""
@@ -194,7 +203,8 @@ class PointObject:
         """
         if not all(isinstance(p, PointObject) for p in points):
             self._raise_error('equalized', 'Points must be PointObjects')
-        points = (self, *points)
+        if self not in points:
+            points = (self, *points)
         dim = max(points, key=lambda p: p.dim).dim
         equalized_points = []
         for point in points:
