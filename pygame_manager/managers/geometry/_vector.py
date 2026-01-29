@@ -1,6 +1,16 @@
-import numpy as np
-import math
+# ======================================== IMPORTS ========================================
+from __future__ import annotations
+from _core.imports import Iterable, Iterator, Self, Tuple, numbers, np, math
+from _core.utils import *
 
+# ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
+def _to_vector(vector: VectorObject | Iterable[numbers.Real], fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument') -> VectorObject | object | None:
+    """tente de convertir si besoin l'objet en Point"""
+    if isinstance(vector, VectorObject):
+        return vector
+    if isinstance(vector, Sequence) and all(isinstance(c, numbers.Real) for c in vector):
+        return VectorObject(*vector)
+    return fallback if fallback is not None else _raise_error(method, message) if raised else None
 
 # ======================================== OBJET ========================================
 class VectorObject:
@@ -12,28 +22,25 @@ class VectorObject:
         effectuer des opérations vectorielles simplement
     """
     __slots__ = ["_v"]
-    def __init__(self, *components):
-        if len(components) == 0:
-            self._raise_error('__init__', 'Vector must have at least 1 component')
-        if not all(isinstance(c, (int, float)) for c in components):
-            self._raise_error('__init__', 'components arguments must be Integer or Float')
-        self._v = np.array(components, dtype=np.float32)
+    PRECISION = 9
+    def __init__(self, *components: numbers.Real):
+        if len(components) == 0: _raise_error(self, '__init__', 'Vector must have at least 1 component')
+        while any(not isinstance(c, numbers.Real) for c in components):
+            if len(components) == 1 and isinstance(components[0], Sequence): components = components[0]
+            else: _raise_error(self, '__init__', 'Invalid components arguments')
+        self._v = np.round(np.array(components, dtype=np.float32), self.PRECISION)
 
-    # ======================================== METHODES FONCTIONNELLES ========================================
-    def _raise_error(self, method: str, text: str):
-        """Lève une erreur"""
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
-    
+    # ======================================== METHODES FONCTIONNELLES ========================================    
     def __repr__(self) -> str:
         """Représentation du vecteur"""
         return f"Vector({', '.join(map(str, self._v))})"
     
-    def __iter__(self) -> iter:
+    def __iter__(self) -> Iterator[float]:
         """Itération sur le vecteur"""
-        return iter(self._v)
+        return iter(self.to_tuple())
     
-    def __hash__(self):
-       """Renvoie le vecteur hashable"""
+    def __hash__(self) -> int:
+       """Renvoie le vecteur hashé"""
        return hash(self.to_tuple())
     
     @staticmethod
@@ -69,9 +76,8 @@ class VectorObject:
     # ======================================== GETTERS ========================================
     def __getitem__(self, i: int) -> float:
         """Renvoie la composante de rang i du vecteur"""
-        if i >= len(self._v):
-            return 0.0
-        return self._v[i]
+        if i >= len(self._v): return 0.0
+        return float(self._v[i])
 
     @property
     def x(self) -> float:
@@ -89,7 +95,7 @@ class VectorObject:
         return self[2]
     
     @property
-    def array(self) -> np.array:
+    def array(self) -> np.ndarray:
         """Renvoie le vecteur sous forme d'array numpy"""
         return self._v
     
@@ -107,111 +113,104 @@ class VectorObject:
         """Renvoie la norme du vecteur"""
         return math.sqrt(sum(c**2 for c in self._v))
     
-    def __abs__(self):
+    def __abs__(self) -> float:
         """Renvoie la norme du vecteur"""
         return self.norm
     
     @property
-    def normalized(self) -> object:
+    def normalized(self) -> VectorObject:
         """Renvoie le vecteur normalisé"""
-        if self.is_null():
-           self._raise_error('normalized', 'Cannot normalize null vector')
+        if self.is_null(): _raise_error(self, 'normalized', 'Cannot normalize null vector')
         return VectorObject(*(self / self.norm))
     
     # ======================================== SETTERS ========================================
-    def __setitem__(self, i: int, x: int|float|np.float32):
+    def __setitem__(self, i: int, r: numbers.Real):
         """Fixe la composante de rang i du vecteur"""
-        if not isinstance(x, (int, float, np.float32)):
-            self._raise_error('__setitem__', 'Component must be an integer or float')
+        if not isinstance(r, numbers.Real): _raise_error(self, '__setitem__', 'Invalid r argument')
         self.reshape(-i)
-        self._v[i] = x
+        self._v[i] = np.round(np.float32(r), self.PRECISION)
 
     @x.setter
-    def x(self, x: int|float|np.float32) :
+    def x(self, x: numbers.Real) :
         """Fixe la composante x du vecteur"""
         self[0] = x
 
     @y.setter
-    def y(self, y: int|float|np.float32):
+    def y(self, y: numbers.Real):
         """Fixe la composante y du vecteur"""
         self[1] = y
 
     @z.setter
-    def z(self, z: int|float|np.float32):
+    def z(self, z: numbers.Real):
         """Fixe la composante z du vecteur"""
         self[2] = z
 
     # ======================================== OPERATIONS ========================================
-    def __add__(self, other: object) -> object:
+    def __add__(self, vector: VectorObject) -> VectorObject:
         """addition vectorielle"""
-        if not isinstance(other, VectorObject):
-            self._raise_error('__add__', 'Invalid addition')
-        u, v = self.equalized(other)
+        vector = _to_vector(vector, method='__add__')
+        u, v = self.equalized(vector)
         return VectorObject(*(u.array + v.array))
 
-    def __sub__(self, other: object) -> object:
+    def __sub__(self, vector: VectorObject) -> VectorObject:
         """Soustraction vectorielle"""
-        if not isinstance(other, VectorObject):
-            self._raise_error('__sub__', 'Invalid substraction')
-        u, v = self.equalized(other)
+        vector = _to_vector(vector, method='__sub__')
+        u, v = self.equalized(vector)
         return VectorObject(*(u.array - v.array))
     
-    def __mul__(self, other: int|float) -> object:
+    def __mul__(self, scalar: numbers.Real) -> VectorObject:
         """Multiplication par un scalaire"""
-        if not isinstance(other, (int, float, np.float32)):
-            self._raise_error('__mul__', 'Invalid multiplication')
-        return VectorObject(*(self.array * other))
+        if not isinstance(scalar, numbers.Real): _raise_error(self, '__mul__', 'Invalid scalar argument')
+        return VectorObject(*(self.array * float(scalar)))
     
-    def __rmul__(self, other: int|float) -> object:
+    def __rmul__(self, scalar: numbers.Real) -> VectorObject:
         """Multiplication par un scalaire (inversé)"""
-        if not isinstance(other, (int, float, np.float32)):
-            self._raise_error('__rmul__', 'Invalid multiplication')
-        return VectorObject(*(self.array * other))
+        if not isinstance(scalar, numbers.Real): _raise_error(self, '__rmul__', 'Invalid scalar argument')
+        return VectorObject(*(self.array * float(scalar)))
     
-    def __truediv__(self, other: int|float) -> object:
+    def __truediv__(self, scalar: numbers.Real) -> VectorObject:
         """Division par un scalaire"""
-        if not isinstance(other, (int, float, np.float32)):
-            self._raise_error('__truediv__', 'Invalid division')
-        return VectorObject(*(self.array / other))
+        if not isinstance(scalar, numbers.Real): _raise_error(self, '__truediv__', 'Invalid scalar argument')
+        return VectorObject(*(self.array / float(scalar)))
     
-    def __matmul__(self, other: object) -> float:
+    def __matmul__(self, vector: VectorObject) -> float:
         """Produit scalaire"""
-        if not isinstance(other, VectorObject):
-            self._raise_error('__matmul__', 'Invalid dot')
-        return self.dot(other)
+        vector = _to_vector(vector, method='__dot__')
+        return self.dot(vector)
     
-    def __xor__(self, other: object) -> object:
+    def __xor__(self, vector: VectorObject) -> VectorObject:
         """Produit vectoriel"""
-        if not isinstance(other, VectorObject):
-            self._raise_error('__xor__', 'Invalid cross product')
-        return self.cross(other)
+        vector = _to_vector(vector, method='__cross__')
+        return self.cross(vector)
     
-    def __pos__(self) -> object:
+    def __pos__(self) -> VectorObject:
         """Copie"""
         return VectorObject(*self.array)
 
-    def __neg__(self) -> object:
+    def __neg__(self) -> VectorObject:
         """Opposé"""
         return VectorObject(*(-self.array))
     
     # ======================================== COMPARATEURS ========================================
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, vector: VectorObject) -> bool:
         """Vérifie la correspondance de deux vecteurs"""
-        if not isinstance(other, VectorObject):
+        vector = _to_vector(vector, raised=False)
+        if vector is None:
             return False
-        return self.to_tuple() == other.to_tuple()
+        u, v = self.equalized(vector)
+        return all(u[i] == v[i] for i in range(u.dim))
     
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, vector: object) -> bool:
         """Vérifie la non correspondance de deux vecteurs"""
-        if not isinstance(other, VectorObject):
+        if not isinstance(vector, VectorObject):
             return True
-        return self.to_tuple() != other.to_tuple()
+        return not self == vector
     
-    def __contains__(self, x: int|float) -> bool:
+    def __contains__(self, r: numbers.Real) -> bool:
         """Vérifie que le vecteur contienne une composante spécifique"""
-        if not isinstance(x, (int, float, np.float32)):
-            self._raise_error('__contains__', 'Value must be an integer or float')
-        return x in self.to_tuple()
+        if not isinstance(r, numbers.Real):
+            return False
+        return float(r) in self.to_tuple()
     
     # ======================================== PREDICATS ========================================
     def is_null(self) -> bool:
@@ -226,67 +225,67 @@ class VectorObject:
         """
         return not self.is_null()
     
-    def is_orthogonal(self, other: object) -> bool:
+    def is_orthogonal(self, vector: VectorObject) -> bool:
         """
         Vérifie l'orthogonalité avec un autre vecteur
 
         Args:
-            other (VectorObject) : second vecteur
+            vector (VectorObject) : second vecteur
         """
-        if self.is_null() or other.is_null():
-           return True
-        return np.isclose(self.dot(other), 0)
+        _to_vector(vector, method='is_orthogonal')
+        if self.is_null() or vector.is_null():
+            return True
+        return np.isclose(self.dot(vector), 0)
 
-    def is_collinear(self, other: object) -> bool:
+    def is_collinear(self, vector: VectorObject) -> bool:
         """
         Vérifie la colinéarité avec un autre vecteur
         
         Args:
-            other (VectorObject) : second vecteur
+            vector (VectorObject) : second vecteur
         """
-        if self.is_null() or other.is_null():
-           return True
-        return np.isclose(abs(self.dot(other)), self.norm * other.norm)
+        vector = _to_vector(vector, method='is_collinear')
+        if self.is_null() or vector.is_null():
+            return True
+        return abs(self.dot(vector)) == self.norm * vector.norm
     
-    def is_coplanar(self, *vectors: tuple[object]) -> bool:
+    def is_coplanar(self, *vectors: VectorObject) -> bool:
         """
         Vérifie si les vecteurs sont coplanaires (dans un même plan)
         
         Args:
-            vectors: vecteurs à tester avec self
+            vectors (tuple[VectorObject]): vecteurs à tester avec Self
         """
-        if not all(isinstance(v, VectorObject) for v in vectors):
-            self._raise_error("is_coplanar", "all arguments must be VectorObject")
+        vectors = list(map(_to_vector, vectors))
         
-        all_vectors = (self, *vectors)
         equalized = self.equalized(*vectors)
         dim = equalized[0].dim
         
         # toujours coplanaire en 1D / 2D
-        if dim <= 2 or len(vectors) < 3:
+        if dim <= 2 or len(equalized) < 3:
             return True
         
         # produit mixte pour 3D
-        if dim == 3 and len(all_vectors) == 3:
+        if dim == 3 and len(equalized) == 3:
             v1, v2, v3 = equalized
             return abs(v1.dot(v2.cross(v3))) < 1e-10
         
-        # Méthode générale : élimination de Gauss
+        # méthode générale : élimination de Gauss
         matrix = [[v[i] for v in equalized] for i in range(dim)]
         return self._compute_rank(matrix) <= 2
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> object:
+    def copy(self) -> VectorObject:
         """Renvoie une copie du vecteur"""
         return VectorObject(*self.array)
     
-    def to_tuple(self) -> tuple:
+    def to_tuple(self) -> tuple[float]:
         """Renvoie les composantes du vecteur en tuple"""
-        return tuple(self.array)
+        return tuple(map(float, self.array))
     
-    def to_list(self) -> list:
+    def to_list(self) -> list[float]:
         """Renvoie les composantes du vecteur en liste"""
-        return list(self.array)
+        return list(map(float, self.array))
     
     def normalize(self):
         """Normalise le vecteur"""
@@ -303,7 +302,7 @@ class VectorObject:
                 > 0 : strictement dim éléments
         """
         if not isinstance(dim, int):
-            self._raise_error('reshape', 'Dimension must be a positive integer')
+            _raise_error(self, 'reshape', 'Invalid dim argument')
         if dim == 0:            # réduction automatique
             self._v = self._v[: np.max(np.nonzero(self._v)[0]) + 1] if np.any(self._v != 0) else np.array([0.0])
         elif dim < 0:           # au moins dim
@@ -313,15 +312,14 @@ class VectorObject:
         else:                   # augmentation strictement à dim
             self._v = np.concatenate([self._v, np.zeros(dim - len(self))])
 
-    def equalized(self, *vectors: tuple[object] | list[object]) -> tuple:
+    def equalized(self, *vectors: VectorObject) -> Tuple[Self, *tuple[VectorObject]]:
         """
         Egalise les dimensions de plusieurs vecteurs
 
         Args:
-            vectors (tuple[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
+            vectors (tuple[VectorObject]) : ensemble de vecteurs à mettre sur la même dimension
         """
-        if not all(isinstance(v, VectorObject) for v in vectors):
-            self._raise_error('equalized', 'Vectors must be VectorObjects')
+        vectors = list(map(_to_vector, vectors))
         if self not in vectors:
             vectors = (self, *vectors)
         dim = max(vectors, key=lambda v: v.dim).dim
@@ -332,65 +330,59 @@ class VectorObject:
             equalized_vectors.append(v)
         return tuple(equalized_vectors)
 
-    def dot(self, other: object) -> float:
+    def dot(self, vector: VectorObject) -> float:
         """
         Renvoie le produit scalaire des deux vecteurs
 
         Args:
-            other (VectorObject) : second vecteur
+            vector (VectorObject) : second vecteur
         """
-        if not isinstance(other, VectorObject):
-            self._raise_error('dot', 'Invalid dot')
-        u, v = self.equalized(other)
-        return np.dot(u.array, v.array)
+        vector = _to_vector(vector, method='dot')
+        u, v = self.equalized(vector)
+        return float(np.dot(u.array, v.array))
     
-    def cross(self, other: object) -> object:
+    def cross(self, vector: VectorObject) -> VectorObject:
         """
         Renvoie le produit vectoriel de deux vecteurs
 
         Args:
-            other (VectorObject) : second vecteur
+            vector (VectorObject) : second vecteur
         """
-        if not isinstance(other, VectorObject):
-            self._raise_error('cross', 'Invalid dot')
-        u, v = self.equalized(other)
+        vector = _to_vector(vector, method='cross')
+        u, v = self.equalized(vector)
         return VectorObject(*np.cross(u.array, v.array))
     
-    def angle_with(self, other: object, degrees: bool=False) -> float:
+    def angle_with(self, vector: VectorObject, degrees: bool=False) -> float:
         """
         Renvoie l'angle entre deux vecteurs
 
         Args:
-            other (VectorObject) : second vecteur
+            vector (VectorObject) : second vecteur
             degrees (bool, optional) : conversion en degrée
         """
-        if not isinstance(other, VectorObject):
-            self._raise_error('angle_with', 'Invalid dot')
-        if self.is_null() or other.is_null():
-           self._raise_error('angle_with', 'Cannot define an angle with null vector')
-        angle = np.arccos(self.dot(other) / (self.norm * other.norm))
+        vector = _to_vector(vector, method='angle_with')
+        if self.is_null() or vector.is_null(): _raise_error(self, 'angle_with', 'Cannot define an angle with null vector')
+        angle = float(np.arccos(self.dot(vector) / (self.norm * vector.norm)))
         if degrees:
             return math.degrees(angle)
         return angle
 
-    def project(self, other: object) -> object:
+    def projection(self, vector: VectorObject) -> VectorObject:
         """
-        Renvoie le projeté du vecteur donné
+        Renvoie le projeté vectoriel du vecteur donné sur Self
 
         Args:
-            other (VectorObject) : vecteur à projeter
+            vecteur (VectorObject) : vecteur à projeter
         """
-        if not isinstance(other, VectorObject):
-            return self._raise_error('angle_with', 'Invalid dot')
-        return (self.dot(other) / other.dot(other)) * other
+        vector = _to_vector(vector, method='projection')
+        return (vector.dot(self) / self.dot(self)) * self
     
-    def distance(self, other: object) -> float:
+    def distance(self, vector: VectorObject) -> float:
         """
         Distance euclidienne entre deux vecteurs
         
         Args:
-            other (VectorObject) : second vecteur
+            vector (VectorObject) : second vecteur
         """
-        if not isinstance(other, VectorObject):
-            return self._raise_error('distance', 'Invalid distance')
-        return (self - other).norm
+        vector = _to_vector(vector, method='distance')
+        return (self - vector).norm
