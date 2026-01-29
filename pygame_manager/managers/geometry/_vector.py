@@ -7,19 +7,15 @@ from _core.utils import *
 def _to_vector(vector: VectorObject | Iterable[numbers.Real], fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument') -> VectorObject | object | None:
     """tente de convertir si besoin l'objet en Point"""
     if isinstance(vector, VectorObject):
-        return vector
+        return vector.copy()
     if isinstance(vector, Sequence) and all(isinstance(c, numbers.Real) for c in vector):
         return VectorObject(*vector)
-    return fallback if fallback is not None else _raise_error(method, message) if raised else None
+    return fallback if fallback is not None else _raise_error(VectorObject, method, message) if raised else None
 
 # ======================================== OBJET ========================================
 class VectorObject:
     """
-    Gestionnaire vectoriel
-
-    Fonctionnalités:
-        stocker des coordonnées vectorielles toute dimension
-        effectuer des opérations vectorielles simplement
+    Objet géométrique nD : Vecteur
     """
     __slots__ = ["_v"]
     PRECISION = 9
@@ -30,7 +26,6 @@ class VectorObject:
             else: _raise_error(self, '__init__', 'Invalid components arguments')
         self._v = np.round(np.array(components, dtype=np.float32), self.PRECISION)
 
-    # ======================================== METHODES FONCTIONNELLES ========================================    
     def __repr__(self) -> str:
         """Représentation du vecteur"""
         return f"Vector({', '.join(map(str, self._v))})"
@@ -144,43 +139,52 @@ class VectorObject:
     def z(self, z: numbers.Real):
         """Fixe la composante z du vecteur"""
         self[2] = z
+    
+    @norm.setter
+    def norm(self, norm: numbers.Real):
+        """Fixe la norme du vecteur"""
+        self._v = (norm * self.normalized).array
+
+    def set_norm(self, norm: numbers.Real):
+        """Fixe la norme du vecteur"""
+        self._v = (norm * self.normalized).array
 
     # ======================================== OPERATIONS ========================================
     def __add__(self, vector: VectorObject) -> VectorObject:
         """addition vectorielle"""
-        vector = _to_vector(vector, method='__add__')
+        vector = _to_vector(vector, method='__add__', fallback=NotImplemented)
         u, v = self.equalized(vector)
         return VectorObject(*(u.array + v.array))
 
     def __sub__(self, vector: VectorObject) -> VectorObject:
         """Soustraction vectorielle"""
-        vector = _to_vector(vector, method='__sub__')
+        vector = _to_vector(vector, method='__sub__', fallback=NotImplemented)
         u, v = self.equalized(vector)
         return VectorObject(*(u.array - v.array))
     
     def __mul__(self, scalar: numbers.Real) -> VectorObject:
         """Multiplication par un scalaire"""
-        if not isinstance(scalar, numbers.Real): _raise_error(self, '__mul__', 'Invalid scalar argument')
+        if not isinstance(scalar, numbers.Real): return NotImplemented
         return VectorObject(*(self.array * float(scalar)))
     
     def __rmul__(self, scalar: numbers.Real) -> VectorObject:
         """Multiplication par un scalaire (inversé)"""
-        if not isinstance(scalar, numbers.Real): _raise_error(self, '__rmul__', 'Invalid scalar argument')
+        if not isinstance(scalar, numbers.Real): return NotImplemented
         return VectorObject(*(self.array * float(scalar)))
     
     def __truediv__(self, scalar: numbers.Real) -> VectorObject:
         """Division par un scalaire"""
-        if not isinstance(scalar, numbers.Real): _raise_error(self, '__truediv__', 'Invalid scalar argument')
+        if not isinstance(scalar, numbers.Real): return NotImplemented
         return VectorObject(*(self.array / float(scalar)))
     
     def __matmul__(self, vector: VectorObject) -> float:
         """Produit scalaire"""
-        vector = _to_vector(vector, method='__dot__')
+        vector = _to_vector(vector, method='__dot__', fallback=NotImplemented)
         return self.dot(vector)
     
     def __xor__(self, vector: VectorObject) -> VectorObject:
         """Produit vectoriel"""
-        vector = _to_vector(vector, method='__cross__')
+        vector = _to_vector(vector, method='__cross__', fallback=NotImplemented)
         return self.cross(vector)
     
     def __pos__(self) -> VectorObject:
@@ -200,10 +204,8 @@ class VectorObject:
         u, v = self.equalized(vector)
         return all(u[i] == v[i] for i in range(u.dim))
     
-    def __ne__(self, vector: object) -> bool:
+    def __ne__(self, vector: VectorObject) -> bool:
         """Vérifie la non correspondance de deux vecteurs"""
-        if not isinstance(vector, VectorObject):
-            return True
         return not self == vector
     
     def __contains__(self, r: numbers.Real) -> bool:

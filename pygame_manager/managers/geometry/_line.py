@@ -1,29 +1,24 @@
 from __future__ import annotations
-from _core.imports import *
-from _core.utils import *
+from _core import *
 
 # ======================================== OBJET ========================================
 class LineObject:
     """
-    Object géométrique : Droite
+    Object géométrique nD : Droite
     """
-    __slots__ = ["_origin", "_vector"]
-    def __init__(self, point: PointObject | Iterable[numbers.Real], vector: VectorObject):
-        point = to_point(point)
-        if point is None:
-            _raise_error(self, "__init__", "Invalid point argument")
-        if not isinstance(vector, VectorObject):
-            _raise_error(self, "__init__", "Invalid vector argument")
+    __slots__ = ["_origin", "_vector", "_color", "_width", "_ashed"]
+    def __init__(self, point: PointObject, vector: VectorObject):
+        # représentation paramétrique
+        point = _to_point(point)
+        vector = _to_vector(vector)
         if vector.is_null():
             _raise_error(self, "__init__", "direction vector cannot be null vector")
         self._origin, self._vector = point.equalized_with_vectors(vector)
-    
-    # ======================================== METHODES FONCTIONNELLES ========================================
-    def _raise_error(self, method: str, text: str):
-        """
-        Lève une erreur
-        """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+
+        # paramètres d'affichage
+        self._color = (0, 0, 0)
+        self._width = 1
+        self._ashed = False
     
     def __repr__(self) -> str:
         """Représentation de la droite"""
@@ -31,7 +26,7 @@ class LineObject:
     
     def __hash__(self) -> int:
         """Renvoie la droite hashée"""
-        return hash(*self._origin, *self._vector)
+        return hash((self.unique_point.to_tuple(), self.unique_vector.to_tuple()))
     
     # ======================================== GETTERS ========================================
     @property
@@ -45,7 +40,7 @@ class LineObject:
     
     def __getitem__(self, t) -> PointObject:
         """Renvoie le point de la droite de paramètre t, P : O + t * v"""
-        self.point(t)
+        return self.point(t)
 
     def get_origin(self) -> PointObject:
         """Renvoie l'origine de la droite"""
@@ -55,29 +50,77 @@ class LineObject:
         """Renvoie un vecteur directeur de la droite"""
         return self._vector
     
+    @property
+    def unique_point(self) -> PointObject:
+        """Renvoie le point unique d'une droite"""
+        return self.project(PointObject(0))
+    
+    @property
+    def unique_vector(self) -> VectorObject:
+        """Renvoie le vecteur directeur unique d'une droite"""
+        sign = 1
+        for component in self._vector:
+            if component != 0:
+                sign = 1 if component > 0 else -1
+                break
+        return (sign * self._vector.normalized)
+    
     def get_cartesian_equation(self) -> dict:
         """Renvoie l'équation cartésienne en 2D : ax + by + c = 0"""
         line = self.copy().reshape(2)
         u, v = line._vector.x, line._vector.y
         x0, y0 = line._origin.x, line._origin.y
-        # vecteur normal (-v, u)
-        a, b = -v, u
+        a, b = -v, u # vecteur normal (-v, u)
         c = -(a * x0 + b * y0)
         return {"a": a, "b": b, "c": c}
+    
+    @property
+    def color(self) -> tuple[int, int ,int]:
+        """Renvoie la couleur d'affichage"""
+        return self._color
+    
+    @property
+    def width(self) -> int:
+        """Renvoie la largeur d'affichage"""
+        return self._width
+    
+    @property
+    def ashed(self) -> bool:
+        """Vérifie si l'affichage de la droite est segmenté"""
+        return self._ashed
 
     # ======================================== SETTERS ========================================
     def set_origin(self, point: PointObject):
         """Modifie l'origine de la droite"""
-        point = to_point(point)
-        if point is None: _raise_error(self, "set_origin", "Invalid point argument")
+        point = _to_point(point)
         self._origin, self._vector = point.equalized_with_vectors(self._vector)
     
     def set_vector(self, vector: VectorObject):
         """Modifie le vecteur directeur de la droite"""
-        vector = to_vector(vector)
-        if vector is None: _raise_error(self, "set_vector", "Invalid vector argument")
+        vector = _to_vector(vector)
         if vector.is_null(): _raise_error(self, "set_vector", "direction vector cannot be null vector")
         self._origin, self._vector = self._origin.equalized_with_vectors(vector)
+
+    @color.setter
+    def color(self, color: tuple[int, int, int]):
+        """Fixe la couleur d'affichage"""
+        if not isinstance(color, tuple) or len(color) != 3 or not all(isinstance(c, int) for c in color):
+            _raise_error(self, 'set_color', 'Invalid color argument')
+        self._color = color
+
+    @width.setter
+    def width(self, width: int):
+        """Fixe la largeur d'affichage"""
+        if not isinstance(width, int):
+            _raise_error(self, 'set_width', 'Invalid width argument')
+        self._width = width
+
+    @ashed.setter
+    def ashed(self, value: bool):
+        """Active ou non l'affichage segmenté"""
+        if not isinstance(value, bool):
+            _raise_error(self, 'set_ashed', 'invalid value argument')
+        self._ashed = value
     
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, line: LineObject) -> bool:
@@ -87,8 +130,7 @@ class LineObject:
     
     def __ne__(self, line: LineObject) -> bool:
         """Vérifie la non correspondance de deux droites"""
-        if not isinstance(line, LineObject): return True
-        return not self.__eq__(line)
+        return not self == line
     
     def __contains__(self, point: PointObject) -> bool:
         """Vérifie qu'un point soit compris dans la droite'"""
@@ -97,28 +139,31 @@ class LineObject:
     # ======================================== PREDICATS ========================================
     def contains(self, point: PointObject) -> bool:
         """Vérifie qu'un point soit compris dans la droite"""
-        point = to_point(point)
-        if point is None: _raise_error(self, "contains", "point argument must be PointObject")
+        point = _to_point(point)
         A, B = self._origin.equalized(point)
         return self._vector.is_collinear(B - A)
     
     def is_orthogonal(self, line: LineObject) -> bool:
         """Vérifie si deux droites sont orthogonales"""
+        if not isinstance(line, LineObject): _raise_error(self, 'is_orthogonal', 'Invalid line argument')
         return self._vector.is_orthogonal(line.get_vector())
     
     def is_parallel(self, line: LineObject) -> bool:
         """Vérifie si deux droites sont parallèles"""
+        if not isinstance(line, LineObject): _raise_error(self, 'is_orthogonal', 'Invalid line argument')
         return self._vector.is_collinear(line.get_vector())
     
     def is_secant(self, line: LineObject) -> bool:
         """Vérifie si deux droites sont sécantes"""
-        if not isinstance(line, LineObject): return False
-        return not self.is_parallel(line) and self.intersect(line) is not None
+        if not isinstance(line, LineObject): _raise_error(self, 'is_orthogonal', 'Invalid line argument')
+        return not self.is_parallel(line) and self.intersection(line) is not None
 
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self) -> LineObject:
-        """Renvoie une copie de la droite"""
-        return LineObject(self._origin, self._vector)
+        """
+        Renvoie une copie de la droite
+        """
+        return deepcopy(self)
     
     def reshape(self, dim: int=0):
         """
@@ -169,29 +214,46 @@ class LineObject:
         return tuple(equalized_objects)
     
     def point(self, t: float) -> PointObject:
-        """Renvoie le point de paramètre t, P : O + t * v"""
+        """
+        Renvoie le point de paramètre t, P : O + t * v
+
+        Args:
+            t (float) : paramètre d'avancement sur la droite
+        """
         if not isinstance(t, numbers.Real): _raise_error(self, "point", "Invalid t argument")
         return self._origin + self._vector * float(t)
     
     def project(self, point: PointObject) -> PointObject:
-        """Renvoie le projeté d'un point sur la droite"""
-        point = to_point(point)
-        if point is None: _raise_error(self, "project", "Invalid point argument")
+        """
+        Renvoie le projeté d'un point sur la droite
+
+        Args:
+            point (PointObject) : point à projeter
+        """
+        point = _to_point(point)
         d, P = self.equalized_with_objects(point)
         A, v = d.get_origin(), d.get_vector()
         AP = P - A
         return A + (AP.dot(v) / v.dot(v)) * v
 
     def distance(self, point: PointObject) -> float:
-        """Renvoie la distance entre un point et une droite"""
-        point = to_point(point)
-        if point is None: _raise_error(self, "distance", "point argument must be PointObject")
+        """
+        Renvoie la distance entre un point et une droite
+
+        Args:
+            point (PointObject) : point distant
+        """
+        point = _to_point(point)
         return point.distance(self.project(point))
 
-    def intersection(self, line: object) -> PointObject:
-        """Renvoie le point d'intersection de deux droites"""
-        if not isinstance(line, LineObject):
-            _raise_error(self, "intersect", "line argument must be LineObject")
+    def intersection(self, line: LineObject) -> PointObject:
+        """
+        Renvoie le point d'intersection de deux droites
+
+        Args:
+            line (LineObject) : seconde droite
+        """
+        if not isinstance(line, LineObject): _raise_error(self, "intersection", "line argument must be LineObject")
         
         # si parallèles, pas d'intersection unique
         if self.is_parallel(line):
@@ -213,26 +275,40 @@ class LineObject:
                     t = (v[i] * (-u2[j]) - v[j] * (-u2[i])) / det
                     return P1 + u1 * t
                 
-    def angle_with(self, line: object) -> float:
-        """Renvoie l'angle entre deux droites (en radians)"""
+    def angle_with(self, line: LineObject) -> float:
+        """
+        Renvoie l'angle entre deux droites (en radians)
+
+        Args:
+            line (LineObject) : seconde droite
+        """
         if not isinstance(line, LineObject):
             _raise_error(self, "angle_with", "line argument must be LineObject")
         return self._vector.angle_with(line.get_vector())
 
     def symmetry(self, point: PointObject) -> PointObject:
-        """Renvoie le symétrique d'un point par rapport à la droite"""
-        if not isinstance(point, PointObject):
-            _raise_error(self, "symmetry", "point argument must be PointObject")
+        """
+        Renvoie le symétrique d'un point par rapport à la droite
+
+        Args:
+            point (PointObject) : point dont on cherche le symétrique
+        """
+        point = _to_point(point)
         H = self.project(point)
         return H + (H - point)
 
     def translate(self, vector: VectorObject):
-        """Translate la droite selon un vecteur"""
-        if not isinstance(vector, VectorObject):
-            _raise_error(self, "translate", "vector argument must be VectorObject")
+        """
+        Translate la droite selon un vecteur
+
+        Args:
+            vector (VectorObject) : vecteur de translation
+        """
+        vector = _to_vector(vector)
         self._origin = self._origin + vector
 
     # ======================================== AFFICHAGE ========================================
-    def draw(self, width: int=2, hashed: bool=False):
+    def draw(self, surface: pygame.Surface, x_min: int=None, x_max: int=None, y_min: int=None, y_max: int=None, color: tuple[int, int, int]=None, width: int=None, hashed: bool=None):
         """Dessine la ligne"""
-        pygame
+        if not isinstance(surface, pygame.Surface): _raise_error(self, 'draw', 'Invalid surface argument')
+        if x_min is not None and not isinstance(x_min, int): _raise_error(self, 'draw', 'Invalid x_min argument')

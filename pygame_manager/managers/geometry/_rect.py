@@ -9,38 +9,24 @@ Sequence = (tuple, list, np.ndarray)
 # ======================================== OBJET ========================================
 class RectObject:
     """
-    Object géométrique : Rectangle
+    Object géométrique 2D : Rectangle
     """
-    def __init__(self, O: PointObject | Iterable[numbers.Real], u: VectorObject | Iterable[numbers.Real], v: VectorObject | Iterable[numbers.Real]):
+    __slots__ = ["_O", "_w", "_h", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around", "_border_radius"
+                , "_border_topleft_radius", "_border_topright_radius", "_border_bottomleft_radius", "_border_bottomright_radius"]
+    def __init__(self, point: PointObject, width: numbers.Real, height: numbers.Real):
         # point
-        if not isinstance(O, PointObject):
-            if not isinstance(O, Sequence):
-                _raise_error(self, '__init__', 'Invalid O point argument')
-            if any(not isinstance(c, numbers.Real) for c in O):
-                _raise_error(self, '__init__', 'Invalid O point coordinates')
-            O = PointObject(*map(float, O))
-        
-        # vecteur u
-        if not isinstance(u, VectorObject):
-            if not isinstance(u, Sequence):
-                _raise_error(self, '__init__', 'Invalid u vector argument')
-            if any(not isinstance(c, numbers.Real) for c in u):
-                _raise_error(self, '__init__', 'Invalid u vector coordinates')
-            u = VectorObject(*map(float, u))
-        
-        # vecteur v
-        if not isinstance(v, VectorObject):
-            if not isinstance(v, Sequence):
-                _raise_error(self, '__init__', 'Invalid v vector argument')
-            if any(not isinstance(c, numbers.Real) for c in v):
-                _raise_error(self, '__init__', 'Invalid v vector coordinates')
-            v = VectorObject(*map(float, v))
+        self._O = _to_point(point)
+        self._O.reshape(2)
 
-        # égalisation des dimensions
-        self._O, self._u, self._v = O.equalized_with_vectors(u, v)
+        # vecteur horizontal
+        if not isinstance(width, numbers.Real) or width <= 0:
+            _raise_error(self, '__init__', 'Invalid width argument')
+        self._w = VectorObject(width, 0)
 
-        # vérification de l'orthogonalité
-        if not self._u.is_orthogonal(self._v)
+        # vecteur vertical
+        if not isinstance(height, numbers.Real) or height <= 0:
+            _raise_error(self, '__init__', 'Invalid height argument')
+        self._h = VectorObject(height, 0)
 
         # remplissage
         self._filling = True
@@ -50,6 +36,7 @@ class RectObject:
         self._border = True
         self._border_color = (0, 0, 0)
         self._border_width = 2
+        self._border_around = False
 
         # forme
         self._border_radius = -1
@@ -58,16 +45,10 @@ class RectObject:
         self._border_bottomleft_radius = -1
         self._border_bottomright_radius = -1
 
-    # ======================================== METHODES FONCTIONNELLES ========================================
-    def _raise_error(self, method: str, text: str):
-        """
-        Lève une erreur
-        """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
-    
+    # ======================================== METHODES FONCTIONNELLES ========================================  
     def __repr__(self) -> str:
         """Représentation du rect"""
-        return f"Rect(P{self._P.to_tuple()}, w : {self._w.to_tuple()}, h : {self._h.to_tuple()})"
+        return f"Rect({self.x}, {self.y}, {self.width}, {self.height})"
     
     def __iter__(self) -> Iterator[float]:
         """Itération sur les sommets"""
@@ -78,35 +59,98 @@ class RectObject:
         return hash(self.to_tuple())
     
     # ======================================== GETTERS ========================================
+    # pygame
     @property
     def rect(self) -> pygame.Rect:
         """Renvoie l'objet pygame.Rect"""
         return pygame.Rect(self.x, self.y, self.width, self.height)
     
+    # position    
+    def get_pos(self) -> tuple[float]:
+        """Renvoie la position"""
+        return self.x, self.y
+    
     @property
     def x(self) -> float:
         """Renvoie la coordonnée x"""
-        return min(self._P.x, self._P.x + self._w.x)
+        return self._O.x
     
     @property
     def y(self) -> float:
         """Renvoie la coordonnée y"""
-        return min(self._P.y, self._P.y + self._h.y)
+        return self._O.y
     
+    @property
+    def topleft(self) -> tuple[float]:
+        """Renvoie les coordonnées du point haut gauche"""
+        return self.x, self.y
+    
+    @property
+    def top(self) -> float:
+        """Renvoie la coordonnée du haut"""
+        return self.y
+    
+    @property
+    def topright(self) -> tuple[float]:
+        """Renvoie les coordonnées du point haut droit"""
+        return self.x + self.width, self.y
+    
+    @property
+    def right(self) -> float:
+        """Renvoie la coordonnée de la droite"""
+        return self.x + self.width
+    
+    @property
+    def bottomright(self) -> tuple[float]:
+        """Renvoie les coordonnées du point haut gauche"""
+        return self.x + self.width, self.y + self.height
+    
+    @property
+    def bottom(self) -> float:
+        """Renvoie la coordonnée du bas"""
+        return self.y + self.height
+    
+    @property
+    def bottomleft(self) -> tuple[float]:
+        """Renvoie les coordonnées du point bas gauche"""
+        return self.x, self.y + self.height
+    
+    @property
+    def left(self) -> float:
+        """Renvoie la coordonnée de la gauche"""
+        return self.x
+    
+    @property
+    def center(self) -> tuple[float]:
+        """Renvoie les coordonnées du centre"""
+        return self.x + self.width / 2, self.y + self.height / 2
+    
+    @property
+    def centerx(self) -> float:
+        """Renvoie la coordonnée x du center"""
+        return self.x + self.width / 2
+
+    @property
+    def centery(self) -> float:
+        """Renvoie la coordonnée y du centre"""
+        return self.y + self.height / 2
+
+    # taille
     def get_size(self) -> tuple[float]:
         """Renvoie les dimensions du rect"""
-        return self._width, self._height
+        return self.width, self.height
     
     @property
     def width(self) -> float:
         """Renvoie la largeur"""
-        return self._width
+        return self._w.norm
     
     @property
     def height(self) -> float:
         """Renvoie la hauteur"""
-        return self._height
+        return self._h.norm
     
+    # paramètres d'affichage
     @property
     def filling(self) -> bool:
         """Vérifie le remplissage"""
@@ -123,14 +167,19 @@ class RectObject:
         return self._border
     
     @property
-    def border_color(self):
+    def border_color(self) -> tuple[int, int, int]:
         """Renvoie la couleur de la bordure"""
         return self._border_color
     
     @property
-    def border_width(self):
+    def border_width(self) -> int:
         """Renvoie l'épaisseur de la bordure"""
         return self._border_width
+    
+    @property
+    def border_around(self) -> bool:
+        """Vérifie que la bordure soit autour du rect"""
+        return self._border_around
     
     @property
     def border_radius(self) -> int:
@@ -158,34 +207,104 @@ class RectObject:
         return self._border_bottomright_radius
 
     # ======================================== SETTERS ========================================
+    # position
     @x.setter
     def x(self, coordinate: numbers.Real):
         """Fixe la coordonnée x"""
         if not isinstance(coordinate, numbers.Real):
             _raise_error(self, 'set_x', 'Invalid coordinate argument')
-        self._x = float(coordinate)
+        self._O.x = float(coordinate)
     
     @y.setter
     def y(self, coordinate: numbers.Real):
         """Fixe la coordonnée y"""
         if not isinstance(coordinate, numbers.Real):
             _raise_error(self, 'set_y', 'Invalid coordinate argument')
-        self._y = float(coordinate)
+        self._O.y = float(coordinate)
 
+    @topleft.setter
+    def topleft(self, point: PointObject):
+        """Fixe les coordonnées du coin haut gauche"""
+        self._O = _to_point(point)
+
+    @top.setter
+    def top(self, coordinate: numbers.Real):
+        """Fixe la coordonnée du haut"""
+        if not isinstance(coordinate, numbers.Real):
+            _raise_error(self, 'set_top', 'Invalid coordinate argument')
+        self._O.y = float(coordinate)
+
+    @topright.setter
+    def topright(self, point: PointObject):
+        """Fixe les coordonnées du coin haut droit"""
+        self._O = _to_point(point) - self._w
+    
+    @right.setter
+    def right(self, coordinate: numbers.Real):
+        """Fixe la coordonnée de la droite"""
+        if not isinstance(coordinate, numbers.Real):
+            _raise_error(self, 'set_right', 'Invalid coordinate argument')
+        self._O.x = float(coordinate) - self.width
+
+    @bottomright.setter
+    def bottomright(self, point: PointObject):
+        """Fixe les coordonnées du coin bas droit"""
+        self._O = _to_point(point) - self._w - self._h
+    
+    @bottom.setter
+    def bottom(self, coordinate: numbers.Real):
+        """Fixe la coordonnée du bas"""
+        if not isinstance(coordinate, numbers.Real):
+            _raise_error(self, 'set_bottom', 'Invalid coordinate argument')
+        self._O.y = float(coordinate) - self.height
+    
+    @bottomleft.setter
+    def bottomleft(self, point: PointObject):
+        """Fixe les coordonnées du coin bas gauche"""
+        self._O = _to_point(point) - self._h
+
+    @left.setter
+    def left(self, coordinate: numbers.Real):
+        """Fixe la coordonnée de la gauche"""
+        if not isinstance(coordinate, numbers.Real):
+            _raise_error(self, 'set_left', 'Invalid coordinate argument')
+        self._O.x = float(coordinate)
+    
+    @center.setter
+    def center(self, point: PointObject):
+        """Fixe les coordonnées du centre"""
+        self._O = _to_point(point) - 0.5 * (self._h + self._w)
+
+    @centerx.setter
+    def centerx(self, coordinate: numbers.Real):
+        """Fixe la coordonnée x du centre"""
+        if not isinstance(coordinate, numbers.Real):
+            _raise_error(self, 'set_centerx', 'Invalid coordinate argument')
+        self._O.x = float(coordinate) - 0.5 * self.width
+    
+    @centery.setter
+    def centery(self, coordinate: numbers.Real):
+        """Fixe la coordonnée x du centre"""
+        if not isinstance(coordinate, numbers.Real):
+            _raise_error(self, 'set_centery', 'Invalid coordinate argument')
+        self._O.y = float(coordinate) - 0.5 * self.height
+    
+    # taille
     @width.setter
     def width(self, width: numbers.Real):
         """Fixe la largeur"""
-        if not isinstance(width, numbers.Real):
+        if not isinstance(width, numbers.Real) or width <= 0:
             _raise_error(self, 'set_width', 'Invalid width argument')
-        self._width = float(width)
+        self._w.set_norm(width)
 
     @height.setter
     def height(self, height: numbers.Real):
         """Fixe la hauteur"""
         if not isinstance(height, numbers.Real):
             _raise_error(self, 'set_height', 'Invalid height argument')
-        self._height = float(height)
+        self._h.set_norm(height)
 
+    # paramètres d'affichage
     @filling.setter
     def filling(self, value: bool):
         """Active ou non le remplissage"""
@@ -196,7 +315,7 @@ class RectObject:
     @color.setter
     def color(self, color: tuple[int, int, int]):
         """fixe la couleur"""
-        if not isinstance(color, (tuple, list)) or any(not isinstance(c, int) for c in color):
+        if not isinstance(color, tuple) or len(color) != 3 or any(not isinstance(c, int) for c in color):
             _raise_error(self, 'set_color', 'Invalid color argument')
         self._color = color
 
@@ -210,7 +329,7 @@ class RectObject:
     @border_color.setter
     def border_color(self, color: tuple[int, int, int]):
         """Fixe la couleur de la bordure"""
-        if not isinstance(color, (tuple, list)) or any(not isinstance(c, int) for c in color):
+        if not isinstance(color, tuple) or len(color) != 3 or any(not isinstance(c, int) for c in color):
             _raise_error(self, 'set_border_color', 'Invalid color argument')
         self._border_color = color
 
@@ -220,6 +339,13 @@ class RectObject:
         if not isinstance(width, int):
             _raise_error(self, 'set_border_width', 'Invalid width argument')
         self._border_width = width
+
+    @border_around.setter
+    def border_around(self, value: bool):
+        """Active ou non la bordure à l'extérieur du rect"""
+        if not isinstance(value, bool):
+            _raise_error(self, 'set_border_around', 'Invalid value argument')
+        self._border_around = value
 
     @border_radius.setter
     def border_radius(self, radius: int):
@@ -259,45 +385,96 @@ class RectObject:
     # ======================================== OPERATIONS ========================================
     def __add__(self, vector: VectorObject) -> RectObject:
         """renvoie l'image du rect par le vecteur donné"""
+        if not isinstance(vector, VectorObject): return NotImplemented
+        return self.translate(vector)
+    
+    def __radd__(self, vector: VectorObject) -> RectObject:
+        """renvoie l'image du rect par le vecteur donné"""
+        if not isinstance(vector, VectorObject): return NotImplemented
+        return self.translate(vector)
+    
+    def __sub__(self, vector: VectorObject) -> RectObject:
+        """renvoie l'image du rect par l'opposé du vecteur donné"""
+        if not isinstance(vector, VectorObject): return NotImplemented
+        return self.translate(vector)
+
+    def __rsub__(self, vector: VectorObject) -> RectObject:
+        """renvoie l'image du rect par l'opposé du vecteur donné"""
+        if not isinstance(vector, VectorObject): return NotImplemented
         return self.translate(vector)
 
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self) -> RectObject:
-        """Renvoie une copie du rect"""
-        new_rect = self.__class__.__new__(self.__class__)
-        new_rect.__dict__ = dict(filter(lambda k: k != '_rect', self.__dict__.copy()))
-        new_rect.__init__(rect=self._rect, _copy=True)
-        return new_rect
-    
+        """
+        Renvoie une copie du rect
+        """
+        return deepcopy(self)
+
     def to_tuple(self) -> tuple[float]:
-        """Renvoie les propriétés dans un tuple"""
-        return tuple(self.x, self.y, self.width, self.height)
+        """
+        Renvoie les propriétés dans un tuple
+        """
+        return (self.x, self.y, self.width, self.height)
 
     def to_list(self) -> list[float]:
-        """Renvoie les propriétés dans une liste"""
-        return list(self.x, self.y, self.width, self.height)
+        """
+        Renvoie les propriétés dans une liste
+        """
+        return [self.x, self.y, self.width, self.height]
     
     def translate(self, vector: VectorObject):
-        """Renvoie l'image du rect par le vecteur donné"""
-        u = vector.copy().reshape[2]
-        self.x += u.x
-        self.y += u.y
+        """
+        Renvoie l'image du rect par le vecteur donné
+
+        Args:
+            vector (VectorObject) : vecteur de translation
+        """
+        vector = _to_vector(vector)
+        self.x += vector.x
+        self.y += vector.y
 
     # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface):
-        """Dessine le rect sur une surface donnée"""
-        if not isinstance(surface, pygame.Surface):
-            _raise_error(self, 'draw', 'Invalid surface argument')
+    def draw(self, surface: pygame.Surface, filling: bool=None, color: tuple[int, int, int]=None, border: bool=None, border_width: int=None, border_color: tuple[int, int, int]=None):
+        """
+        Dessine le rect sur une surface donnée
+        Par défaut les paramètres sont ceux définis pour le RectObject en question
+
+        Args:
+            surface (pygame.Surface) : surface de dessin
+            filling (bool, optional) : remplissage
+            color (tuple[int, int, int], optional) : couleur de remplissage
+            border (bool, optional) : bordure
+            border_width (int, optional) : épaisseur de la bordure
+            border_color (tuple[int, int, int], optional) : couleur de la bordure
+        """
+        if not isinstance(surface, pygame.Surface): _raise_error(self, 'draw', 'Invalid surface argument')
+        if filling is not None and not isinstance(filling, bool): _raise_error(self, 'draw', 'Invalid filling argument')
+        if color is not None and (not isinstance(color, Sequence) or not all(isinstance(c, int) for c in color)): _raise_error(self, 'draw', 'Invalid color argument')
+        if border is not None and not isinstance(border, bool): _raise_error(self, 'draw', 'Invalid border argument')
+        if border_width is not None and not isinstance(border_width, bool): _raise_error(self, 'draw', 'Invalid border_width argument')
+        if border_color is not None and (not isinstance(border_color, Sequence) or not all(isinstance(c, int) for c in border_color)): _raise_error(self, 'draw', 'Invalid border_color argument')
         
-        # paramètres
-        color = self._color
-        rect = self._rect
-        border_width = self._border_width if self._border else 0
+        # paramètres d'affichage
+        rect = self.rect
+        filling = self._filling if filling is None else filling
+        color = self._color if color is None else color
+        border = self._border if border is None else border
+        border_width = self._border_width if border_width is None else border_width
+        border_color = self._border_color if border_color is None else border_color
+        border_around = self._border_around
         border_radius = self._border_radius
         border_topleft_radius = self._border_topleft_radius
         border_topright_radius = self._border_topright_radius
         border_bottomleft_radius = self._border_bottomleft_radius
         border_bottomright_radius = self._border_bottomright_radius
 
-        # dessin
-        pygame.draw.rect(surface, color, rect, border_width, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)
+        # remplissage
+        if filling:
+            pygame.draw.rect(surface, color, rect, 0, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)
+        
+        # bordure
+        if border_around:
+            rect_around = pygame.Rect(rect.left - border_width, rect.top - border_width, rect.width + 2 * border_width, rect.height + 2 * border_width)
+            pygame.draw.rect(surface, border_color, rect_around, border_width, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)
+        else:
+            pygame.draw.rect(surface, border_color, rect, border_width, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)

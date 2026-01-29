@@ -14,7 +14,7 @@ from typing import (
 
 # ======================================== OBJETS ========================================
 from _vector import VectorObject, _to_vector
-from _point import PointObject
+from _point import PointObject, _to_point
 
 # ======================================== EXPORTS ========================================
 __all__ = [
@@ -27,5 +27,7 @@ __all__ = [
     "Self",
     "Tuple",
     "VectorObject",
+    "_to_vector",
     "PointObject",
+    "_to_point",
 ]

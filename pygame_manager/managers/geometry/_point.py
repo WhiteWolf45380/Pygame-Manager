@@ -7,15 +7,15 @@ from _core.utils import *
 def _to_point(point: PointObject | Iterable[numbers.Real], fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument'):
     """tente de convertir si besoin l'objet en Point"""
     if isinstance(point, PointObject):
-        return point
+        return point.copy()
     if isinstance(point, Sequence) and all(isinstance(c, numbers.Real) for c in point):
         return PointObject(*point)
-    return fallback if fallback is not None else _raise_error(method, message) if raised else None
+    return fallback if fallback is not None else _raise_error(PointObject, method, message) if raised else None
 
 # ======================================== OBJET ========================================
 class PointObject:
     """
-    Object géométrique : Point
+    Object géométrique nD : Point
     """
     __slots__ = ["_pos"]
     PRECISION = 9
@@ -26,11 +26,6 @@ class PointObject:
             if len(coos) == 1 and isinstance(coos[0], Sequence): coos = coos[0]
             else: _raise_error(self, '__init__', 'Invalid coos arguments')
         self._pos = [round(c, self.PRECISION) for c in list(map(float, coos))]
-    
-    # ======================================== METHODES FONCTIONNELLES ========================================
-    def _raise_error(self, method: str, text: str):
-        """Lève une erreur"""
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
     
     def __repr__(self) -> str:
         """Représentation du point"""
@@ -78,10 +73,8 @@ class PointObject:
     # ======================================== SETTERS ========================================
     def __setitem__(self, i: int, x: numbers.Real):
         """Fixe la coordonnée de rang i du point"""
-        if not isinstance(i, int):
-            _raise_error(self, '__setitem__', 'Invalid index argument')
-        if not isinstance(x, numbers.Real):
-            _raise_error(self, '__setitem__', 'Invalid coordinate argument')
+        if not isinstance(i, int): _raise_error(self, '__setitem__', 'Invalid index argument')
+        if not isinstance(x, numbers.Real): _raise_error(self, '__setitem__', 'Invalid coordinate argument')
         self.reshape(-i)
         self._pos[i] = round(float(x), self.PRECISION)
 
@@ -103,11 +96,15 @@ class PointObject:
     # ======================================== OPERATIONS ========================================
     def __add__(self, vector: VectorObject) -> PointObject:
         """Renvoie l'image du point par le vecteur donné"""
-        return self.translate(vector)
+        return self.translate(_to_vector(vector, fallback=NotImplemented))
 
-    def __sub__(self, point: PointObject) -> VectorObject:
+    def __sub__(self, vector: VectorObject) -> PointObject:
         """Renvoie le vecteur Self -> point"""
-        return point.vector_to(self)
+        return self.translate(_to_vector(vector, fallback=NotImplemented))
+    
+    def __rsub__(self, point: PointObject) -> VectorObject:
+        """Renvoie le vecteur Self -> point"""
+        return self.vector_to(_to_point(point, fallback=NotImplemented))
 
     def __pos__(self) -> PointObject:
         """Copie"""
@@ -120,15 +117,13 @@ class PointObject:
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, point: PointObject) -> bool:
         """Vérifie la correspondance de deux points"""
-        if not isinstance(point, PointObject):
-            return False
+        point = _to_point(point, raised=False, method='__eq__')
+        if point is None: return False
         A, B = self.equalized(point)
-        return (A[i] == B[i] for i in range(A.dim))
+        return all(A[i] == B[i] for i in range(A.dim))
     
     def __ne__(self, point: PointObject) -> bool:
         """Vérifie la non correspondance de deux points"""
-        if not isinstance(point, PointObject):
-            return True
         return not self == point
     
     def __contains__(self, n: numbers.Real) -> bool:
@@ -146,22 +141,19 @@ class PointObject:
     
     def __bool__(self) -> bool:
         """
-        Vérifie que le vecteur ne soit pas l'origine du repère
+        Vérifie que le point soit valide
         """
-        return not self.is_origin()
+        return True
     
     def is_aligned(self, *points: PointObject) -> bool:
         """
         Vérifie que les points soient alignés
         """
-        if any(not isinstance(p, PointObject) for p in points):
-            if len(points) == 1 and isinstance(points[0], Sequence): return self.is_aligned(*points[0])
-            _raise_error(self, 'aligned', 'Invalid points arguments')
-        if len(points) < 2:
-            return True
+        points = list(map(_to_point, points))
+        if len(points) < 2: return True
         all_points = self.equalized(*points)
         vector0 = all_points[1] - all_points[0]
-        if vector0.is_null():
+        if not vector0:
             return all((p - all_points[0]).is_null() for p in all_points[2:])
         return all(vector0.is_collinear(p - all_points[0]) for p in all_points[2:])
     
@@ -205,14 +197,14 @@ class PointObject:
         """
         if not isinstance(dim, int):
             _raise_error(self, 'reshape', 'Invalid dimension argument')
-        if dim == 0:            # réduction automatique
+        if dim == 0:    # réduction automatique
             last_nonzero = next((i for i in reversed(range(len(self._pos))) if self._pos[i] != 0), None)
             self._pos = self._pos[:last_nonzero + 1] if last_nonzero is not None else [0.0]
-        elif dim < 0:           # au moins dim
+        elif dim < 0:   # au moins dim
             if self.dim < abs(dim): self.reshape(abs(dim))
         elif dim <= self.dim:   # réduction strictement à dim
             self._pos = self._pos[:dim]
-        else:                   # augmentation strictement à dim
+        else:           # augmentation strictement à dim
             self._pos.extend([0] * (dim - len(self._pos)))
 
     def equalized(self, *points: PointObject) -> Tuple[Self, *tuple[PointObject]]:
@@ -222,11 +214,8 @@ class PointObject:
         Args:
             points (tuple[PointObject]) : ensemble des points à mettre sur la même dimension
         """
-        if any(not isinstance(p, PointObject) for p in points):
-            if len(points) == 1 and isinstance(points[0], Sequence): return self.equalized(*points[0])
-            _raise_error(self, 'equalized', 'Invalid points arguments')
-        if self not in points:
-            points = (self, *points)
+        points = list(map(_to_point, points))
+        if self not in points: points = (self, *points)
         dim = max(points, key=lambda p: p.dim).dim
         equalized_points = []
         for point in points:
@@ -242,8 +231,7 @@ class PointObject:
         Args:
             vectors (tuple[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
         """
-        if any(not isinstance(v, VectorObject) for v in vectors):
-            _raise_error(self, 'equalized_with_vectors', 'Invalid vectors objects')
+        vectors = list(map(_to_vector, vectors))
         vectors = (self, *vectors)
         dim = max(vectors, key=lambda v: v.dim).dim
         equalized_vectors = []
@@ -260,8 +248,7 @@ class PointObject:
         Args:
             other (PointObject) : second point
         """
-        if not isinstance(point, PointObject):
-            return _raise_error(self, 'distance', 'Invalid point argument')
+        point = _to_point(point, method='distance')
         return (self - point).norm
     
     def vector_to(self, point: PointObject) -> VectorObject:
@@ -271,8 +258,7 @@ class PointObject:
         Args:
             other (PointObject) : le point d'arrivé
         """
-        if not isinstance(point, PointObject):
-            _raise_error(self, 'vector_to', 'Invalid point object')
+        point = _to_point(point, method='vector_to')
         A, B = self.equalized(point)
         return VectorObject(*(b - a for a, b in zip(A, B)))
     
@@ -283,8 +269,7 @@ class PointObject:
         Args:
             vector (VectorObject) : vecteur de translation
         """
-        if not isinstance(vector, VectorObject):
-            _raise_error(self, 'translate', 'Invalid vector argument')
+        vector = _to_vector(vector)
         A, u = self.equalized_with_vectors(vector)
         return PointObject(*tuple(A[i] + u[i] for i in range(A.dim)))
     
@@ -295,12 +280,11 @@ class PointObject:
         Args:
             other (PointObject) : second point
         """
-        if not isinstance(point, PointObject):
-            _raise_error(self, 'midpoint', 'Invalid point argument')
+        point = _to_point(point, method='midpoint')
         A, B = self.equalized(point)
         return PointObject(*((A[i] + B[i]) / 2 for i in range(A.dim)))
     
-    def barycenter(self, *points: PointObject, weights: Iterable[float] = None) -> PointObject:
+    def barycenter(self, *points: PointObject, weights: Iterable[float]=None) -> PointObject:
         """
         Calcule le barycentre du point à plusieurs points
         
@@ -310,9 +294,7 @@ class PointObject:
         """
         if not points:
             return self.copy()       
-        if any(not isinstance(p, PointObject) for p in points):
-            if len(points) == 1 and isinstance(points[0], Sequence): self.barycenter(*points[0], weights=weights)
-            _raise_error(self, 'barycenter', 'Invalid points arguments')
+        points = list(map(_to_point, points))
         if weights is not None and not isinstance(weights, Sequence):
             _raise_error(self, 'barycenter', 'Invalid weights argument')
         
