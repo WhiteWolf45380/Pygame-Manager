@@ -1,5 +1,5 @@
 # ======================================== OBJET ========================================
-from _core.utils import *
+from ._core import *
 from ._vector import VectorObject
 from ._point import PointObject
 from ._segment import SegmentObject

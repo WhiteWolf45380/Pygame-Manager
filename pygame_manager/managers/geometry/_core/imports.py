@@ -15,10 +15,6 @@ from typing import (
     Tuple,
 )
 
-# ======================================== OBJETS ========================================
-from _vector import VectorObject, _to_vector
-from _point import PointObject, _to_point
-
 # ======================================== EXPORTS ========================================
 __all__ = [
     "np",
@@ -29,8 +25,6 @@ __all__ = [
     "Iterator",
     "Self",
     "Tuple",
-    "VectorObject",
     "_to_vector",
-    "PointObject",
     "_to_point",
 ]

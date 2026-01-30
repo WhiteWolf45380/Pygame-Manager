@@ -1,5 +1,5 @@
-from imports import *
-from utils import *
+from .imports import *
+from .utils import *
 
 __all__ = [
     "np",
@@ -10,9 +10,7 @@ __all__ = [
     "Iterator",
     "Self",
     "Tuple",
-    "VectorObject",
     "_to_vector",
-    "PointObject",
     "_to_point",
 
     "Sequence",

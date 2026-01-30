@@ -1,14 +1,14 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
-from _core import *
+from ._core import *
 
 # Lazy imports
 def _lazy_import_point():
-    from _point import PointObject, _to_point
+    from ._point import PointObject, _to_point
     return PointObject, _to_point
 
 def _lazy_import_vector():
-    from _vector import VectorObject, _to_vector
+    from ._vector import VectorObject, _to_vector
     return VectorObject, _to_vector
 
 # ======================================== OBJET ========================================
@@ -317,7 +317,6 @@ class LineObject:
         Args:
             t (float) : paramètre d'avancement sur la droite
         """
-        from _core.imports import Real
         if not isinstance(t, Real): 
             _raise_error(self, "point", "Invalid t argument")
         return self._origin + self._vector * float(t)

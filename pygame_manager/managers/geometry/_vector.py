@@ -1,6 +1,6 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
-from _core import *
+from ._core import *
 
 # ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
 def _to_vector(vector: VectorObject | Iterable[Real], fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument') -> VectorObject | object | None:

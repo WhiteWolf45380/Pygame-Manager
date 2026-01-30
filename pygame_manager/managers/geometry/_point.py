@@ -1,10 +1,10 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
-from _core import *
+from ._core import *
 
 # Import lazy pour éviter les dépendances circulaires
 def _lazy_import_vector():
-    from _vector import VectorObject, _to_vector
+    from ._vector import VectorObject, _to_vector
     return VectorObject, _to_vector
 
 # ======================================== TRANSFORMATION INTERMEDIAIRE ========================================

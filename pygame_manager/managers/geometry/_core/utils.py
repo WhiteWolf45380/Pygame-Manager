@@ -1,5 +1,5 @@
 # ======================================== IMPORTS ========================================
-from _core.imports import np, pygame, Iterable
+from .imports import np, pygame, Iterable
 
 # ======================================== FAMILLES DE TYPES ========================================
 Sequence = (tuple, list, np.ndarray)
