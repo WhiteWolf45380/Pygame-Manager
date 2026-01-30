@@ -10,8 +10,6 @@ __all__ = [
     "Iterator",
     "Self",
     "Tuple",
-    "_to_vector",
-    "_to_point",
 
     "Sequence",
     "_raise_error",
