@@ -19,7 +19,7 @@ class StatesManager:
         self.__active_states = {}
 
         # super-classe
-        self.State = State
+        self.State = StateObject
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def __repr__(self):
