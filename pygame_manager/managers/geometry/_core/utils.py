@@ -66,7 +66,7 @@ def _deepcopy(obj: object, memo=None) -> object:
 
     return new_obj
 
-def _to_color(color: pygame.Color | Iterable[int, int, int], fallback: object=None, raised: bool=None, method: str='_to_color', message: str='Invalid color argument') -> pygame.Color:
+def _to_color(color: pygame.Color | Iterable[int], fallback: object=None, raised: bool=None, method: str='_to_color', message: str='Invalid color argument') -> pygame.Color:
     """Transforme en couleur pygame si besoin l'est"""
     if isinstance(color, pygame.Color):
         return color
