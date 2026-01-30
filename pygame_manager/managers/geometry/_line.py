@@ -6,7 +6,7 @@ class LineObject:
     """
     Object géométrique nD : Droite
     """
-    __slots__ = ["_origin", "_vector", "_color", "_width", "_ashed"]
+    __slots__ = ["_origin", "_vector", "_color", "_width", "_dashed"]
     def __init__(self, point: PointObject, vector: VectorObject):
         # représentation paramétrique
         point = _to_point(point)
@@ -18,7 +18,9 @@ class LineObject:
         # paramètres d'affichage
         self._color = (0, 0, 0)
         self._width = 1
-        self._ashed = False
+        self._dashed = False
+        self._dash = 10
+        self._gap = 6
     
     def __repr__(self) -> str:
         """Représentation de la droite"""
@@ -85,9 +87,19 @@ class LineObject:
         return self._width
     
     @property
-    def ashed(self) -> bool:
+    def dashed(self) -> bool:
         """Vérifie si l'affichage de la droite est segmenté"""
-        return self._ashed
+        return self._dashed
+    
+    @property
+    def dash(self) -> int:
+        """Renvoie la longueur des segments"""
+        return self._dash
+    
+    @property
+    def gap(self) -> int:
+        """Renvoie la longueur des espaces inter-segments"""
+        return self._gap
 
     # ======================================== SETTERS ========================================
     def set_origin(self, point: PointObject):
@@ -104,23 +116,30 @@ class LineObject:
     @color.setter
     def color(self, color: tuple[int, int, int]):
         """Fixe la couleur d'affichage"""
-        if not isinstance(color, tuple) or len(color) != 3 or not all(isinstance(c, int) for c in color):
+        if not isinstance(color, tuple) or len(color) != 3 or any(not isinstance(c, int) or c < 0 for c in color):
             _raise_error(self, 'set_color', 'Invalid color argument')
         self._color = color
 
     @width.setter
     def width(self, width: int):
         """Fixe la largeur d'affichage"""
-        if not isinstance(width, int):
+        if not isinstance(width, int) or width <= 0:
             _raise_error(self, 'set_width', 'Invalid width argument')
         self._width = width
 
-    @ashed.setter
-    def ashed(self, value: bool):
+    @dashed.setter
+    def dashed(self, value: bool):
         """Active ou non l'affichage segmenté"""
         if not isinstance(value, bool):
-            _raise_error(self, 'set_ashed', 'invalid value argument')
-        self._ashed = value
+            _raise_error(self, 'set_dashed', 'Invalid value argument')
+        self._dashed = value
+
+    @dash.setter
+    def dash(self, length: int):
+        """Fixe la longueur des segments"""
+        if not isinstance(length, int) or length <= 0:
+            _raise_error(self, 'set_dash', 'Invalid length argument')
+        self._dash = length
     
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, line: LineObject) -> bool:
@@ -186,7 +205,7 @@ class LineObject:
         Args:
             lines (tuple[LineObject]) : ensemble des droites à mettre sur la même dimension
         """
-        if not all(isinstance(d, LineObject) for d in lines): _raise_error(self, 'equalized', 'Invalid lines arguments')
+        if any(not isinstance(d, LineObject) for d in lines): _raise_error(self, 'equalized', 'Invalid lines arguments')
         if self not in lines: lines = (self, *lines)
         dim = max(lines, key=lambda l: l.dim).dim
         equalized_lines = []
@@ -203,7 +222,7 @@ class LineObject:
         Args:
             objects (tuple[PointObject|VectorObject]) : ensemble des objets géométriques à mettre sur la même dimension
         """
-        if not all(isinstance(o, (PointObject, VectorObject)) for o in objects): _raise_error(self, 'equalized_with_objects', 'Invalid objects arguments')
+        if any(not isinstance(o, (PointObject, VectorObject)) for o in objects): _raise_error(self, 'equalized_with_objects', 'Invalid objects arguments')
         objects = (self, *objects)
         dim = max(objects, key=lambda o: o.dim).dim
         equalized_objects = []
@@ -308,7 +327,92 @@ class LineObject:
         self._origin = self._origin + vector
 
     # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, x_min: int=None, x_max: int=None, y_min: int=None, y_max: int=None, color: tuple[int, int, int]=None, width: int=None, hashed: bool=None):
+    def draw(self, surface: pygame.Surface, x_min: numbers.Real=None, x_max: numbers.Real=None, y_min: numbers.Real=None, y_max: numbers.Real=None, color: tuple[int, int, int]=None, width: int=None, dashed: bool=None, dash: int=None, gap: int=None):
         """Dessine la ligne"""
         if not isinstance(surface, pygame.Surface): _raise_error(self, 'draw', 'Invalid surface argument')
-        if x_min is not None and not isinstance(x_min, int): _raise_error(self, 'draw', 'Invalid x_min argument')
+        if x_min is not None and not isinstance(x_min, numbers.Real): _raise_error(self, 'draw', 'Invalid x_min argument')
+        if x_max is not None and not isinstance(x_max, numbers.Real): _raise_error(self, 'draw', 'Invalid x_max argument')
+        if y_min is not None and not isinstance(y_min, numbers.Real): _raise_error(self, 'draw', 'Invalid y_min argument')
+        if y_max is not None and not isinstance(y_max, numbers.Real): _raise_error(self, 'draw', 'Invalid y_max argument')
+        if color is not None and (not isinstance(color, tuple) or any(not isinstance(c, int) for c in color)): _raise_error(self, 'draw', 'Invalid color argument')
+        if width is not None and not isinstance(width, int): _raise_error(self, 'draw', 'Invalid width argument')
+        if dashed is not None and not isinstance(dashed, bool): _raise_error(self, 'draw', 'Invalid dashed argument')
+        if dash is not None and not isinstance(dash, int): _raise_error(self, 'draw', 'Invalid dash argument')
+        if gap is not None and not isinstance(gap, int): _raise_error(self, 'draw', 'Invalid gap argument')
+
+        # paramètres d'affichage
+        x_min = 0 if x_min is None else x_min
+        x_max = surface.get_width() if x_max is None else x_max
+        y_min = 0 if y_min is None else y_min
+        y_max = surface.get_height() if y_max is None else y_max
+        color = self._color if color is None else color
+        width = self._width if width is None else width
+        dashed = self._dashed if dashed is None else dashed
+        dash = self._dash if dash is None else dash
+        gap = self._gap if gap is None else gap
+
+        borders = {
+            "left": self.intersection(LineObject((x_min, y_min), (0, 1))),
+            "top": self.intersection(LineObject((x_min, y_min), (1, 0))),
+            "right": self.intersection(LineObject((x_max, y_max), (0, 1))),
+            "bottom": self.intersection(LineObject((x_max, y_max), (1, 0)))
+        }
+
+        points = []
+        for border in borders:
+            p = self.intersection(border)
+            if p is None:
+                continue
+            x, y = p.to_tuple()
+            if x_min <= x <= x_max and y_min <= y <= y_max:
+                points.append((x, y))
+
+        points = list(dict.fromkeys(points))
+        if len(points) < 2:
+            return
+
+        start_pos, end_pos = points[0], points[1]
+        
+
+        if dashed:
+            self._draw_dashed_line(surface, color, start_pos, end_pos, width, dash, gap)
+        elif width == 1:
+            pygame.draw.aaline(surface, color, start_pos, end_pos)
+        else:
+            pygame.draw.line(surface, color, start_pos, end_pos, width)
+
+
+    def _draw_dashed_line(self, surface: pygame.Surface, color: tuple[int, int, int], start: tuple[float, float], end: tuple[float, float], width: int, dash: int, gap: int):
+        x1, y1 = start
+        x2, y2 = end
+
+        dx = x2 - x1
+        dy = y2 - y1
+        length = math.hypot(dx, dy)
+
+        if length == 0:
+            return
+
+        ux = dx / length
+        uy = dy / length
+
+        pos = 0
+        draw = True
+
+        while pos < length:
+            seg_len = dash if draw else gap
+            seg_len = min(seg_len, length - pos)
+
+            if draw:
+                sx = x1 + ux * pos
+                sy = y1 + uy * pos
+                ex = x1 + ux * (pos + seg_len)
+                ey = y1 + uy * (pos + seg_len)
+
+                if width == 1:
+                    pygame.draw.aaline(surface, color, (sx, sy), (ex, ey))
+                else:
+                    pygame.draw.line(surface, color, (sx, sy), (ex, ey), width)
+
+            pos += seg_len
+            draw = not draw

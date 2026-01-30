@@ -300,7 +300,7 @@ class RectObject:
     @height.setter
     def height(self, height: numbers.Real):
         """Fixe la hauteur"""
-        if not isinstance(height, numbers.Real):
+        if not isinstance(height, numbers.Real) or height <= 0:
             _raise_error(self, 'set_height', 'Invalid height argument')
         self._h.set_norm(height)
 
@@ -315,7 +315,7 @@ class RectObject:
     @color.setter
     def color(self, color: tuple[int, int, int]):
         """fixe la couleur"""
-        if not isinstance(color, tuple) or len(color) != 3 or any(not isinstance(c, int) for c in color):
+        if not isinstance(color, tuple) or len(color) != 3 or any(not isinstance(c, int) or c < 0 for c in color):
             _raise_error(self, 'set_color', 'Invalid color argument')
         self._color = color
 
@@ -449,10 +449,10 @@ class RectObject:
         """
         if not isinstance(surface, pygame.Surface): _raise_error(self, 'draw', 'Invalid surface argument')
         if filling is not None and not isinstance(filling, bool): _raise_error(self, 'draw', 'Invalid filling argument')
-        if color is not None and (not isinstance(color, Sequence) or not all(isinstance(c, int) for c in color)): _raise_error(self, 'draw', 'Invalid color argument')
+        if color is not None and (not isinstance(color, Sequence) or any(not isinstance(c, int) for c in color)): _raise_error(self, 'draw', 'Invalid color argument')
         if border is not None and not isinstance(border, bool): _raise_error(self, 'draw', 'Invalid border argument')
         if border_width is not None and not isinstance(border_width, bool): _raise_error(self, 'draw', 'Invalid border_width argument')
-        if border_color is not None and (not isinstance(border_color, Sequence) or not all(isinstance(c, int) for c in border_color)): _raise_error(self, 'draw', 'Invalid border_color argument')
+        if border_color is not None and (not isinstance(border_color, Sequence) or any(not isinstance(c, int) for c in border_color)): _raise_error(self, 'draw', 'Invalid border_color argument')
         
         # paramètres d'affichage
         rect = self.rect
