@@ -2,9 +2,10 @@
 from _core.utils import *
 from ._vector import VectorObject
 from ._point import PointObject
+from ._segment import SegmentObject
 from ._line import LineObject
-from ._rect import RectObject
 from ._circle import CircleObject
+from ._rect import RectObject
 from ._polygon import PolygonObject
 
 # ======================================== GESTIONNAIRE ========================================
@@ -18,9 +19,10 @@ class GeometryManager:
     def __init__(self):
         self.Vector = VectorObject
         self.Point = PointObject
+        self.Segment = SegmentObject
         self.Line = LineObject
-        self.Rect = RectObject
         self.Circle = CircleObject
+        self.Rect = RectObject
         self.Polygon = PolygonObject
     
     # ======================================== GENERATIONS PARTICULIERES ========================================

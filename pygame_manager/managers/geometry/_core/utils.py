@@ -1,16 +1,15 @@
-# ======================================== GESTION DES ERREURS ========================================
-def _raise_error(obj: object, method: str, text: str):
-    """Lève une erreur"""
-    raise RuntimeError(f"[{obj.__class__.__name__}].{method} : {text}")
-
 # ======================================== IMPORTS ========================================
-from _core.imports import *
+from _core.imports import np, pygame, Iterable
 
 # ======================================== FAMILLES DE TYPES ========================================
 Sequence = (tuple, list, np.ndarray)
 
 # ======================================== FONCTIONS UTILES ========================================
-def deepcopy(obj: object, memo=None) -> object:
+def _raise_error(obj: object, method: str, text: str):
+    """Lève une erreur"""
+    raise RuntimeError(f"[{obj.__class__.__name__}].{method} : {text}")
+
+def _deepcopy(obj: object, memo=None) -> object:
     """
     Renvoie une copie profonde de l'objet
 
@@ -31,22 +30,22 @@ def deepcopy(obj: object, memo=None) -> object:
 
     # built-ins mutables
     if isinstance(obj, list):
-        copied = [deepcopy(x, memo) for x in obj]
+        copied = [_deepcopy(x, memo) for x in obj]
         memo[obj_id] = copied
         return copied
 
     if isinstance(obj, tuple):
-        copied = tuple(deepcopy(x, memo) for x in obj)
+        copied = tuple(_deepcopy(x, memo) for x in obj)
         memo[obj_id] = copied
         return copied
 
     if isinstance(obj, dict):
-        copied = {deepcopy(k, memo): deepcopy(v, memo) for k, v in obj.items()}
+        copied = {_deepcopy(k, memo): _deepcopy(v, memo) for k, v in obj.items()}
         memo[obj_id] = copied
         return copied
 
     if isinstance(obj, set):
-        copied = {deepcopy(x, memo) for x in obj}
+        copied = {_deepcopy(x, memo) for x in obj}
         memo[obj_id] = copied
         return copied
 
@@ -58,18 +57,27 @@ def deepcopy(obj: object, memo=None) -> object:
     # copier les slots
     for slot in getattr(cls, '__slots__', []):
         value = getattr(obj, slot)
-        setattr(new_obj, slot, deepcopy(value, memo))
+        setattr(new_obj, slot, _deepcopy(value, memo))
 
     # copier le dict si présent
     if hasattr(obj, '__dict__'):
         for k, v in obj.__dict__.items():
-            setattr(new_obj, k, deepcopy(v, memo))
+            setattr(new_obj, k, _deepcopy(v, memo))
 
     return new_obj
 
+def _to_color(color: pygame.Color | Iterable[int, int, int], fallback: object=None, raised: bool=None, method: str='_to_color', message: str='Invalid color argument') -> pygame.Color:
+    """Transforme en couleur pygame si besoin l'est"""
+    if isinstance(color, pygame.Color):
+        return color
+    elif isinstance(color, Sequence) and len(color) in (3, 4) and any(not isinstance(c, int) or not 0 <= c <= 255 for c in color):
+        return pygame.Color(color)
+    return fallback if fallback is not None else _raise_error(pygame.Color, method, message) if raised else None
+
 # ======================================== EXPORTS ========================================
 __all__ = [
-    "_raise_error",
     "Sequence",
-    "deepcopy",
+    "_raise_error",
+    "_deepcopy",
+    "_to_color"
 ]

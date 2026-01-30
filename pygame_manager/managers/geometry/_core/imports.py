@@ -4,7 +4,10 @@ import math
 import pygame
 
 # ======================================== TYPAGE ========================================
-import numbers
+from numbers import (
+    Real,
+)
+
 from typing import (
     Iterable,
     Iterator,
@@ -21,7 +24,7 @@ __all__ = [
     "np",
     "math",
     "pygame",
-    "numbers",
+    "Real",
     "Iterable",
     "Iterator",
     "Self",

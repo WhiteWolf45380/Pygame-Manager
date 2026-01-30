@@ -1,4 +1,5 @@
-from ._point import PointObject
+from __future__ import annotations
+from _core import *
 
 
 # ======================================== OBJET ========================================

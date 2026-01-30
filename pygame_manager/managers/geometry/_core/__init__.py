@@ -5,7 +5,7 @@ __all__ = [
     "np",
     "math",
     "pygame",
-    "numbers",
+    "Real",
     "Iterable",
     "Iterator",
     "Self",
@@ -15,7 +15,8 @@ __all__ = [
     "PointObject",
     "_to_point",
 
-    "_raise_error",
     "Sequence",
-    "deepcopy"
+    "_raise_error",
+    "_deepcopy",
+    "_to_color",
 ]
