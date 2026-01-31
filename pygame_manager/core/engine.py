@@ -46,7 +46,6 @@ class Engine:
             self._raise_error("run", "update must be callable")
 
         self.__running = True
-
         while self.__running:
             self.time.tick()
 
@@ -55,6 +54,7 @@ class Engine:
                     self.__running = self.inputs.check_all()
                 update()
                 self.states.update()
+                self.ui.update()
 
             if not self.__running:
                 break

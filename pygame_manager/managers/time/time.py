@@ -1,7 +1,7 @@
 try:
     import pygame
 except ImportError:
-    raise RuntimeError("[AudioManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
+    raise RuntimeError("[TimeManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
 
 
 # ======================================== GESTIONNAIRE ========================================

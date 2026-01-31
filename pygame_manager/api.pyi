@@ -1,12 +1,13 @@
-from pygame_manager.managers.audio import AudioManager
-from pygame_manager.managers.data import DataManager
-from pygame_manager.managers.inputs import InputsManager
-from pygame_manager.managers.languages import LanguagesManager
-from pygame_manager.managers.screen import ScreenManager
-from pygame_manager.managers.settings import SettingsManager
-from pygame_manager.managers.states import StatesManager
-from pygame_manager.managers.time import TimeManager
-from pygame_manager.managers.geometry import GeometryManager
+from .managers.audio import AudioManager
+from .managers.data import DataManager
+from .managers.inputs import InputsManager
+from .managers.languages import LanguagesManager
+from .managers.screen import ScreenManager
+from .managers.settings import SettingsManager
+from .managers.states import StatesManager
+from .managers.time import TimeManager
+from .managers.geometry import GeometryManager
+from .managers.ui import UiManager
 from typing import List
 
 # === Engine lifecycle ===
@@ -24,5 +25,6 @@ settings: SettingsManager
 states: StatesManager
 time: TimeManager
 geometry: GeometryManager
+ui: UiManager
 
 __all__: List[str]

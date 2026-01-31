@@ -1,15 +1,8 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-
-# Lazy imports
-def _lazy_import_point():
-    from ._point import PointObject, _to_point
-    return PointObject, _to_point
-
-def _lazy_import_vector():
-    from ._vector import VectorObject, _to_vector
-    return VectorObject, _to_vector
+from ._point import PointObject, _to_point
+from ._vector import VectorObject, _to_vector
 
 # ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
 def _to_rect(rect, fallback: object=None, raised: bool=True, method: str='_to_rect', message: str='Invalid rect argument'):
@@ -30,22 +23,9 @@ class RectObject:
     __slots__ = ["_O", "_w", "_h", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around", "_border_radius",
                 "_border_topleft_radius", "_border_topright_radius", "_border_bottomleft_radius", "_border_bottomright_radius"]
     
-    def __init__(self, *args):
-        PointObject, _to_point = _lazy_import_point()
-        VectorObject, _ = _lazy_import_vector()
-        
-        # Gestion des arguments flexibles
-        if len(args) == 3:
-            # (point, width, height)
-            point, width, height = args
-            self._O = _to_point(point)
-        elif len(args) == 4:
-            # (x, y, width, height)
-            x, y, width, height = args
-            self._O = PointObject(x, y)
-        else:
-            _raise_error(self, '__init__', 'Invalid arguments: expected (point, width, height) or (x, y, width, height)')
-        
+    def __init__(self, point: PointObject, width: Real, height: Real):
+        # Point
+        self._O = _to_point(point)       
         self._O.reshape(2)
 
         # Dimensions
@@ -78,9 +58,8 @@ class RectObject:
         """Représentation du rect"""
         return f"Rect({self.x}, {self.y}, {self.width}, {self.height})"
     
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[PointObject]:
         """Itération sur les sommets"""
-        PointObject, _ = _lazy_import_point()
         for vertex in [
             PointObject(*self.topleft), 
             PointObject(*self.topright), 
@@ -99,7 +78,7 @@ class RectObject:
         """Renvoie l'objet pygame.Rect"""
         return pygame.Rect(*map(int, [self.x, self.y, self.width, self.height]))
     
-    def get_pos(self):
+    def get_pos(self) -> PointObject:
         """Renvoie le point positionnel"""
         return self._O.copy()
     
@@ -273,11 +252,9 @@ class RectObject:
         self._O.y = coordinate
 
     @topleft.setter
-    def topleft(self, point):
+    def topleft(self, point: PointObject):
         """Fixe les coordonnées du coin haut gauche"""
-        PointObject, _to_point = _lazy_import_point()
         self._O = _to_point(point)
-        self._O.reshape(2)
 
     @top.setter
     def top(self, coordinate: Real):
@@ -287,12 +264,9 @@ class RectObject:
         self._O.y = coordinate
 
     @topright.setter
-    def topright(self, point):
+    def topright(self, point: PointObject):
         """Fixe les coordonnées du coin haut droit"""
-        PointObject, _to_point = _lazy_import_point()
-        point = _to_point(point)
-        self._O.x = point.x - self.width
-        self._O.y = point.y
+        self._O = _to_point(point) - self._w
     
     @right.setter
     def right(self, coordinate: Real):
@@ -302,12 +276,9 @@ class RectObject:
         self._O.x = coordinate - self.width
 
     @bottomright.setter
-    def bottomright(self, point):
+    def bottomright(self, point: PointObject):
         """Fixe les coordonnées du coin bas droit"""
-        PointObject, _to_point = _lazy_import_point()
-        point = _to_point(point)
-        self._O.x = point.x - self.width
-        self._O.y = point.y - self.height
+        self._O = _to_point(point) - (self._w + self._h)
     
     @bottom.setter
     def bottom(self, coordinate: Real):
@@ -317,12 +288,9 @@ class RectObject:
         self._O.y = coordinate - self.height
     
     @bottomleft.setter
-    def bottomleft(self, point):
+    def bottomleft(self, point: PointObject):
         """Fixe les coordonnées du coin bas gauche"""
-        PointObject, _to_point = _lazy_import_point()
-        point = _to_point(point)
-        self._O.x = point.x
-        self._O.y = point.y - self.height
+        self._O = _to_point(point) - self._h
 
     @left.setter
     def left(self, coordinate: Real):
@@ -332,12 +300,9 @@ class RectObject:
         self._O.x = coordinate
     
     @center.setter
-    def center(self, point):
+    def center(self, point: PointObject):
         """Fixe les coordonnées du centre"""
-        PointObject, _to_point = _lazy_import_point()
-        point = _to_point(point)
-        self._O.x = point.x - self.width / 2
-        self._O.y = point.y - self.height / 2
+        self._O = _to_point(point) - 0.5 * (self._w + self._h)
 
     @centerx.setter
     def centerx(self, coordinate: Real):
@@ -441,46 +406,41 @@ class RectObject:
         self._border_bottomright_radius = min(radius, self.border_radius_max)
 
     # ======================================== OPERATIONS ========================================
-    def __add__(self, vector) -> RectObject:
+    def __add__(self, vector: VectorObject) -> RectObject:
         """Renvoie l'image du rect par le vecteur donné"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector, fallback=NotImplemented)
-        if vector is NotImplemented: return NotImplemented
+        vector = _to_vector(vector, raised=False)
+        if vector is None: return NotImplemented
         result = self.copy()
         result.translate(vector)
         return result
     
-    def __radd__(self, vector) -> RectObject:
+    def __radd__(self, vector: VectorObject) -> RectObject:
         """Renvoie l'image du rect par le vecteur donné"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector, fallback=NotImplemented)
-        if vector is NotImplemented: return NotImplemented
+        vector = _to_vector(vector, raised=False)
+        if vector is None: return NotImplemented
         result = self.copy()
         result.translate(vector)
         return result
     
-    def __sub__(self, vector) -> RectObject:
+    def __sub__(self, vector: VectorObject) -> RectObject:
         """Renvoie l'image du rect par l'opposé du vecteur donné"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector, fallback=NotImplemented)
-        if vector is NotImplemented: return NotImplemented
+        vector = _to_vector(vector, raised=False)
+        if vector is None: return NotImplemented
         result = self.copy()
         result.translate(-vector)
         return result
 
-    def __rsub__(self, vector) -> RectObject:
+    def __rsub__(self, vector: VectorObject) -> RectObject:
         """Renvoie l'image du rect par l'opposé du vecteur donné"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector, fallback=NotImplemented)
-        if vector is NotImplemented: return NotImplemented
+        vector = _to_vector(vector, raised=False)
+        if vector is None: return NotImplemented
         result = self.copy()
         result.translate(-vector)
         return result
     
     # ======================================== PREDICATS & COLLISIONS ========================================
-    def collidepoint(self, point) -> bool:
+    def collidepoint(self, point: PointObject) -> bool:
         """Vérifie que le point se trouve dans le rect"""
-        PointObject, _to_point = _lazy_import_point()
         point = _to_point(point)
         px, py = point.x, point.y
         
@@ -561,7 +521,7 @@ class RectObject:
         
         return False
 
-    def colliderect(self, rect) -> bool:
+    def colliderect(self, rect: RectObject) -> bool:
         """Vérifie la superposition de deux rects"""
         rect = _to_rect(rect)
         
@@ -653,7 +613,6 @@ class RectObject:
             center = circle.center
             radius = circle.radius
         elif isinstance(circle, (tuple, list)) and len(circle) == 2:
-            PointObject, _to_point = _lazy_import_point()
             center = _to_point(circle[0])
             radius = float(circle[1])
         else:
@@ -734,21 +693,19 @@ class RectObject:
         self.width = self.width * ratio
         self.height = self.height * ratio
     
-    def translate(self, vector):
+    def translate(self, vector: VectorObject):
         """
         Translate le rect selon un vecteur
 
         Args:
             vector (VectorObject) : vecteur de translation
         """
-        VectorObject, _to_vector = _lazy_import_vector()
         vector = _to_vector(vector)
         self.x += vector.x
         self.y += vector.y
     
-    def closest_point(self, point):
+    def closest_point(self, point: PointObject):
         """Renvoie le point du rect le plus proche d'un point donné"""
-        PointObject, _to_point = _lazy_import_point()
         point = _to_point(point)
         px, py = point.x, point.y
         
@@ -802,9 +759,7 @@ class RectObject:
     
     def line_intersection(self, line):
         """Renvoie l'ensemble des points d'intersection entre la droite et le rect"""
-        from ._line import LineObject
-        PointObject, _ = _lazy_import_point()
-        
+        from ._line import LineObject        
         if not isinstance(line, LineObject): 
             _raise_error(self, 'line_intersection', 'Invalid line argument')
         
