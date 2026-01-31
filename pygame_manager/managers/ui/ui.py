@@ -33,8 +33,5 @@ class UiManager:
             if hasattr(obj, 'update') and callable(obj.update):
                 obj.update()
 
-    def absolute_pos(self, point: tuple[Real, Real], ):
-        """Renvoie la position du point sur la fenête"""
-
 # ======================================== INSTANCE ========================================
 ui_manager = UiManager()

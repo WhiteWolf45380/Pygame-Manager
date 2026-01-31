@@ -1,8 +1,8 @@
 # ======================================== IMPORTS ========================================
-from ._state import StateObject
+from ._menus import Menu
 
 # ======================================== GESTIONNAIRE ========================================
-class StatesManager:
+class MenusManager:
     """
     Gestionnaire des états multi-layers avec remplacement par layer
 
@@ -16,24 +16,24 @@ class StatesManager:
     def __init__(self):
         # gestion des états
         self._dict = {}
-        self._active_states = {}
+        self._active_menus = {}
 
         # super-classe
-        self.State = StateObject
+        self.menu = Menu
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def __repr__(self):
-        if self._active_states:
-            active_list = [f"{name}(L{layer})" for layer, name in sorted(self._active_states.items())]
+        if self._active_menus:
+            active_list = [f"{name}(L{layer})" for layer, name in sorted(self._active_menus.items())]
             active = ', '.join(active_list)
         else:
             active = 'None'
-        return f"<StatesManager: {len(self._dict)} states | Active: [{active}]>"
+        return f"<menusManager: {len(self._dict)} menus | Active: [{active}]>"
     
     def __getitem__(self, key):
         if key not in self._dict:
-            self._raise_error('__getitem__', f'State {key} does not exist')
-        return self._dict.get(key)["state_obj"]
+            self._raise_error('__getitem__', f'menu {key} does not exist')
+        return self._dict.get(key)["menu_obj"]
 
     def _raise_error(self, method: str, text: str):
         """Lève une erreur"""
@@ -41,33 +41,33 @@ class StatesManager:
 
     def _clear_upper_layers(self, layer: int):
         """Désactive tous les états sur les layers supérieurs"""
-        layers_to_remove = [l for l in self._active_states.keys() if l > layer]
+        layers_to_remove = [l for l in self._active_menus.keys() if l > layer]
         for l in layers_to_remove:
-            state_name = self._active_states[l]
-            state_obj = self._dict[state_name]["state_obj"]
+            menu_name = self._active_menus[l]
+            menu_obj = self._dict[menu_name]["menu_obj"]
             # Appeler on_exit si la méthode existe
-            if hasattr(state_obj, 'on_exit') and callable(getattr(state_obj, 'on_exit')):
-                state_obj.on_exit()
-            del self._active_states[l]
+            if hasattr(menu_obj, 'on_exit') and callable(getattr(menu_obj, 'on_exit')):
+                menu_obj.on_exit()
+            del self._active_menus[l]
     
     # ======================================== GETTERS ========================================
-    def get_states(self) -> list:
+    def get_menus(self) -> list:
         """Retourne la liste de tous les états disponibles"""
         return list(self._dict.keys())
 
-    def get_active_states(self) -> list:
+    def get_active_menus(self) -> list:
         """Retourne la liste des états actifs (triés par layer)"""
-        sorted_layers = sorted(self._active_states.keys())
-        return [self._active_states[layer] for layer in sorted_layers]
+        sorted_layers = sorted(self._active_menus.keys())
+        return [self._active_menus[layer] for layer in sorted_layers]
 
     def get_active_by_layer(self, layer: int) -> str | None:
         """Retourne l'état actif sur un layer donné"""
-        return self._active_states.get(layer)
+        return self._active_menus.get(layer)
 
     def get_layer(self, name: str) -> int:
         """Retourne le layer d'un état"""
         if name not in self._dict:
-            self._raise_error('get_layer', f'State "{name}" does not exist')
+            self._raise_error('get_layer', f'menu "{name}" does not exist')
         return self._dict[name]["layer"]
 
     def is_active(self, name: str) -> bool:
@@ -75,36 +75,36 @@ class StatesManager:
         if name not in self._dict:
             return False
         layer = self._dict[name]["layer"]
-        return self._active_states.get(layer) == name
+        return self._active_menus.get(layer) == name
     
-    def get_state_object(self, name: str):
-        """Retourne l'objet State associé à un nom"""
+    def get_menu_object(self, name: str):
+        """Retourne l'objet menu associé à un nom"""
         if name not in self._dict:
             return None
-        return self._dict[name]["state_obj"]
+        return self._dict[name]["menu_obj"]
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def register(self, state_obj):
+    def register(self, menu_obj):
         """
         Enregistre un objet état
 
         Args:
-            state_obj : objet State avec attributs name, layer et méthode update
+            menu_obj : objet menu avec attributs name, layer et méthode update
         """
-        if not hasattr(state_obj, 'name') or not isinstance(state_obj.name, str):
-            self._raise_error('register', 'State object must have a "name" attribute (str)')
-        if not hasattr(state_obj, 'layer'):
-            self._raise_error('register', 'State object must have a "layer" attribute')
-        if not hasattr(state_obj, 'update') or not callable(getattr(state_obj, 'update')):
-            self._raise_error('register', 'State object must have a callable "update" method')
+        if not hasattr(menu_obj, 'name') or not isinstance(menu_obj.name, str):
+            self._raise_error('register', 'menu object must have a "name" attribute (str)')
+        if not hasattr(menu_obj, 'layer'):
+            self._raise_error('register', 'menu object must have a "layer" attribute')
+        if not hasattr(menu_obj, 'update') or not callable(getattr(menu_obj, 'update')):
+            self._raise_error('register', 'menu object must have a callable "update" method')
         
-        name = state_obj.name
+        name = menu_obj.name
         if name in self._dict:
-            self._raise_error('register', f'State "{name}" already exists')
+            self._raise_error('register', f'menu "{name}" already exists')
         
         self._dict[name] = {
-            "layer": state_obj.layer,
-            "state_obj": state_obj
+            "layer": menu_obj.layer,
+            "menu_obj": menu_obj
         }
 
     def set(self, name: str, layer: int = None):
@@ -116,20 +116,20 @@ class StatesManager:
             layer (int, optional) : nouveau layer
         """
         if not isinstance(name, str):
-            self._raise_error('set', 'State name must be a string object')
+            self._raise_error('set', 'menu name must be a string object')
         if name not in self._dict:
-            self._raise_error('set', f'State "{name}" does not exist')
+            self._raise_error('set', f'menu "{name}" does not exist')
         
         if layer is not None:
             old_layer = self._dict[name]["layer"]
             self._dict[name]["layer"] = layer
-            state_obj = self._dict[name]["state_obj"]
-            state_obj.layer = layer
+            menu_obj = self._dict[name]["menu_obj"]
+            menu_obj.layer = layer
             
             # Si l'état était actif, le déplacer vers le nouveau layer
-            if old_layer in self._active_states and self._active_states[old_layer] == name:
-                del self._active_states[old_layer]
-                self._active_states[layer] = name
+            if old_layer in self._active_menus and self._active_menus[old_layer] == name:
+                del self._active_menus[old_layer]
+                self._active_menus[layer] = name
                 # Nettoyer les layers supérieurs au nouveau layer
                 self._clear_upper_layers(layer)
 
@@ -141,27 +141,27 @@ class StatesManager:
             name (str) : nom de l'état à activer
         """
         if name not in self._dict:
-            self._raise_error('activate', f'State "{name}" does not exist')
+            self._raise_error('activate', f'menu "{name}" does not exist')
         
         layer = self._dict[name]["layer"]
         
         # on_exit pour l'ancien état du même layer
-        if layer in self._active_states:
-            old_state_name = self._active_states[layer]
-            old_state_obj = self._dict[old_state_name]["state_obj"]
-            if hasattr(old_state_obj, 'on_exit') and callable(getattr(old_state_obj, 'on_exit')):
-                old_state_obj.on_exit()
+        if layer in self._active_menus:
+            old_menu_name = self._active_menus[layer]
+            old_menu_obj = self._dict[old_menu_name]["menu_obj"]
+            if hasattr(old_menu_obj, 'on_exit') and callable(getattr(old_menu_obj, 'on_exit')):
+                old_menu_obj.on_exit()
         
         # Activation
-        self._active_states[layer] = name
+        self._active_menus[layer] = name
         
         # Nettoyer tous les layers au-dessus
         self._clear_upper_layers(layer)
         
         # on_enter pour le nouvel état
-        state_obj = self._dict[name]["state_obj"]
-        if hasattr(state_obj, 'on_enter') and callable(getattr(state_obj, 'on_enter')):
-            state_obj.on_enter()
+        menu_obj = self._dict[name]["menu_obj"]
+        if hasattr(menu_obj, 'on_enter') and callable(getattr(menu_obj, 'on_enter')):
+            menu_obj.on_enter()
 
     def deactivate(self, name: str):
         """
@@ -174,13 +174,13 @@ class StatesManager:
             return
         
         layer = self._dict[name]["layer"]
-        if layer in self._active_states and self._active_states[layer] == name:
+        if layer in self._active_menus and self._active_menus[layer] == name:
             # on_exit
-            state_obj = self._dict[name]["state_obj"]
-            if hasattr(state_obj, 'on_exit') and callable(getattr(state_obj, 'on_exit')):
-                state_obj.on_exit()
+            menu_obj = self._dict[name]["menu_obj"]
+            if hasattr(menu_obj, 'on_exit') and callable(getattr(menu_obj, 'on_exit')):
+                menu_obj.on_exit()
             
-            del self._active_states[layer]
+            del self._active_menus[layer]
             # Nettoyer tous les layers au-dessus
             self._clear_upper_layers(layer)
 
@@ -192,43 +192,43 @@ class StatesManager:
             name (str) : nom de l'état à activer
         """
         if name not in self._dict:
-            self._raise_error('switch', f'State "{name}" does not exist')
+            self._raise_error('switch', f'menu "{name}" does not exist')
         
         # on_exit pour tous les états actifs
-        for layer, state_name in list(self._active_states.items()):
-            state_obj = self._dict[state_name]["state_obj"]
-            if hasattr(state_obj, 'on_exit') and callable(getattr(state_obj, 'on_exit')):
-                state_obj.on_exit()
+        for layer, menu_name in list(self._active_menus.items()):
+            menu_obj = self._dict[menu_name]["menu_obj"]
+            if hasattr(menu_obj, 'on_exit') and callable(getattr(menu_obj, 'on_exit')):
+                menu_obj.on_exit()
         
         # Reset complet
         layer = self._dict[name]["layer"]
-        self._active_states = {layer: name}
+        self._active_menus = {layer: name}
         
         # on_enter pour le nouvel état
-        state_obj = self._dict[name]["state_obj"]
-        if hasattr(state_obj, 'on_enter') and callable(getattr(state_obj, 'on_enter')):
-            state_obj.on_enter()
+        menu_obj = self._dict[name]["menu_obj"]
+        if hasattr(menu_obj, 'on_enter') and callable(getattr(menu_obj, 'on_enter')):
+            menu_obj.on_enter()
 
     def deactivate_layer(self, layer: int):
         """Désactive l'état sur un layer spécifique (et tous les layers supérieurs)"""
-        if layer in self._active_states:
-            state_name = self._active_states[layer]
-            state_obj = self._dict[state_name]["state_obj"]
-            if hasattr(state_obj, 'on_exit') and callable(getattr(state_obj, 'on_exit')):
-                state_obj.on_exit()
+        if layer in self._active_menus:
+            menu_name = self._active_menus[layer]
+            menu_obj = self._dict[menu_name]["menu_obj"]
+            if hasattr(menu_obj, 'on_exit') and callable(getattr(menu_obj, 'on_exit')):
+                menu_obj.on_exit()
             
-            del self._active_states[layer]
+            del self._active_menus[layer]
             self._clear_upper_layers(layer)
 
     def deactivate_all(self):
         """Désactive tous les états"""
         # on_exit pour tous
-        for state_name in self._active_states.values():
-            state_obj = self._dict[state_name]["state_obj"]
-            if hasattr(state_obj, 'on_exit') and callable(getattr(state_obj, 'on_exit')):
-                state_obj.on_exit()
+        for menu_name in self._active_menus.values():
+            menu_obj = self._dict[menu_name]["menu_obj"]
+            if hasattr(menu_obj, 'on_exit') and callable(getattr(menu_obj, 'on_exit')):
+                menu_obj.on_exit()
         
-        self._active_states = {}
+        self._active_menus = {}
 
     # ======================================== UPDATE ========================================
     def update(self):
@@ -236,19 +236,19 @@ class StatesManager:
         Exécute les fonctions update de tous les états actifs
         (dans l'ordre des layers, du plus bas au plus haut)
         """
-        sorted_layers = sorted(self._active_states.keys())
+        sorted_layers = sorted(self._active_menus.keys())
         for i in range(len(sorted_layers)):
-            state_name = self._active_states[sorted_layers[i]]
-            state_obj = self._dict[state_name]["state_obj"]
-            getattr(state_obj, "update", lambda: None)()
+            menu_name = self._active_menus[sorted_layers[i]]
+            menu_obj = self._dict[menu_name]["menu_obj"]
+            getattr(menu_obj, "update", lambda: None)()
             if i == 0:
                 from ... import screen
-                state_obj.draw(screen.surface)
+                menu_obj.draw(screen.surface)
             else:
-                master_name = self._active_states[sorted_layers[i-1]]
-                master_obj = self._dict[master_name]["state_obj"]
+                master_name = self._active_menus[sorted_layers[i-1]]
+                master_obj = self._dict[master_name]["menu_obj"]
                 master_surface = getattr(master_obj, "surface", lambda: None)
-                getattr(state_obj, "draw", lambda surface: None)(master_surface)
+                getattr(menu_obj, "draw", lambda surface: None)(master_surface)
 
 # ======================================== INSTANCE ========================================
-states_manager = StatesManager()
+menus_manager = MenusManager()

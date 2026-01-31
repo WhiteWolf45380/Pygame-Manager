@@ -2,11 +2,11 @@
 import pygame
 
 # ======================================== SUPER-CLASSE ========================================
-class StateObject:
+class Menu:
     """
-    Classe de base pour les états
+    Classe de base pour les menus
     
-    S'enregistre automatiquement dans StatesManager lors de l'instanciation
+    S'enregistre automatiquement dans MenusManager lors de l'instanciation
     Méthode update() à override pour actualisation automatique
     Méthode draw(surface) affiche la surface de l'état sur une surface donnée
     """
@@ -14,7 +14,6 @@ class StateObject:
         """
         Args:
             name (str) : nom de l'état
-            manager (StatesManager) : gestionnaire d'états
             layer (int) : niveau de priorité
             width (int, optional) : largeur de la surface de l'état
             height (int, optional) : hauteur de la surface de l'état
@@ -36,8 +35,8 @@ class StateObject:
         self.surface_rect = self.surface.get_rect()
         
         # auto-registration
-        from .states import states_manager
-        self.manager = states_manager
+        from .menus import menus_manager
+        self.manager = menus_manager
         self.manager.register(self)
     
     def _raise_error(self, method: str, text: str):
