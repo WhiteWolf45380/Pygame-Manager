@@ -53,6 +53,8 @@ class StateObject:
 
     def draw(self, surface: pygame.Surface):
         """Affiche la surface de l'état"""
+        if not isinstance(surface, pygame.Surface):
+            return None
         surface.blit(self.surface, self.surface_rect)
     
     def on_enter(self):
