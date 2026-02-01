@@ -1,5 +1,4 @@
 import pygame
-from pygame_manager import managers
 from ..context import context
 
 class Engine:
@@ -8,14 +7,6 @@ class Engine:
         if not pygame.get_init():
             pygame.init()
     
-        # instanciation auto des managers
-        for manager_name in managers.__all__:
-            if manager_name.endswith("_manager"):
-                manager_instance = getattr(managers, manager_name)
-                attr = manager_name[:-8].lower()
-                setattr(self, attr, manager_instance)
-                setattr(context, attr, manager_instance)
-        context.engine = self
         self.__initialized = False
         self.__running = False
 
@@ -28,6 +19,16 @@ class Engine:
         """
         if self.__initialized: # déjà initialisé
             return self
+        
+        # instanciation auto des managers
+        from pygame_manager import managers
+        for manager_name in managers.__all__:
+            if manager_name.endswith("_manager"):
+                manager_instance = getattr(managers, manager_name)
+                attr = manager_name[:-8].lower()
+                setattr(self, attr, manager_instance)
+                setattr(context, attr, manager_instance)
+        context.engine = self
 
         # création de la fenêtre
         self.screen.create()
