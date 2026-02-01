@@ -68,6 +68,12 @@ class StatesManager:
         return self._dict[name]["state_obj"]
     
     # ======================================== PREDICATS ========================================
+    def __contains__(self, state: str | State):
+        """Vérifie l'enregistrement d'un état"""
+        if isinstance(state, str):
+            return state in self._dict.keys()
+        return state in self._dict.values()
+
     def is_active(self, name: str) -> bool:
         """Vérifie qu'un état soit actif"""
         return name in self._active_states.values()
@@ -89,31 +95,34 @@ class StatesManager:
     # ======================================== ACTIVATION ========================================
     def activate(self, name: str):
         """
-        Active un state.
-        Remplace l'ancien state sur le même layer (on_exit) et ferme les layers supérieurs.
+        Active un state
+        Remplace l'ancien state sur le même layer (on_exit) et ferme les layers supérieurs
+
+        Args:
+            name (str) : nom de l'état à activer
         """
         if name not in self._dict:
             self._raise_error('activate', f'state "{name}" does not exist')
 
         layer = self._dict[name]["layer"]
 
-        # on_exit de l'ancien state sur ce layer
         if layer in self._active_states:
             old_name = self._active_states[layer]
             old_obj = self._dict[old_name]["state_obj"]
             old_obj.on_exit()
 
-        # activation
         self._active_states[layer] = name
-
-        # cascade vers le haut
         self._clear_upper_layers(layer)
-
-        # on_enter du nouveau state
         self._dict[name]["state_obj"].on_enter()
 
-    def deactivate(self, name: str):
-        """Désactive un state (et les layers supérieurs)"""
+    def deactivate(self, name: str, pruning: bool = True):
+        """
+        Désactive un state
+
+        Args:
+            name (str) : nom de l'état à désactiver
+            pruning (bool, optional) : fermeture de tous les états supérieurs
+        """
         if name not in self._dict:
             return
 
@@ -121,18 +130,28 @@ class StatesManager:
         if layer in self._active_states and self._active_states[layer] == name:
             self._dict[name]["state_obj"].on_exit()
             del self._active_states[layer]
-            self._clear_upper_layers(layer)
+            if pruning:
+                self._clear_upper_layers(layer)
 
-    def deactivate_layer(self, layer: int):
-        """Désactive le state sur un layer donné (et les layers supérieurs)"""
+    def deactivate_layer(self, layer: int, pruning: bool = True):
+        """
+        Désactive l'état sur une couche donnée
+
+        Args:
+            layer (int) : couche à désactiver
+            pruning (bool) : désactivation des couches supérieures
+        """
         if layer in self._active_states:
             name = self._active_states[layer]
             self._dict[name]["state_obj"].on_exit()
             del self._active_states[layer]
-            self._clear_upper_layers(layer)
+            if pruning:
+                self._clear_upper_layers(layer)
 
     def deactivate_all(self):
-        """Désactive tous les states"""
+        """
+        Désactive tous les states
+        """
         for layer in sorted(self._active_states, reverse=True):
             name = self._active_states[layer]
             self._dict[name]["state_obj"].on_exit()
@@ -142,7 +161,6 @@ class StatesManager:
     def update(self):
         """
         Exécute update() de tous les states actifs,
-        du layer le plus bas au plus haut, tout sur screen.surface.
         """
         for layer in sorted(self._active_states):
             name = self._active_states[layer]

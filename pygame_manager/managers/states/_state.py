@@ -1,5 +1,6 @@
 # ======================================== IMPORTS ========================================
 from _core import *
+from ...context import states, menus
 
 # ======================================== SUPER-CLASSE ========================================
 class State:
@@ -7,10 +8,10 @@ class State:
     Classe de base pour les states
 
     Fonctionnalités:
-        S'enregistre automatiquement dans StatesManager lors de l'instanciation.
-        Méthode update() à override pour la logique frame-to-frame.
-        Méthode draw(surface) à n'override qu'en connaissance des conséquences.
-        Les menus liés (bound_menus) sont auto-ouverts/fermés avec le state.
+        S'enregistre automatiquement dans StatesManager lors de l'instanciation
+        Méthode update() à override pour la logique frame-to-frame
+        Méthode draw(surface) à n'override qu'en connaissance des conséquences
+        Les menus liés (bound_menus) sont auto-ouverts/fermés avec le state
     """
     def __init__(self, name: str, layer: int = 0):
         """
@@ -30,22 +31,23 @@ class State:
         self._bound_menus = []
 
         # auto-registration
-        from .states import states_manager
-        self.manager = states_manager
-        self.manager.register(self)
+        self.manager = states
+        self.manager.register(self._name, self, layer=self._layer)
     
     # ======================================== CALLBACKS ========================================
     def on_enter(self):
         """Appelé quand le state devient actif"""
-        from ..menus import menus_manager
         for menu_name in self._bound_menus:
-            menus_manager.activate(menu_name)
+            if menu_name not in menus:
+                continue
+            menus.activate(menu_name)
 
     def on_exit(self):
         """Appelé quand le state devient inactif — désactive les bound menus"""
-        from ..menus import menus_manager
         for menu_name in self._bound_menus:
-            menus_manager.deactivate(menu_name)
+            if menu_name not in menus:
+                continue
+            menus.deactivate(menu_name)
 
     # ======================================== BIND ========================================
     def bind_menu(self, menu_name: str):
@@ -65,10 +67,13 @@ class State:
 
     # ======================================== RACCOURCIS ========================================
     def activate(self):
+        """Active l'état"""
         self.manager.activate(self.name)
 
     def deactivate(self):
+        """Désactive l'état"""
         self.manager.deactivate(self.name)
 
     def is_active(self) -> bool:
+        """Vérifie l'activation de l'état"""
         return self.manager.is_active(self.name)

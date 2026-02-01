@@ -1,16 +1,6 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-from ._vector import VectorObject, _to_vector
-
-# ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
-def _to_point(point: PointObject | Iterable[Real], copy: bool=False, fallback: object=None, raised: bool=True, method: str='_to_point', message: str='Invalid point argument'):
-    """tente de convertir si besoin l'objet en Point"""
-    if isinstance(point, PointObject):
-        return point if not copy else point.copy()
-    if isinstance(point, Sequence) and all(isinstance(c, Real) for c in point):
-        return PointObject(*point)
-    return fallback if fallback is not None else _raise_error(PointObject, method, message) if raised else None
 
 # ======================================== OBJET ========================================
 class PointObject:
@@ -94,47 +84,47 @@ class PointObject:
         self[2] = z
 
     # ======================================== OPERATIONS ========================================
-    def __add__(self, vector: VectorObject) -> PointObject:
+    def __add__(self, vector: geometry.Vector) -> geometry.Point:
         """Renvoie l'image du point par le vecteur donné"""
-        vector = _to_vector(vector, raised=False)
+        vector = geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         return self._translate(vector)
     
-    def __radd__(self, vector: VectorObject) -> PointObject:
+    def __radd__(self, vector: geometry.Vector) -> geometry.Point:
         """Renvoie l'image du point par le vecteur donné"""
-        vector = _to_vector(vector, raised=False)
+        vector = geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         return self._translate(vector)
 
-    def __sub__(self, vector: VectorObject) -> PointObject:
+    def __sub__(self, vector: geometry.Vector) -> geometry.Point:
         """Renvoie l'image du point par l'opposé du vecteur"""
-        vector = _to_vector(vector, raised=False)
+        vector = geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         return self.translate(-vector)
     
-    def __rsub__(self, point: PointObject) -> VectorObject:
+    def __rsub__(self, point: geometry.Point) -> geometry.Vector:
         """Renvoie le vecteur point -> Self"""
-        point = _to_point(point, raised=False)
+        point = geometry._to_point(point, raised=False)
         if point is None: return NotImplemented
         return self._vector_to(point)
 
-    def __pos__(self) -> PointObject:
+    def __pos__(self) -> geometry.Point:
         """Copie"""
-        return PointObject(*self._pos)
+        return geometry.Point(*self._pos)
 
-    def __neg__(self) -> PointObject:
+    def __neg__(self) -> geometry.Point:
         """Opposé"""
-        return PointObject(*(-c for c in self._pos))
+        return geometry.Point(*(-c for c in self._pos))
     
     # ======================================== COMPARATEURS ========================================
-    def __eq__(self, point: PointObject) -> bool:
+    def __eq__(self, point: geometry.Point) -> bool:
         """Vérifie la correspondance de deux points"""
-        point = _to_point(point, raised=False)
+        point = geometry._to_point(point, raised=False)
         if point is None: return False
         self._equalize(point)
         return all(self[i] == point[i] for i in range(self.dim))
     
-    def __ne__(self, point: PointObject) -> bool:
+    def __ne__(self, point: geometry.Point) -> bool:
         """Vérifie la non correspondance de deux points"""
         return not self == point
     
@@ -153,17 +143,17 @@ class PointObject:
         """Vérifie que le point soit valide"""
         return True
     
-    def is_aligned(self, *points: PointObject) -> bool:
+    def is_aligned(self, *points: geometry.Point) -> bool:
         """
         Vérifie que les points soient alignés
 
         Args:
-            points (tuple[PointObject]) : points dont on veut vérifier l'alignement
+            points (tuple[geometry.Point]) : points dont on veut vérifier l'alignement
         """
-        points = list(map(_to_point, points))
+        points = list(map(geometry._to_point, points))
         return self._is_aligned(*points)
     
-    def _is_aligned(self, *points: PointObject) -> bool:
+    def _is_aligned(self, *points: geometry.Point) -> bool:
         """Implémentation interne de is_aligned"""
         self._equalize(*points)
         points = (self, *points)
@@ -173,27 +163,27 @@ class PointObject:
             return all((p - points[0]).is_null() for p in points[2:])
         return all(vector0._is_collinear(p - points[0]) for p in points[2:])
     
-    def is_close(self, point: PointObject, epsilon: float=1e-10) -> bool:
+    def is_close(self, point: geometry.Point, epsilon: float=1e-10) -> bool:
         """
         Vérifie que les points sont à epsilon près similaires
 
         Args:
-            point (PointObject) : second point
+            point (geometry.Point) : second point
             epsilon (float) : seuil de tolérance d'écart
         """
         if not isinstance(epsilon, Real): _raise_error(self, 'is_close', 'Invalid epsilon argument')
-        point = _to_point(point)
+        point = geometry._to_point(point)
         return self._is_close(point, epsilon=epsilon)
     
-    def _is_close(self, point: PointObject, epsilon: float=1e-10) -> bool:
+    def _is_close(self, point: geometry.Point, epsilon: float=1e-10) -> bool:
         """Implémentation interne de is_close"""
         self._equalize(point)
         return all(abs(point[k] - self[k]) < epsilon for k in range(self.dim))
     
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> PointObject:
+    def copy(self) -> geometry.Point:
         """Renvoie une copie du point"""
-        return PointObject(*self._pos)
+        return geometry.Point(*self._pos)
     
     def to_tuple(self) -> tuple[float]:
         """Renvoie les coordonnées du point en tuple"""
@@ -203,9 +193,9 @@ class PointObject:
         """Renvoie les coordonnées du point en liste"""
         return list(self._pos)
     
-    def to_vector(self) -> VectorObject:
+    def to_vector(self) -> geometry.Vector:
         """Renvoie le vecteur O -> Self"""
-        return VectorObject(*self)
+        return geometry.Vector(*self)
     
     def reshape(self, dim: int=0):
         """
@@ -245,75 +235,75 @@ class PointObject:
         for obj in objs:
             obj.reshape(dim)
     
-    def distance(self, point: PointObject) -> float:
+    def distance(self, point: geometry.Point) -> float:
         """
         Distance euclidienne entre deux points
         
         Args:
-            point (PointObject) : second point
+            point (geometry.Point) : second point
         """
-        point = _to_point(point, method='distance')
+        point = geometry._to_point(point, method='distance')
         return self._distance(point)
     
-    def _distance(self, point: PointObject) -> float:
+    def _distance(self, point: geometry.Point) -> float:
         """Implémentation interne de distance"""
         return (self - point).norm
     
-    def vector_to(self, point: PointObject) -> VectorObject:
+    def vector_to(self, point: geometry.Point) -> geometry.Vector:
         """
         Renvoie le vecteur Self -> point
 
         Args:
-            point (PointObject) : le point d'arrivée
+            point (geometry.Point) : le point d'arrivée
         """
-        point = _to_point(point, method='vector_to')
+        point = geometry._to_point(point, method='vector_to')
         return self._vector_to(point)
     
-    def _vector_to(self, point: PointObject) -> VectorObject:
+    def _vector_to(self, point: geometry.Point) -> geometry.Vector:
         """Implémentation interne de vector_to"""
         self._equalize(point)
-        return VectorObject(*(b - a for a, b in zip(self, point)))
+        return geometry.Vector(*(b - a for a, b in zip(self, point)))
     
-    def translate(self, vector: VectorObject) -> PointObject:
+    def translate(self, vector: geometry.Vector) -> geometry.Point:
         """
         Renvoie l'image du point par un vecteur
 
         Args:
-            vector (VectorObject) : vecteur de translation
+            vector (geometry.Vector) : vecteur de translation
         """
-        vector = _to_vector(vector)
+        vector = geometry._to_vector(vector)
         return self._translate(vector)
     
-    def _translate(self, vector: VectorObject) -> PointObject:
+    def _translate(self, vector: geometry.Vector) -> geometry.Point:
         """Implémentation interne de translate"""
-        return PointObject(*tuple(self[i] + vector[i] for i in range(self.dim)))
+        return geometry.Point(*tuple(self[i] + vector[i] for i in range(self.dim)))
     
-    def midpoint(self, point: PointObject) -> PointObject:
+    def midpoint(self, point: geometry.Point) -> geometry.Point:
         """
         Renvoie le point central entre Self et point
 
         Args:
-            point (PointObject) : second point
+            point (geometry.Point) : second point
         """
-        point = _to_point(point, method='midpoint')
+        point = geometry._to_point(point, method='midpoint')
         return self._midpoint(point)
     
-    def _midpoint(self, point: PointObject) -> PointObject:
+    def _midpoint(self, point: geometry.Point) -> geometry.Point:
         """Implémentation interne de midpoint"""
         self._equalize(point)
-        return PointObject(*((self[i] + point[i]) / 2 for i in range(self.dim)))
+        return geometry.Point(*((self[i] + point[i]) / 2 for i in range(self.dim)))
     
-    def barycenter(self, *points: PointObject, weights: Iterable[float]=None) -> PointObject:
+    def barycenter(self, *points: geometry.Point, weights: Iterable[float]=None) -> geometry.Point:
         """
         Calcule le barycentre du point à plusieurs points
         
         Args:
-            points (tuple[PointObject]) : points à inclure dans le barycentre
+            points (tuple[geometry.Point]) : points à inclure dans le barycentre
             weights (Iterable[float]) : poids associés à chaque point (défaut: poids égaux)
         """
         if not points:
             return self.copy()       
-        points = list(map(_to_point, points))
+        points = list(map(geometry._to_point, points))
         if weights is not None and not isinstance(weights, Sequence):
             _raise_error(self, 'barycenter', 'Invalid weights argument')
         
@@ -332,7 +322,7 @@ class PointObject:
         
         return self._barycenter(*points, weights)
     
-    def _barycenter(self, *points: PointObject, weights: Iterable[float]=None) -> PointObject:
+    def _barycenter(self, *points: geometry.Point, weights: Iterable[float]=None) -> geometry.Point:
         """Implémentation interne de barycenter"""
         n = len(points)
         
@@ -348,4 +338,4 @@ class PointObject:
             coord = sum(weights[j] * points[j][i] for j in range(n)) / total_weight
             barycenter_coords.append(coord)
         
-        return PointObject(*barycenter_coords)
+        return geometry.Point(*barycenter_coords)

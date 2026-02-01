@@ -10,6 +10,7 @@ __all__ = [
     "Iterator",
     "Self",
     "Tuple",
+    "geometry"
 
     "Sequence",
     "Reshapable",

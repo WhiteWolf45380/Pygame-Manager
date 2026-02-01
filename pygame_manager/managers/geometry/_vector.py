@@ -2,15 +2,6 @@
 from __future__ import annotations
 from ._core import *
 
-# ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
-def _to_vector(vector: VectorObject | Iterable[Real], copy:bool=False, fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument') -> VectorObject | object | None:
-    """tente de convertir si besoin l'objet en VectorObject"""
-    if isinstance(vector, VectorObject):
-        return vector if not copy else vector.copy()
-    if isinstance(vector, Sequence) and all(isinstance(c, Real) for c in vector):
-        return VectorObject(*vector)
-    return fallback if fallback is not None else _raise_error(VectorObject, method, message) if raised else None
-
 # ======================================== OBJET ========================================
 class VectorObject:
     """
@@ -113,10 +104,10 @@ class VectorObject:
         return self.norm
     
     @property
-    def normalized(self) -> VectorObject:
+    def normalized(self) -> geometry.Vector:
         """Renvoie le vecteur normalisé"""
         if self.is_null(): _raise_error(self, 'normalized', 'Cannot normalize null vector')
-        return VectorObject(*(self / self.norm))
+        return geometry.Vector(*(self / self.norm))
     
     # ======================================== SETTERS ========================================
     def __setitem__(self, i: int, r: Real):
@@ -150,39 +141,39 @@ class VectorObject:
         self._v = (np.float32(norm) * self.normalized).array
 
     # ======================================== OPERATIONS ========================================
-    def __add__(self, vector: VectorObject) -> VectorObject:
+    def __add__(self, vector: geometry.Vector) -> geometry.Vector:
         """addition vectorielle"""
-        vector = _to_vector(vector, method='__add__', raised=False)
+        vector = geometry._to_vector(vector, method='__add__', raised=False)
         if vector is None: return NotImplemented
         self._equalize(vector)
-        return VectorObject(*(self.array + vector.array))
+        return geometry.Vector(*(self.array + vector.array))
 
-    def __sub__(self, vector: VectorObject) -> VectorObject:
+    def __sub__(self, vector: geometry.Vector) -> geometry.Vector:
         """Soustraction vectorielle"""
-        vector = _to_vector(vector, method='__sub__', raised=False)
+        vector = geometry._to_vector(vector, method='__sub__', raised=False)
         if vector is None: return NotImplemented
         self._equalize(vector)
-        return VectorObject(*(self.array - vector.array))
+        return geometry.Vector(*(self.array - vector.array))
     
-    def __mul__(self, scalar: Real) -> VectorObject:
+    def __mul__(self, scalar: Real) -> geometry.Vector:
         """Multiplication par un scalaire"""
         if not isinstance(scalar, Real): return NotImplemented
-        return VectorObject(*(self.array * float(scalar)))
+        return geometry.Vector(*(self.array * float(scalar)))
     
-    def __rmul__(self, scalar: Real) -> VectorObject:
+    def __rmul__(self, scalar: Real) -> geometry.Vector:
         """Multiplication par un scalaire (inversé)"""
         if not isinstance(scalar, Real): return NotImplemented
-        return VectorObject(*(self.array * float(scalar)))
+        return geometry.Vector(*(self.array * float(scalar)))
     
-    def __truediv__(self, scalar: Real) -> VectorObject:
+    def __truediv__(self, scalar: Real) -> geometry.Vector:
         """Division par un scalaire"""
         if not isinstance(scalar, Real): return NotImplemented
         if scalar == 0: _raise_error(self, '__truediv__', 'Cannot divide by zero')
-        return VectorObject(*(self.array / float(scalar)))
+        return geometry.Vector(*(self.array / float(scalar)))
     
-    def __rtruediv__(self, vector: VectorObject) -> float:
+    def __rtruediv__(self, vector: geometry.Vector) -> float:
         """Rapport scalaire entre deux vecteurs colinéaires"""
-        vector = _to_vector(vector, method='__rtruediv__', raised=False)
+        vector = geometry._to_vector(vector, method='__rtruediv__', raised=False)
         if vector is None: return NotImplemented
         self._equalize(vector)
         if not self.is_collinear(vector): return NotImplemented
@@ -190,35 +181,35 @@ class VectorObject:
             if self[i] != 0: return vector[i] / self[i]
         return 0.0
     
-    def __matmul__(self, vector: VectorObject) -> float:
+    def __matmul__(self, vector: geometry.Vector) -> float:
         """Produit scalaire"""
-        vector = _to_vector(vector, method='__dot__', raised=False)
+        vector = geometry._to_vector(vector, method='__dot__', raised=False)
         if vector is None: return NotImplemented
         return self._dot(vector)
     
-    def __xor__(self, vector: VectorObject) -> VectorObject:
+    def __xor__(self, vector: geometry.Vector) -> geometry.Vector:
         """Produit vectoriel"""
-        vector = _to_vector(vector, method='__cross__', raised=False)
+        vector = geometry._to_vector(vector, method='__cross__', raised=False)
         if vector is None: return NotImplemented
         return self._cross(vector)
     
-    def __pos__(self) -> VectorObject:
+    def __pos__(self) -> geometry.Vector:
         """Copie"""
-        return VectorObject(*self.array)
+        return geometry.Vector(*self.array)
 
-    def __neg__(self) -> VectorObject:
+    def __neg__(self) -> geometry.Vector:
         """Opposé"""
-        return VectorObject(*(-self.array))
+        return geometry.Vector(*(-self.array))
     
     # ======================================== COMPARATEURS ========================================
-    def __eq__(self, vector: VectorObject) -> bool:
+    def __eq__(self, vector: geometry.Vector) -> bool:
         """Vérifie la correspondance de deux vecteurs"""
-        vector = _to_vector(vector, raised=False)
+        vector = geometry._to_vector(vector, raised=False)
         if vector is None:return False
         self._equalize(vector)
         return all(self[i] == vector[i] for i in range(self.dim))
     
-    def __ne__(self, vector: VectorObject) -> bool:
+    def __ne__(self, vector: geometry.Vector) -> bool:
         """Vérifie la non correspondance de deux vecteurs"""
         return not self == vector
     
@@ -237,49 +228,49 @@ class VectorObject:
         """Vérifie que le vecteur ne soit pas nul"""
         return not self.is_null()
     
-    def is_orthogonal(self, vector: VectorObject) -> bool:
+    def is_orthogonal(self, vector: geometry.Vector) -> bool:
         """
         Vérifie l'orthogonalité avec un autre vecteur
 
         Args:
-            vector (VectorObject) : second vecteur
+            vector (geometry.Vector) : second vecteur
         """
-        _to_vector(vector, method='is_orthogonal')
+        geometry._to_vector(vector, method='is_orthogonal')
         return self._is_orthogonal(vector)
     
-    def _is_orthogonal(self, vector: VectorObject) -> bool:
+    def _is_orthogonal(self, vector: geometry.Vector) -> bool:
         """Implémentation interne de is_orthogonal"""
         if self.is_null() or vector.is_null():
             return True
         return np.isclose(self._dot(vector), 0)
 
-    def is_collinear(self, vector: VectorObject) -> bool:
+    def is_collinear(self, vector: geometry.Vector) -> bool:
         """
         Vérifie la colinéarité avec un autre vecteur
         
         Args:
-            vector (VectorObject) : second vecteur
+            vector (geometry.Vector) : second vecteur
         """
-        vector = _to_vector(vector, method='is_collinear')
+        vector = geometry._to_vector(vector, method='is_collinear')
         return self._is_collinear(vector)
     
-    def _is_collinear(self, vector: VectorObject) -> bool:
+    def _is_collinear(self, vector: geometry.Vector) -> bool:
         """Implémentation interne de is_collinear"""
         if self.is_null() or vector.is_null():
             return True
         return abs(self._dot(vector)) == self.norm * vector.norm
     
-    def is_coplanar(self, *vectors: VectorObject) -> bool:
+    def is_coplanar(self, *vectors: geometry.Vector) -> bool:
         """
         Vérifie si les vecteurs sont coplanaires (dans un même plan)
         
         Args:
-            vectors (tuple[VectorObject]): vecteurs à tester avec Self
+            vectors (tuple[geometry.Vector]): vecteurs à tester avec Self
         """
-        vectors = list(map(_to_vector, vectors))
+        vectors = list(map(geometry._to_vector, vectors))
         return self._is_coplanar(*vectors)
     
-    def _is_coplanar(self, *vectors: VectorObject) -> bool:
+    def _is_coplanar(self, *vectors: geometry.Vector) -> bool:
         """Implémentation interne de is_coplanar"""
         self._equalize(*vectors)
         vectors = (self, *vectors)
@@ -299,9 +290,9 @@ class VectorObject:
         return self._compute_rank(matrix) <= 2
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> VectorObject:
+    def copy(self) -> geometry.Vector:
         """Renvoie une copie du vecteur"""
-        return VectorObject(*self.array)
+        return geometry.Vector(*self.array)
     
     def to_tuple(self) -> tuple[float]:
         """Renvoie les composantes du vecteur en tuple"""
@@ -352,49 +343,49 @@ class VectorObject:
         for obj in objs:
             obj.reshape(dim)
 
-    def dot(self, vector: VectorObject) -> float:
+    def dot(self, vector: geometry.Vector) -> float:
         """
         Renvoie le produit scalaire des deux vecteurs
 
         Args:
-            vector (VectorObject) : second vecteur
+            vector (geometry.Vector) : second vecteur
         """
-        vector = _to_vector(vector, method='dot')
+        vector = geometry._to_vector(vector, method='dot')
         return self._dot(vector)
     
-    def _dot(self, vector: VectorObject) -> float:
+    def _dot(self, vector: geometry.Vector) -> float:
         """Implémentation interne de dot"""
         self._equalize(vector)
         return float(np.dot(self.array, vector.array))
     
-    def cross(self, vector: VectorObject) -> VectorObject:
+    def cross(self, vector: geometry.Vector) -> geometry.Vector:
         """
         Renvoie le produit vectoriel de deux vecteurs
 
         Args:
-            vector (VectorObject) : second vecteur
+            vector (geometry.Vector) : second vecteur
         """
-        vector = _to_vector(vector, method='cross')
+        vector = geometry._to_vector(vector, method='cross')
         return self._cross(vector)
     
-    def _cross(self, vector: VectorObject) -> VectorObject:
+    def _cross(self, vector: geometry.Vector) -> geometry.Vector:
         """Implémentation interne de cross"""
         self._equalize(vector)
-        return VectorObject(*np.cross(self.array, vector.array))
+        return geometry.Vector(*np.cross(self.array, vector.array))
     
-    def angle_with(self, vector: VectorObject, degrees: bool=False) -> float:
+    def angle_with(self, vector: geometry.Vector, degrees: bool=False) -> float:
         """
         Renvoie l'angle entre deux vecteurs
 
         Args:
-            vector (VectorObject) : second vecteur
+            vector (geometry.Vector) : second vecteur
             degrees (bool, optional) : conversion en degrée
         """
-        vector = _to_vector(vector, method='angle_with')
+        vector = geometry._to_vector(vector, method='angle_with')
         if self.is_null() or vector.is_null(): _raise_error(self, 'angle_with', 'Cannot define an angle with null vector')
         return self._angle_with(vector, degrees=degrees)
     
-    def _angle_with(self, vector: VectorObject, degrees: bool=False) -> float:
+    def _angle_with(self, vector: geometry.Vector, degrees: bool=False) -> float:
         """Implémentation interne de angle_with"""
         cos_angle = self._dot(vector) / (self.norm * vector.norm)
         cos_angle = max(-1.0, min(1.0, cos_angle))  # Clamp pour éviter les erreurs d'arrondi
@@ -403,30 +394,30 @@ class VectorObject:
             return math.degrees(angle)
         return angle
 
-    def projection(self, vector: VectorObject) -> VectorObject:
+    def projection(self, vector: geometry.Vector) -> geometry.Vector:
         """
         Renvoie le projeté vectoriel du vecteur donné sur Self
 
         Args:
-            vecteur (VectorObject) : vecteur à projeter
+            vecteur (geometry.Vector) : vecteur à projeter
         """
-        vector = _to_vector(vector, method='projection')
+        vector = geometry._to_vector(vector, method='projection')
         return self._projection(vector)
     
-    def _projection(self, vector: VectorObject) -> VectorObject:
+    def _projection(self, vector: geometry.Vector) -> geometry.Vector:
         """Implémentation interne de projection"""
         return (vector._dot(self) / self._dot(self)) * self
     
-    def distance(self, vector: VectorObject) -> float:
+    def distance(self, vector: geometry.Vector) -> float:
         """
         Distance euclidienne entre deux vecteurs
         
         Args:
-            vector (VectorObject) : second vecteur
+            vector (geometry.Vector) : second vecteur
         """
-        vector = _to_vector(vector, method='distance')
+        vector = geometry._to_vector(vector, method='distance')
         return self._distance(vector)
     
-    def _distance(self, vector: VectorObject) -> float:
+    def _distance(self, vector: geometry.Vector) -> float:
         """Implémentation interne de distance"""
         return (self - vector).norm

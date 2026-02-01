@@ -1,8 +1,6 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-from ._point import PointObject, _to_point
-from ._vector import VectorObject, _to_vector
 
 # ======================================== OBJET ========================================
 class CircleObject:
@@ -11,14 +9,14 @@ class CircleObject:
     """
     __slots__ = ["_center", "_radius", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around"]
     PRECISION = 9
-    def __init__(self, center: PointObject, radius: Real):
+    def __init__(self, center: geometry.Point, radius: Real):
         """
         Args:
-            center (PointObject) : point central du cercle
+            center (geometry.Point) : point central du cercle
             radius (Real) : rayon du cercle
         """
         # centre
-        self._center = _to_point(center, copy=True)
+        self._center = geometry._to_point(center, copy=True)
         self._center.reshape(2)
 
         # rayon
@@ -50,7 +48,7 @@ class CircleObject:
     
     # ======================================== GETTERS ========================================
     @property
-    def center(self) -> PointObject:
+    def center(self) -> geometry.Point:
         """Renvoie le point central"""
         return self._center.copy()
     
@@ -116,9 +114,9 @@ class CircleObject:
     
     # ======================================== SETTERS ========================================
     @center.setter
-    def center(self, point: PointObject):
+    def center(self, point: geometry.Point):
         """Fixe le point central"""
-        self._center = _to_point(point, copy=True)
+        self._center = geometry._to_point(point, copy=True)
         self._center.reshape(2)
 
     @centerx.setter
@@ -198,90 +196,86 @@ class CircleObject:
         self._border_around = value
 
     # ======================================== PREDICATS ========================================
-    def collidepoint(self, point: PointObject) -> bool:
+    def collidepoint(self, point: geometry.Point) -> bool:
         """
         Vérifie qu'un point soit dans le cercle
 
         Args:
-            point (PointObject) : point à vérifier
+            point (geometry.Point) : point à vérifier
         """
-        point = _to_point(point)
+        point = geometry._to_point(point)
         return self._collidepoint(point)
     
-    def _collidepoint(self, point: PointObject) -> bool:
+    def _collidepoint(self, point: geometry.Point) -> bool:
         """Implémentation interne de collidepoint"""
         dist_sq = (point.x - self.centerx)**2 + (point.y - self.centery)**2
         return dist_sq <= self._radius**2
 
-    def collideline(self, line: LineObject) -> bool:
+    def collideline(self, line: geometry.Line) -> bool:
         """
         Vérifie que la droite croise le cercle
 
         Args:
-            line (LineObject) : droite à vérifier
+            line (geometry.Line) : droite à vérifier
         """
-        from ._line import LineObject
-        if not isinstance(line, LineObject):
+        if not isinstance(line, geometry.Line):
             _raise_error(self, 'collideline', 'Invalid line argument')
         return self._collideline(line)
     
-    def _collideline(self, line: LineObject) -> bool:
+    def _collideline(self, line: geometry.Line) -> bool:
         """Implémentation interne de collideline"""
         dist = line._distance(self._center)
         return dist <= self._radius
 
-    def collidesegment(self, segment: SegmentObject) -> bool:
+    def collidesegment(self, segment: geometry.Segment) -> bool:
         """
         Vérifie que le segment croise le cercle
 
         Args:
-            segment (SegmentObject) : segment à vérifier
+            segment (geometry.Segment) : segment à vérifier
         """
-        from ._segment import SegmentObject
-        if not isinstance(segment, SegmentObject):
+        if not isinstance(segment, geometry.Segment):
             _raise_error(self, 'collidesegment', 'Invalid segment argument')
         return self._collidesegment(segment)
     
-    def _collidesegment(self, segment: SegmentObject) -> bool:
+    def _collidesegment(self, segment: geometry.Segment) -> bool:
         """Implémentation interne de collidesegment"""
         dist = segment._distance(self._center)
         return dist <= self._radius
 
-    def colliderect(self, rect: RectObject) -> bool:
+    def colliderect(self, rect: geometry.Rect) -> bool:
         """
         Vérifie la collision avec un rectangle
 
         Args:
-            rect (RectObject) : rectangle à vérifier
+            rect (geometry.Rect) : rectangle à vérifier
         """
-        from ._rect import _to_rect
-        rect = _to_rect(rect)
+        rect = geometry._to_rect(rect)
         return self._colliderect(rect)
     
-    def _colliderect(self, rect: RectObject) -> bool:
+    def _colliderect(self, rect: geometry.Rect) -> bool:
         """Implémentation interne de colliderect"""
         return rect._collidecircle(self)
 
-    def collidecircle(self, circle: CircleObject) -> bool:
+    def collidecircle(self, circle: geometry.Circle) -> bool:
         """
         Vérifie la collision avec un autre cercle
 
         Args:
-            circle (CircleObject) : cercle à vérifier
+            circle (geometry.Circle) : cercle à vérifier
         """
-        from ._circle import CircleObject
-        if not isinstance(circle, CircleObject):
+        if not isinstance(circle, geometry.Circle):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
         return self._collidecircle(circle)
     
-    def _collidecircle(self, circle: CircleObject) -> bool:
+    def _collidecircle(self, circle: geometry.Circle) -> bool:
         """Implémentation interne de collidecircle"""
         dist_sq = (self.centerx - circle.centerx)**2 + (self.centery - circle.centery)**2
         dist = math.sqrt(dist_sq)
         return dist <= self._radius + circle.radius
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> CircleObject:
+    def copy(self) -> geometry.Circle:
         """Renvoie une copie du cercle"""
         return _deepcopy(self)
     
@@ -308,22 +302,22 @@ class CircleObject:
         """Implémentation interne de scale"""
         self.radius = round(self.radius * float(ratio), self.PRECISION)
     
-    def translate(self, vector: VectorObject):
+    def translate(self, vector: geometry.Vector):
         """
         Translate le cercle selon un vecteur
 
         Args:
-            vector (VectorObject) : vecteur de translation
+            vector (geometry.Vector) : vecteur de translation
         """
-        vector = _to_vector(vector)
+        vector = geometry._to_vector(vector)
         self._translate(vector)
 
-    def _translate(self, vector: VectorObject):
+    def _translate(self, vector: geometry.Vector):
         """Implémentation interne de translate"""
         self.centerx += vector.x
         self.centery += vector.y
     
-    def point_from_angle(self, angle: Real, degrees: bool = False) -> PointObject:
+    def point_from_angle(self, angle: Real, degrees: bool = False) -> geometry.Point:
         """
         Renvoie le point sur le cercle à un angle donné
         
@@ -337,7 +331,7 @@ class CircleObject:
             _raise_error(self, 'point_from_angle', 'Invalid degrees argument')
         return self._point_from_angle(angle, degrees=degrees)
     
-    def _point_from_angle(self, angle: Real, degrees: bool = False) -> PointObject:
+    def _point_from_angle(self, angle: Real, degrees: bool = False) -> geometry.Point:
         """Implémentation interne de point_from_angle"""
         if degrees:
             angle = math.radians(angle)
@@ -345,24 +339,23 @@ class CircleObject:
         x = self.centerx + self._radius * math.cos(angle)
         y = self.centery + self._radius * math.sin(angle)
         
-        return PointObject(x, y)
+        return geometry.Point(x, y)
 
-    def line_intersection(self, line: LineObject) -> tuple[PointObject] | None:
+    def line_intersection(self, line: geometry.Line) -> tuple[geometry.Point] | None:
         """
         Renvoie les points d'intersection entre le cercle et une droite
         
         Args:
-            line (LineObject): droite
+            line (geometry.Line): droite
             
         Returns:
-            tuple[PointObject] | None: 0, 1 ou 2 points d'intersection
+            tuple[geometry.Point] | None: 0, 1 ou 2 points d'intersection
         """
-        from ._line import LineObject        
-        if not isinstance(line, LineObject):
+        if not isinstance(line, geometry.Line):
             _raise_error(self, 'line_intersection', 'Invalid line argument')
         return self._line_intersection(line)
     
-    def _line_intersection(self, line: LineObject) -> tuple[PointObject] | None:
+    def _line_intersection(self, line: geometry.Line) -> tuple[geometry.Point] | None:
         """Implémentation interne de line_intersection"""
         line = line.copy()
         line.reshape(2)
@@ -395,25 +388,23 @@ class CircleObject:
         
         return (P1, P2)
 
-    def segment_intersection(self, segment: SegmentObject) -> tuple[PointObject] | None:
+    def segment_intersection(self, segment: geometry.Segment) -> tuple[geometry.Point] | None:
         """
         Renvoie les points d'intersection entre le cercle et un segment
         
         Args:
-            segment (SegmentObject): segment
+            segment (geometry.Segment): segment
             
         Returns:
-            tuple[PointObject] | None: 0, 1 ou 2 points d'intersection
+            tuple[geometry.Point] | None: 0, 1 ou 2 points d'intersection
         """
-        from ._segment import SegmentObject       
-        if not isinstance(segment, SegmentObject):
+        if not isinstance(segment, geometry.Segment):
             _raise_error(self, 'segment_intersection', 'Invalid segment argument')
         return self._segment_intersection(segment)
     
-    def _segment_intersection(self, segment: SegmentObject) -> tuple[PointObject] | None:
+    def _segment_intersection(self, segment: geometry.Segment) -> tuple[geometry.Point] | None:
         """Implémentation interne de segment_intersection"""
-        from ._line import LineObject        
-        line = LineObject(segment.P1, segment.get_vector())
+        line = geometry.Line(segment._start, segment.get_vector())
         intersections = self.line_intersection(line)
         
         if intersections is None:
@@ -426,23 +417,21 @@ class CircleObject:
         
         return tuple(valid_points) if valid_points else None
 
-    def rect_intersection(self, rect: RectObject) -> tuple[PointObject] | None:
+    def rect_intersection(self, rect: geometry.Rect) -> tuple[geometry.Point] | None:
         """
         Renvoie les points d'intersection entre le cercle et un rectangle
         
         Args:
-            rect (RectObject): rectangle
+            rect (geometry.Rect): rectangle
             
         Returns:
-            tuple[PointObject] | None: liste des points d'intersection
+            tuple[geometry.Point] | None: liste des points d'intersection
         """
-        from ._rect import _to_rect        
-        rect = _to_rect(rect)
+        rect = geometry._to_rect(rect)
         return self._rect_intersection(rect)
         
-    def _rect_intersection(self, rect: RectObject) -> tuple[PointObject] | None:
+    def _rect_intersection(self, rect: geometry.Rect) -> tuple[geometry.Point] | None:
         """Implémentation interne de rect_intersection"""
-        from ._segment import SegmentObject
         if not self._colliderect(rect):
             return None
         
@@ -451,10 +440,10 @@ class CircleObject:
         
         if r <= 0:
             segments = [
-                SegmentObject(PointObject(rect.left, rect.top), PointObject(rect.right, rect.top)),
-                SegmentObject(PointObject(rect.right, rect.top), PointObject(rect.right, rect.bottom)),
-                SegmentObject(PointObject(rect.right, rect.bottom), PointObject(rect.left, rect.bottom)),
-                SegmentObject(PointObject(rect.left, rect.bottom), PointObject(rect.left, rect.top)),
+                geometry.Segment(geometry.Point(rect.left, rect.top), geometry.Point(rect.right, rect.top)),
+                geometry.Segment(geometry.Point(rect.right, rect.top), geometry.Point(rect.right, rect.bottom)),
+                geometry.Segment(geometry.Point(rect.right, rect.bottom), geometry.Point(rect.left, rect.bottom)),
+                geometry.Segment(geometry.Point(rect.left, rect.bottom), geometry.Point(rect.left, rect.top)),
             ]
             
             for segment in segments:
@@ -462,21 +451,21 @@ class CircleObject:
                 if intersections:
                     points.extend(intersections)
         else:
-            top_segment = SegmentObject(
-                PointObject(rect.left + r, rect.top),
-                PointObject(rect.right - r, rect.top)
+            top_segment = geometry.Segment(
+                geometry.Point(rect.left + r, rect.top),
+                geometry.Point(rect.right - r, rect.top)
             )
-            bottom_segment = SegmentObject(
-                PointObject(rect.left + r, rect.bottom),
-                PointObject(rect.right - r, rect.bottom)
+            bottom_segment = geometry.Segment(
+                geometry.Point(rect.left + r, rect.bottom),
+                geometry.Point(rect.right - r, rect.bottom)
             )
-            left_segment = SegmentObject(
-                PointObject(rect.left, rect.top + r),
-                PointObject(rect.left, rect.bottom - r)
+            left_segment = geometry.Segment(
+                geometry.Point(rect.left, rect.top + r),
+                geometry.Point(rect.left, rect.bottom - r)
             )
-            right_segment = SegmentObject(
-                PointObject(rect.right, rect.top + r),
-                PointObject(rect.right, rect.bottom - r)
+            right_segment = geometry.Segment(
+                geometry.Point(rect.right, rect.top + r),
+                geometry.Point(rect.right, rect.bottom - r)
             )
             
             for segment in [top_segment, bottom_segment, left_segment, right_segment]:
@@ -492,7 +481,7 @@ class CircleObject:
             ]
             
             for cx, cy in corners:
-                corner_points = self._circle_intersection((PointObject(cx, cy), r))
+                corner_points = self._circle_intersection((geometry.Point(cx, cy), r))
                 if corner_points:
                     points.extend(corner_points)
         
@@ -506,21 +495,21 @@ class CircleObject:
         
         return tuple(unique_points) if unique_points else None
 
-    def circle_intersection(self, circle: CircleObject) -> tuple[PointObject] | None:
+    def circle_intersection(self, circle: geometry.Circle) -> tuple[geometry.Point] | None:
         """
         Calcule l'intersection avec un autre cercle
         
         Args:
-            circle (CircleObject | tuple): autre cercle
+            circle (geometry.Circle | tuple): autre cercle
             
         Returns:
-            tuple[PointObject] | None: 0, 1 ou 2 points d'intersection
+            tuple[geometry.Point] | None: 0, 1 ou 2 points d'intersection
         """        
-        if not isinstance(circle, CircleObject):
+        if not isinstance(circle, geometry.Circle):
             _raise_error(self, 'circle_intersection', 'Invalid circle argument')
         return self._circle_intersection(circle)
     
-    def _circle_intersection(self, circle: CircleObject) -> tuple[PointObject] | None:
+    def _circle_intersection(self, circle: geometry.Circle) -> tuple[geometry.Point] | None:
         """Implémentation interne de circle_intersection"""        
         x1, y1 = self.centerx, self.centery
         r1 = self._radius
@@ -539,7 +528,7 @@ class CircleObject:
             ratio = r1 / d
             px = x1 + ratio * dx
             py = y1 + ratio * dy
-            return (PointObject(px, py),)
+            return (geometry.Point(px, py),)
         
         a = (r1**2 - r2**2 + d**2) / (2 * d)
         h = math.sqrt(r1**2 - a**2)
@@ -553,29 +542,28 @@ class CircleObject:
         p2x = px2 - h * dy / d
         p2y = py2 + h * dx / d
         
-        return (PointObject(p1x, p1y), PointObject(p2x, p2y))
+        return (geometry.Point(p1x, p1y), geometry.Point(p2x, p2y))
 
-    def rect_collision_normal(self, rect: RectObject, collision_point: PointObject=None) -> VectorObject:
+    def rect_collision_normal(self, rect: geometry.Rect, collision_point: geometry.Point=None) -> geometry.Vector:
         """
         Renvoie le vecteur normal au point de collision avec un rectangle
         
         Args:
-            rect (RectObject): rectangle avec lequel il y a collision
-            collision_point (PointObject, optional): point de collision spécifique
+            rect (geometry.Rect): rectangle avec lequel il y a collision
+            collision_point (geometry.Point, optional): point de collision spécifique
             
         Returns:
-            VectorObject: vecteur normal normalisé pointant vers l'extérieur du rectangle
+            geometry.Vector: vecteur normal normalisé pointant vers l'extérieur du rectangle
         """
-        from ._rect import _to_rect        
-        rect = _to_rect(rect)
+        rect = geometry._to_rect(rect)
         return self._rect_collision_normal(rect, collision_point=collision_point)
     
-    def _rect_collision_normal(self, rect: RectObject, collision_point: PointObject=None) -> VectorObject:
+    def _rect_collision_normal(self, rect: geometry.Rect, collision_point: geometry.Point=None) -> geometry.Vector:
         """Implémentation interne de rect_collision_normal"""        
         if collision_point is None:
             collision_point = rect._closest_point(self._center)
         else:
-            collision_point = _to_point(collision_point)
+            collision_point = geometry._to_point(collision_point)
         
         r = rect.border_radius if rect.border_radius > 0 else 0
         px, py = collision_point.x, collision_point.y
@@ -584,17 +572,17 @@ class CircleObject:
             epsilon = 1e-6
             
             if abs(py - rect.top) < epsilon:
-                return VectorObject(0, -1)
+                return geometry.Vector(0, -1)
             elif abs(py - rect.bottom) < epsilon:
-                return VectorObject(0, 1)
+                return geometry.Vector(0, 1)
             elif abs(px - rect.left) < epsilon:
-                return VectorObject(-1, 0)
+                return geometry.Vector(-1, 0)
             elif abs(px - rect.right) < epsilon:
-                return VectorObject(1, 0)
+                return geometry.Vector(1, 0)
             else:
                 normal = collision_point - self._center
                 if normal.is_null():
-                    return VectorObject(0, -1)
+                    return geometry.Vector(0, -1)
                 return normal.normalized
         
         corners = [
@@ -608,7 +596,7 @@ class CircleObject:
             dist_to_corner = math.sqrt((px - cx)**2 + (py - cy)**2)
             
             if dist_to_corner < r + 1e-6:
-                normal = VectorObject(px - cx, py - cy)
+                normal = geometry.Vector(px - cx, py - cy)
                 if normal.is_null():
                     normal = collision_point - self._center
                 if not normal.is_null():
@@ -618,19 +606,19 @@ class CircleObject:
         
         if rect.left + r <= px <= rect.right - r:
             if abs(py - rect.top) < epsilon:
-                return VectorObject(0, -1)
+                return geometry.Vector(0, -1)
             elif abs(py - rect.bottom) < epsilon:
-                return VectorObject(0, 1)
+                return geometry.Vector(0, 1)
         
         if rect.top + r <= py <= rect.bottom - r:
             if abs(px - rect.left) < epsilon:
-                return VectorObject(-1, 0)
+                return geometry.Vector(-1, 0)
             elif abs(px - rect.right) < epsilon:
-                return VectorObject(1, 0)
+                return geometry.Vector(1, 0)
         
         normal = collision_point - self._center
         if normal.is_null():
-            return VectorObject(0, -1)
+            return geometry.Vector(0, -1)
         return normal.normalized
 
     # ======================================== AFFICHAGE ========================================

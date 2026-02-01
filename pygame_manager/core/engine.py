@@ -1,5 +1,6 @@
 import pygame
 from pygame_manager import managers
+from context import context
 
 class Engine:
     def __init__(self):
@@ -11,8 +12,10 @@ class Engine:
         for manager_name in managers.__all__:
             if manager_name.endswith("_manager"):
                 manager_instance = getattr(managers, manager_name)
-                setattr(self, manager_name[:-8].lower(), manager_instance)
-
+                attr = manager_name[:-8].lower()
+                setattr(self, attr, manager_instance)
+                setattr(context, attr, manager_instance)
+        context.engine = self
         self.__initialized = False
         self.__running = False
 
@@ -54,7 +57,9 @@ class Engine:
                     self.__running = self.inputs.check_all()
                 update()
                 self.states.update()
+                self.menus.update()
                 self.ui.update()
+                self.menus.draw()
 
             if not self.__running:
                 break

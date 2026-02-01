@@ -24,6 +24,36 @@ class GeometryManager:
         self.Circle = CircleObject
         self.Rect = RectObject
         self.Polygon = PolygonObject
+
+    # ======================================== TRANSFORMATIONS INTERMEDIAIRE ========================================
+    @staticmethod
+    def _to_vector(vector: VectorObject | Iterable[Real], copy:bool=False, fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument') -> VectorObject | object | None:
+        """tente de convertir si besoin l'objet en VectorObject"""
+        if isinstance(vector, VectorObject):
+            return vector if not copy else vector.copy()
+        if isinstance(vector, Sequence) and all(isinstance(c, Real) for c in vector):
+            return VectorObject(*vector)
+        return fallback if fallback is not None else _raise_error(VectorObject, method, message) if raised else None
+    
+    @staticmethod
+    def _to_point(point: PointObject | Iterable[Real], copy: bool=False, fallback: object=None, raised: bool=True, method: str='_to_point', message: str='Invalid point argument'):
+        """tente de convertir si besoin l'objet en Point"""
+        if isinstance(point, PointObject):
+            return point if not copy else point.copy()
+        if isinstance(point, Sequence) and all(isinstance(c, Real) for c in point):
+            return PointObject(*point)
+        return fallback if fallback is not None else _raise_error(PointObject, method, message) if raised else None
+    
+    @staticmethod
+    def _to_rect(rect: RectObject, copy: bool=False, fallback: object=None, raised: bool=True, method: str='_to_rect', message: str='Invalid rect argument'):
+        """Transforme l'objet en rect si besoin l'est"""
+        if isinstance(rect, RectObject):
+            return rect.copy() if copy else rect
+        elif isinstance(rect, pygame.Rect):
+            return RectObject(rect.x, rect.y, rect.width, rect.height)
+        elif isinstance(rect, Sequence) and len(rect) == 4 and all(isinstance(c, Real) for c in rect):
+            return RectObject(*rect)
+        return fallback if fallback is not None else _raise_error(RectObject, method, message) if raised else None
     
     # ======================================== GENERATIONS PARTICULIERES ========================================
     def line_from_two_points(self, P1: PointObject, P2: PointObject) -> LineObject:

@@ -3,9 +3,9 @@ from ._core import *
 from ...context import ui, screen, menus
 
 # ======================================== OBJET ========================================
-class RectButtonObject:
+class CircleButtonObject:
     """
-    Object de l'interface : Bouton
+    Object de l'interface : Bouton circulaire
     
     S'enregistre et s'actualise automatiquement en tant qu'objet lors de l'instanciation
     """
@@ -13,11 +13,9 @@ class RectButtonObject:
             self,
             x: Real = -1,
             y: Real = -1,
-            width: Real = -1, 
-            height: Real = -1,
+            radius: Real = -1,
 
             filling: bool = True,
-            filling_hover: bool = True,
             filling_color: pygame.Color = (255, 255, 255, 255),
             filling_color_hover: pygame.Color = None,
 
@@ -28,34 +26,31 @@ class RectButtonObject:
             font: pygame.font.Font = None,
             font_path: str = None,
             font_size: int = None,
-            font_color : pygame.Color = (0, 0, 0, 255),
-            font_color_hover : pygame.Color = None,
+            font_color: pygame.Color = (0, 0, 0, 255),
+            font_color_hover: pygame.Color = None,
 
-            border_width : int = 0,
-            border_color : pygame.Color = (0, 0, 0, 255),
-            border_radius: int = 0,
+            border_width: int = 0,
+            border_color: pygame.Color = (0, 0, 0, 255),
 
             hover_scale_ratio: float = 1.0,
             hover_scale_duration: float = 0.0,
 
             callback: callable = lambda: None,
-
-            menu: object = None,
-            zorder: int = 0,
+            menu: object = None
         ):
         """
         Args:
-            x (Real) : coordonnée de la gauche
-            y (Real) : coordonnée du haut
-            width (Real) : largeur
-            height (Real) : hauteur
+            x (Real) : coordonnée x du centre
+            y (Real) : coordonnée y du centre
+            radius (Real) : rayon du cercle
 
             filling (bool, optional) : remplissage
             filling_color (Color, optional) : couleur de fond
             filling_color_hover (Color, optional) : couleur de fond lors du survol
             icon (Surface, optional) : image de fond
+            icon_hover (Surface, optional) : image de fond lors du survol
 
-            text (str, optional) : texte du boutton
+            text (str, optional) : texte du bouton
             font (Font, optional) : police du texte
             font_path (str, optional) : chemin vers la police
             font_size (int, optional) : taille de la police
@@ -64,7 +59,6 @@ class RectButtonObject:
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
-            border_radius (int, optional) : rayon d'arrondissement des coins
 
             hover_scale_ratio (float, optional) : facteur de redimensionnement lors du survol
             hover_scale_duration (float, optional) : durée de redimensionnement (en secondes)
@@ -75,13 +69,12 @@ class RectButtonObject:
         # vérifications
         if not isinstance(x, Real): _raise_error(self, '__init__', 'Invalid x argument')
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
-        if not isinstance(width, Real): _raise_error(self, '__init__', 'Invalid width argument')
-        if not isinstance(height, Real): _raise_error(self, '__init__', 'Invalid height argument')
+        if not isinstance(radius, Real) or radius <= 0: _raise_error(self, '__init__', 'Invalid radius argument')
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
-        if not isinstance(filling_hover, bool): _raise_error(self, '__init__', 'Invalid filling_hover argument')
         filling_color = _to_color(filling_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)
         if icon is not None and not isinstance(icon, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon argument')
+        if icon_hover is not None and not isinstance(icon_hover, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_hover argument')
         if text is not None and not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
         if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
@@ -90,12 +83,10 @@ class RectButtonObject:
         font_color_hover = _to_color(font_color_hover, raised=False)
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color, method='__init__')
-        if not isinstance(border_radius, int): _raise_error(self, '__init__', 'Invalid border_radius argument')
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
         if menu is not None and not isinstance(menu, str): _raise_error(self, '__init__', 'Invalid menu argument')
-        if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
         ui._append(self)
@@ -105,13 +96,14 @@ class RectButtonObject:
         self._surface_rect = None
 
         # position et taille
-        width = min(1920, max(5, width))
-        height = min(1080, max(5, height))
-        self._rect = pygame.Rect(x, y, width, height)
+        self._radius = int(min(540, max(3, radius)))
+        self._center = (int(x), int(y))
+        diameter = self._radius * 2
+        self._rect = pygame.Rect(x - self._radius, y - self._radius, diameter, diameter)
+        self._local_center = (self._radius, self._radius)
 
         # background
         self._filling = filling
-        self._filling_hover = filling_hover
         self._filling_color = filling_color
         self._filling_color_hover = filling_color_hover
 
@@ -119,20 +111,20 @@ class RectButtonObject:
         self._icon = None
         self._icon_rect = None
         if icon is not None:
+            max_icon = int(self._radius * 1.2)
             iwidth, iheight = icon.get_size()
-            iwidth = min(iwidth, width * 0.8)
-            iheight = min(iheight, height * 0.8)
-            self._icon = pygame.transform.smoothscale(icon, (iwidth, iheight))
-            self._icon_rect = self._icon.get_rect(center=self._rect.center)
+            ratio = min(max_icon / iwidth, max_icon / iheight)
+            self._icon = pygame.transform.smoothscale(icon, (int(iwidth * ratio), int(iheight * ratio)))
+            self._icon_rect = self._icon.get_rect(center=self._local_center)
 
         self._icon_hover = self._icon
         self._icon_hover_rect = self._icon_rect
         if icon_hover is not None:
+            max_icon = int(self._radius * 1.2)
             iwidth, iheight = icon_hover.get_size()
-            iwidth = min(iwidth, width * 0.8)
-            iheight = min(iheight, height * 0.8)
-            self._icon_hover = pygame.transform.smoothscale(icon_hover, (iwidth, iheight))
-            self._icon_hover_rect = self._icon_hover.get_rect(center=self._rect.center)
+            ratio = min(max_icon / iwidth, max_icon / iheight)
+            self._icon_hover = pygame.transform.smoothscale(icon_hover, (int(iwidth * ratio), int(iheight * ratio)))
+            self._icon_hover_rect = self._icon_hover.get_rect(center=self._local_center)
 
         # texte
         self._text = text
@@ -147,26 +139,25 @@ class RectButtonObject:
         self._text_object_rect = None
         self._text_blit = False
 
-        if self._text is not None: # génération
-            if self._font_size is None: # taille de police auto
-                self._font = max(3, int(self._rect.height * 0.6))
+        if self._text is not None:
+            if self._font_size is None:
+                self._font_size = max(3, int(self._radius * 0.7))
 
-            if self._font is None: # chargement de la police
+            if self._font is None:
                 try:
                     self._font = pygame.font.Font(self._font_path, self._font_size)
                 except Exception as _:
                     self._font = pygame.font.Font(None, self._font_size)
 
-            self._text_object = self._font.render(self._text, 1, self._font_color)
-            self._text_object_hover = self._font.render(self._text, 1, self._font_color_hover)
-            self._text_object_rect = self._text_object.get_rect(center=self._rect.center)
+            self._text_object = self._font.render(self._text, True, self._font_color)
+            self._text_object_hover = self._font.render(self._text, True, self._font_color_hover)
+            self._text_object_rect = self._text_object.get_rect(center=self._local_center)
             self._text_blit = True
 
         # bordure
         self._border_width = max(0, border_width)
         self._border_color = border_color
-        self._border_radius = max(0, border_radius)
-        
+
         # effet de survol
         self._hover_scale_ratio = float(hover_scale_ratio)
         self._hover_scale_duration = float(hover_scale_duration)
@@ -176,7 +167,7 @@ class RectButtonObject:
 
         # menu maître
         self._menu = menu if menu in menus else None
-        self._zorder = zorder
+        self._zorder = 0
 
         # préchargement
         self._preloaded = {
@@ -205,7 +196,7 @@ class RectButtonObject:
 
     @property
     def rect(self) -> pygame.Rect:
-        """Renvoie le rect pygame"""
+        """Renvoie la bounding box pygame"""
         return self._rect.copy()
 
     @property
@@ -246,45 +237,45 @@ class RectButtonObject:
         return ui.hovered_object == self
     
     def collidemouse(self) -> bool:
-        """Vérifie que la souris soit sur le bouton"""
-        if self._menu is not None:
-            mouse_pos = self._menu.mouse_pos
-        else:
-            mouse_pos = screen.get_mouse_pos()
-        return self._rect.collidepoint(mouse_pos)
-    
-    # ======================================== DESSIN DU BOUTON ========================================
-    def load_default(self) -> dict[pygame.Surface]:
-        """Renvoie la surface par défaut du bouton'"""
-        default = pygame.Surface((self._rect.width, self._rect.height))
-        if self._filling:
-            pygame.draw.rect(default, self._filling_color, self._rect, border_radius=self._border_radius)
-        if self._icon is not None:
-            default.blit(self._icon, self._icon_rect)
-        if self._text_blit:
-            default.blit(self._text_object, self._text_object_rect)
-        if self._border_width > 0:
-            pygame.draw.rect(default, self._border_color, self._rect, border_radius=self._border_radius)
-        return default
+        """Vérifie que la souris soit sur le bouton (distance au centre <= rayon)"""
+        mouse_pos = self._menu.mouse_pos if self._menu is not None else screen.get_mouse_pos()
+        dx = mouse_pos[0] - self._center[0]
+        dy = mouse_pos[1] - self._center[1]
+        return dx * dx + dy * dy <= self._radius * self._radius
 
-    def load_hover(self) -> dict[pygame.Surface]:
-        """Renvoie la surface survolée du bouton'"""
-        hover = pygame.Surface((self._rect.width, self._rect.height))
-        if self._filling_hover:
-            pygame.draw.rect(hover, self._filling_color_hover, self._rect, border_radius=self._border_radius)
-        if self._icon_hover is not None:
-            hover.blit(self._icon_hover, self._icon_hover_rect)
+    # ======================================== DESSIN DU BOUTON ========================================
+    def load_default(self) -> pygame.Surface:
+        """Génère la surface par défaut du bouton"""
+        diameter = self._radius * 2
+        surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+        if self._filling:
+            pygame.draw.circle(surface, self._filling_color, self._local_center, self._radius)
+        if self._icon is not None:
+            surface.blit(self._icon, self._icon_rect)
         if self._text_blit:
-            hover.blit(self._text_object_hover, self._text_object_rect)
+            surface.blit(self._text_object, self._text_object_rect)
         if self._border_width > 0:
-            pygame.draw.rect(hover, self._border_color, self._rect, border_radius=self._border_radius)
-        return hover
+            pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
+        return surface
+
+    def load_hover(self) -> pygame.Surface:
+        """Génère la surface survolée du bouton"""
+        surface = self._preloaded["default"].copy()
+        if self._filling_color_hover is not None:
+            pygame.draw.circle(surface, self._filling_color_hover, self._local_center, self._radius)
+        if self._icon_hover is not None:
+            surface.blit(self._icon_hover, self._icon_hover_rect)
+        if self._text_blit:
+            surface.blit(self._text_object_hover, self._text_object_rect)
+        if self._border_width > 0:
+            pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
+        return surface
 
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
         self._surface = self._preloaded["hover" if self.hovered else "default"]
-        self._surface_rect = self._surface.get_rect(center=self._rect.center)
+        self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
 
     def draw(self):
         """Dessin par frame"""
@@ -292,7 +283,7 @@ class RectButtonObject:
             return
     
         surface = screen.surface
-        if self._menu is not None and hasattr(self.menu, 'surface'):
+        if self._menu is not None and hasattr(self._menu, 'surface'):
             surface = self._menu.surface
         
         surface.blit(self._surface, self._surface_rect)

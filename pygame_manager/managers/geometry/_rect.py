@@ -1,19 +1,6 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-from ._point import PointObject, _to_point
-from ._vector import VectorObject, _to_vector
-
-# ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
-def _to_rect(rect: RectObject, copy: bool=False, fallback: object=None, raised: bool=True, method: str='_to_rect', message: str='Invalid rect argument'):
-    """Transforme l'objet en rect si besoin l'est"""
-    if isinstance(rect, RectObject):
-        return rect.copy() if copy else rect
-    elif isinstance(rect, pygame.Rect):
-        return RectObject(rect.x, rect.y, rect.width, rect.height)
-    elif isinstance(rect, Sequence) and len(rect) == 4 and all(isinstance(c, Real) for c in rect):
-        return RectObject(*rect)
-    return fallback if fallback is not None else _raise_error(RectObject, method, message) if raised else None
 
 # ======================================== OBJET ========================================
 class RectObject:
@@ -23,20 +10,20 @@ class RectObject:
     __slots__ = ["_O", "_w", "_h", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around", "_border_radius",
                 "_border_topleft_radius", "_border_topright_radius", "_border_bottomleft_radius", "_border_bottomright_radius"]
     
-    def __init__(self, point: PointObject, width: Real, height: Real):
+    def __init__(self, point: geometry.Point, width: Real, height: Real):
         # point haut gauche
-        self._O = _to_point(point)       
+        self._O = geometry._to_point(point)       
         self._O.reshape(2)
 
         # largeur
         if not isinstance(width, Real) or width <= 0:
             _raise_error(self, '__init__', 'Invalid width argument')
-        self._w = VectorObject(width, 0)
+        self._w = geometry.Vector(width, 0)
 
         # hauteur
         if not isinstance(height, Real) or height <= 0:
             _raise_error(self, '__init__', 'Invalid height argument')
-        self._h = VectorObject(0, height)
+        self._h = geometry.Vector(0, height)
 
         # remplissage
         self._filling = True
@@ -59,13 +46,13 @@ class RectObject:
         """Représentation du rect"""
         return f"Rect({self.x}, {self.y}, {self.width}, {self.height})"
     
-    def __iter__(self) -> Iterator[PointObject]:
+    def __iter__(self) -> Iterator[geometry.Point]:
         """Itération sur les sommets"""
         for vertex in [
-            PointObject(*self.topleft), 
-            PointObject(*self.topright), 
-            PointObject(*self.bottomright), 
-            PointObject(*self.bottomleft)
+            geometry.Point(*self.topleft), 
+            geometry.Point(*self.topright), 
+            geometry.Point(*self.bottomright), 
+            geometry.Point(*self.bottomleft)
         ]: 
             yield vertex 
 
@@ -80,7 +67,7 @@ class RectObject:
         return pygame.Rect(*map(int, [self.x, self.y, self.width, self.height]))
     
     # position
-    def get_pos(self) -> PointObject:
+    def get_pos(self) -> geometry.Point:
         """Renvoie le point positionnel"""
         return self._O.copy()
     
@@ -95,7 +82,7 @@ class RectObject:
         return self._O.y
     
     @property
-    def topleft(self) -> PointObject:
+    def topleft(self) -> geometry.Point:
         """Renvoie le point haut gauche"""
         return self._O.copy()
     
@@ -105,7 +92,7 @@ class RectObject:
         return self.y
     
     @property
-    def topright(self) -> PointObject:
+    def topright(self) -> geometry.Point:
         """Renvoie le point haut droit"""
         return self._O + self._w
     
@@ -115,7 +102,7 @@ class RectObject:
         return self.x + self.width
     
     @property
-    def bottomright(self) -> PointObject:
+    def bottomright(self) -> geometry.Point:
         """Renvoie le du point bas droit"""
         return self._O + self._w + self._h
     
@@ -125,7 +112,7 @@ class RectObject:
         return self.y + self.height
     
     @property
-    def bottomleft(self) -> PointObject:
+    def bottomleft(self) -> geometry.Point:
         """Renvoie le du point bas gauche"""
         return self._O + self._h
     
@@ -135,7 +122,7 @@ class RectObject:
         return self.x
     
     @property
-    def center(self) -> PointObject:
+    def center(self) -> geometry.Point:
         """Renvoie le point central"""
         return self._O + 0.5 * (self._w + self._h)
     
@@ -257,9 +244,9 @@ class RectObject:
         self._O.y = coordinate
 
     @topleft.setter
-    def topleft(self, point: PointObject):
+    def topleft(self, point: geometry.Point):
         """Fixe les coordonnées du coin haut gauche"""
-        self._O = _to_point(point)
+        self._O = geometry._to_point(point)
 
     @top.setter
     def top(self, coordinate: Real):
@@ -269,9 +256,9 @@ class RectObject:
         self._O.y = coordinate
 
     @topright.setter
-    def topright(self, point: PointObject):
+    def topright(self, point: geometry.Point):
         """Fixe les coordonnées du coin haut droit"""
-        self._O = _to_point(point) - self._w
+        self._O = geometry._to_point(point) - self._w
     
     @right.setter
     def right(self, coordinate: Real):
@@ -281,9 +268,9 @@ class RectObject:
         self._O.x = coordinate - self.width
 
     @bottomright.setter
-    def bottomright(self, point: PointObject):
+    def bottomright(self, point: geometry.Point):
         """Fixe les coordonnées du coin bas droit"""
-        self._O = _to_point(point) - (self._w + self._h)
+        self._O = geometry._to_point(point) - (self._w + self._h)
     
     @bottom.setter
     def bottom(self, coordinate: Real):
@@ -293,9 +280,9 @@ class RectObject:
         self._O.y = coordinate - self.height
     
     @bottomleft.setter
-    def bottomleft(self, point: PointObject):
+    def bottomleft(self, point: geometry.Point):
         """Fixe les coordonnées du coin bas gauche"""
-        self._O = _to_point(point) - self._h
+        self._O = geometry._to_point(point) - self._h
 
     @left.setter
     def left(self, coordinate: Real):
@@ -305,9 +292,9 @@ class RectObject:
         self._O.x = coordinate
     
     @center.setter
-    def center(self, point: PointObject):
+    def center(self, point: geometry.Point):
         """Fixe les coordonnées du centre"""
-        self._O = _to_point(point) - 0.5 * (self._w + self._h)
+        self._O = geometry._to_point(point) - 0.5 * (self._w + self._h)
 
     @centerx.setter
     def centerx(self, coordinate: Real):
@@ -411,42 +398,42 @@ class RectObject:
         self._border_bottomright_radius = min(radius, self.border_radius_max)
 
     # ======================================== OPERATIONS ========================================
-    def __add__(self, vector: VectorObject) -> RectObject:
+    def __add__(self, vector: geometry.Vector) -> geometry.Rect:
         """Renvoie l'image du rect par le vecteur donné"""
-        vector = _to_vector(vector, raised=False)
+        vector = geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
         result._translate(vector)
         return result
     
-    def __radd__(self, vector: VectorObject) -> RectObject:
+    def __radd__(self, vector: geometry.Vector) -> geometry.Rect:
         """Renvoie l'image du rect par le vecteur donné"""
-        vector = _to_vector(vector, raised=False)
+        vector = geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
         result._translate(vector)
         return result
     
-    def __sub__(self, vector: VectorObject) -> RectObject:
+    def __sub__(self, vector: geometry.Vector) -> geometry.Rect:
         """Renvoie l'image du rect par l'opposé du vecteur donné"""
-        vector = _to_vector(vector, raised=False)
+        vector = geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
         result._translate(-vector)
         return result
     
     # ======================================== PREDICATS & COLLISIONS ========================================
-    def collidepoint(self, point: PointObject) -> bool:
+    def collidepoint(self, point: geometry.Point) -> bool:
         """
         Vérifie que le point se trouve dans le rect
 
         Args:
-            point (PointObject) : point à vérifier
+            point (geometry.Point) : point à vérifier
         """
-        point = _to_point(point)
+        point = geometry._to_point(point)
         return self._collidepoint(point)
     
-    def _collidepoint(self, point: PointObject) -> bool:
+    def _collidepoint(self, point: geometry.Point) -> bool:
         """Implémentation interne de collidepoint"""
         px, py = point.x, point.y
         if self._border_radius <= 0:
@@ -488,10 +475,9 @@ class RectObject:
         
         return False
 
-    def collideline(self, line: LineObject) -> bool:
+    def collideline(self, line: geometry.Line) -> bool:
         """Vérifie que la ligne croise le rect"""
-        from ._line import LineObject
-        if not isinstance(line, LineObject):
+        if not isinstance(line, geometry.Line):
             _raise_error(self, 'collideline', 'Invalid line argument')
         return self._collideline(line)
     
@@ -500,20 +486,18 @@ class RectObject:
         intersections = self._line_intersection(line)
         return intersections is not None and len(intersections) > 0
 
-    def collidesegment(self, segment: SegmentObject) -> bool:
+    def collidesegment(self, segment: geometry.Segment) -> bool:
         """Vérifie qu'un segment croise le rect"""
-        from ._segment import SegmentObject
-        if not isinstance(segment, SegmentObject):
+        if not isinstance(segment, geometry.Segment):
             _raise_error(self, 'collidesegment', 'Invalid segment argument')
         return self._collidesegment(segment)
     
-    def _collidesegment(self, segment: SegmentObject) -> bool:
+    def _collidesegment(self, segment: geometry.Segment) -> bool:
         """Implémentation interne de collidesegment"""        
         if self._collidepoint(segment._start) or self._collidepoint(segment._end):
             return True
         
-        from ._line import LineObject
-        line = LineObject(segment._start, segment.get_vector())
+        line = geometry.Line(segment._start, segment.get_vector())
         intersections = self._line_intersection(line)
         
         if intersections is None: return False
@@ -522,17 +506,17 @@ class RectObject:
                 return True
         return False
 
-    def colliderect(self, rect: RectObject) -> bool:
+    def colliderect(self, rect: geometry.Rect) -> bool:
         """
         Vérifie la superposition de deux rects
 
         Args:
-            rect (RectObject) : rect à vérifier
+            rect (geometry.Rect) : rect à vérifier
         """
-        rect = _to_rect(rect)
+        rect = geometry._to_rect(rect)
         return self._colliderect(rect)
     
-    def _colliderect(self, rect: RectObject) -> bool:
+    def _colliderect(self, rect: geometry.Rect) -> bool:
         """Implémentation interne de colliderect"""       
         if self.right < rect.left or rect.right < self.left:
             return False
@@ -597,19 +581,18 @@ class RectObject:
         
         return False
     
-    def collidecircle(self, circle: CircleObject) -> bool:
+    def collidecircle(self, circle: geometry.Circle) -> bool:
         """
         Vérifie la collision avec un cercle
 
         Args:
-            circle (CircleObject) : cercle à vérifier
+            circle (geometry.Circle) : cercle à vérifier
         """
-        from ._circle import CircleObject
-        if not isinstance(circle, CircleObject):
+        if not isinstance(circle, geometry.Circle):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
         return self._collidecircle(circle)
 
-    def _collidecircle(self, circle: CircleObject) -> bool:
+    def _collidecircle(self, circle: geometry.Circle) -> bool:
         """Implémentation interne de collidecircle"""
         center = circle._center
         radius = circle._radius
@@ -659,7 +642,7 @@ class RectObject:
         return dist_sq <= radius**2
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> RectObject:
+    def copy(self) -> geometry.Rect:
         """Renvoie une copie du rect"""
         return _deepcopy(self)
 
@@ -683,39 +666,39 @@ class RectObject:
         self.width = self.width * ratio
         self.height = self.height * ratio
     
-    def translate(self, vector: VectorObject):
+    def translate(self, vector: geometry.Vector):
         """
         Translate le rect selon un vecteur
 
         Args:
-            vector (VectorObject) : vecteur de translation
+            vector (geometry.Vector) : vecteur de translation
         """
-        vector = _to_vector(vector)
+        vector = geometry._to_vector(vector)
         self.x += vector.x
         self.y += vector.y
     
-    def closest_point(self, point: PointObject):
+    def closest_point(self, point: geometry.Point):
         """Renvoie le point du rect le plus proche d'un point donné"""
-        point = _to_point(point)
+        point = geometry._to_point(point)
         px, py = point.x, point.y
         
         # Sans arrondi, simple clamping
         if self._border_radius <= 0:
             x = max(self.left, min(px, self.right))
             y = max(self.top, min(py, self.bottom))
-            return PointObject(x, y)
+            return geometry.Point(x, y)
         
         r = self._border_radius
         
         # Zone centrale horizontale
         if self.left + r <= px <= self.right - r:
             y = max(self.top, min(py, self.bottom))
-            return PointObject(px, y)
+            return geometry.Point(px, y)
         
         # Zone centrale verticale
         if self.top + r <= py <= self.bottom - r:
             x = max(self.left, min(px, self.right))
-            return PointObject(x, py)
+            return geometry.Point(x, py)
         
         # Dans une zone de coin arrondi
         corners = [
@@ -734,23 +717,22 @@ class RectObject:
                 dist = math.sqrt(dx**2 + dy**2)
                 
                 if dist == 0:
-                    return PointObject(cx + sign_x * r, cy)
+                    return geometry.Point(cx + sign_x * r, cy)
                 
                 if dist <= r:
-                    return PointObject(px, py)
+                    return geometry.Point(px, py)
                 else:
                     ratio = r / dist
-                    return PointObject(cx + dx * ratio, cy + dy * ratio)
+                    return geometry.Point(cx + dx * ratio, cy + dy * ratio)
         
         # Fallback
         x = max(self.left, min(px, self.right))
         y = max(self.top, min(py, self.bottom))
-        return PointObject(x, y)
+        return geometry.Point(x, y)
     
     def line_intersection(self, line):
         """Renvoie l'ensemble des points d'intersection entre la droite et le rect"""
-        from ._line import LineObject        
-        if not isinstance(line, LineObject): 
+        if not isinstance(line, geometry.Line): 
             _raise_error(self, 'line_intersection', 'Invalid line argument')
         
         # Propriétés du rect
@@ -769,25 +751,25 @@ class RectObject:
             t = (top - y0) / dy
             x = x0 + t * dx
             if left + r <= x <= right - r:
-                points.append(PointObject(x, top))
+                points.append(geometry.Point(x, top))
 
         if dx != 0:  # droit
             t = (right - x0) / dx
             y = y0 + t * dy
             if top + r <= y <= bottom - r:
-                points.append(PointObject(right, y))
+                points.append(geometry.Point(right, y))
 
         if dy != 0:  # bas
             t = (bottom - y0) / dy
             x = x0 + t * dx
             if left + r <= x <= right - r:
-                points.append(PointObject(x, bottom))
+                points.append(geometry.Point(x, bottom))
 
         if dx != 0:  # gauche
             t = (left - x0) / dx
             y = y0 + t * dy
             if top + r <= y <= bottom - r:
-                points.append(PointObject(left, y))
+                points.append(geometry.Point(left, y))
 
         # Coins arrondis
         if r > 0:
@@ -832,7 +814,7 @@ class RectObject:
                         if py < cy:
                             continue
 
-                    points.append(PointObject(px, py))
+                    points.append(geometry.Point(px, py))
 
         # Suppression des doublons
         unique_points = []

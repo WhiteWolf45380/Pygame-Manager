@@ -234,14 +234,14 @@ class ScreenManager:
         return (self.__screen_width / 2, self.__screen_height / 2)
     
     @property
-    def center_x(self) -> float:
+    def centerx(self) -> float:
         """
         Renvoie la coordonnée horizontale du centre de l'écran
         """
         return self.__screen_width / 2
     
     @property
-    def center_y(self) -> float:
+    def centery(self) -> float:
         """
         Renvoie la coordonnée verticale du centre de l'écran
         """

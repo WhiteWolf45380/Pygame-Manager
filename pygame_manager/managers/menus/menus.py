@@ -1,40 +1,56 @@
 # ======================================== IMPORTS ========================================
-from ._menu import Menu
+from typing import Iterable
+from numbers import Real
 import pygame
+from ...context import screen
+from ._menu import Menu
 
 # ======================================== MANAGER ========================================
 class MenusManager:
     """
     Gestionnaire de menus avec système predecessor/successor.
-
-    _all_menus : topologie complète de tous les menus enregistrés
-        { name: { "predecessor": str|None, "predecessor_type": str|None,
-                  "successors": [str, ...], "menu_obj": Menu } }
-
-    _active_menus : set des noms de menus actuellement actifs
-
-    Règle de propagation : désactiver un menu désactive tout son sous-arbre.
     """
     def __init__(self):
-        self._all_menus = {}
-        self._active_menus = set()
+        self._dict = {}
+        self._zorder = []
+        self._active_menus = []
+        self._hovered = None
 
         self.menu = Menu
 
-    # ======================================== REPR ========================================
-    def __repr__(self):
-        active = ', '.join(sorted(self._active_menus)) if self._active_menus else 'None'
-        return f"<MenusManager: {len(self._all_menus)} menus | Active: [{active}]>"
-
-    def __getitem__(self, key):
-        if key not in self._all_menus:
-            self._raise_error('__getitem__', f'menu "{key}" does not exist')
-        return self._all_menus[key]["menu_obj"]
-
     def _raise_error(self, method: str, text: str):
+        """
+        Lève une erreur
+        """
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
-    # ======================================== INTERNAL ========================================
+    def __repr__(self):
+        active = ', '.join(name for name in self._active_menus) or 'None'
+        return f"<MenusManager: {len(self._dict)} menus | Active: [{active}]>"
+
+    # ======================================== METHODES INTERNES ========================================
+    def _update_zorder(self):
+        """Exploration récursive pour construire la liste de Z-order"""
+        self._zorder = []
+
+        def visit(name: str):
+            if name not in self._dict:
+                return
+            self._zorder.append(name)
+            for child in self._dict[name]["successors"]:
+                visit(child)
+
+        for name, info in self._dict.items():
+            if info["predecessor"] is None:
+                visit(name)
+        
+        self._sort_active_menus()
+
+    def _sort_active_menus(self):
+        """Tri des menus actifs selon le zorder"""
+        active = set(self._active_menus)
+        self._active_menus = list(filter(lambda name: name in active, self._zorder))
+
     def _get_subtree(self, name: str) -> list:
         """Retourne tous les descendants d'un menu (lui-même inclus), en ordre BFS"""
         result = []
@@ -42,138 +58,173 @@ class MenusManager:
         while queue:
             current = queue.pop(0)
             result.append(current)
-            if current in self._all_menus:
-                queue.extend(self._all_menus[current]["successors"])
+            if current in self._dict:
+                queue.extend(self._dict[current]["successors"])
         return result
 
     def _deactivate_subtree(self, name: str):
         """Désactive un menu et tout son sous-arbre (on_exit en ordre inverse = feuilles d'abord)"""
         subtree = self._get_subtree(name)
-        # on_exit des feuilles vers la racine du sous-arbre
         for menu_name in reversed(subtree):
             if menu_name in self._active_menus:
-                menu_obj = self._all_menus[menu_name]["menu_obj"]
-                menu_obj.on_exit()
-                self._active_menus.discard(menu_name)
+                obj = self._dict[menu_name]["object"]
+                obj.on_exit()
+                self._active_menus.remove(menu_name)
+    
+    def _update_hovered(self):
+        """Renvoie le menu survolé par la souris"""
+        for name in reversed(self._active_menus):
+            obj = self._dict[name]["object"]
+            if not hasattr(obj, 'surface_rect'): continue
+            if not getattr(obj, "hoverable", True): continue
+            if any(p not in self._active_menus for p in self._get_chain(name)): continue
+            if 0 <= obj.mouse_x <= obj.surface_rect.width and 0 <= obj.mouse_y <= obj.surface_rect.height:
+                self._hovered = name
+                return
+        self._hovered = None
 
     # ======================================== GETTERS ========================================
     def get_menus(self) -> list:
-        return list(self._all_menus.keys())
+        """Renvoie l'ensemble des menus enregistrés"""
+        return list(self._dict.keys())
 
     def get_active_menus(self) -> list:
-        return list(self._active_menus)
+        """Renvoie l'ensemble des menus actifs"""
+        return self._active_menus
 
-    def is_active(self, name: str) -> bool:
-        return name in self._active_menus
-
-    def get_menu_object(self, name: str) -> Menu | None:
-        if name not in self._all_menus:
+    def get_object(self, name: str) -> Menu | None:
+        """Renvoie l'objet d'un menu"""
+        if name not in self._dict:
             return None
-        return self._all_menus[name]["menu_obj"]
+        return self._dict[name]["object"]
+    
+    def __getitem__(self, key):
+        """Renvoie l'objet d'un menu"""
+        if key not in self._dict.keys():
+            self._raise_error('__getitem__', f'menu "{key}" does not exist')
+        return self._dict[key]["object"]
 
     def get_predecessor(self, name: str) -> str | None:
-        if name not in self._all_menus:
+        """Renvoie le prédecesseur d'un menu"""
+        if name not in self._dict:
             return None
-        return self._all_menus[name]["predecessor"]
+        return self._dict[name]["predecessor"]
 
     def get_successors(self, name: str) -> list:
-        if name not in self._all_menus:
+        """Renvoie les successeurs d'un menu"""
+        if name not in self._dict:
             return []
-        return list(self._all_menus[name]["successors"])
+        return list(self._dict[name]["successors"])
+    
+    def get_hovered(self) -> str | None:
+        """Renvoie le menu survolé"""
+        return self._hovered
+    
+    @property
+    def hovered(self) -> str | None:
+        """Renvoie le menu survolé"""
+        return self._hovered
 
-    # ======================================== REGISTER ========================================
-    def register(self, menu_obj: Menu):
-        """Enregistre un objet Menu dans la topologie"""
-        name = menu_obj.name
-        if name in self._all_menus:
+    # ======================================== ENREGISTREMENT ========================================
+    def register(self, obj: Menu):
+        """
+        Enregistre un objet Menu
+
+        Args:
+            obj (Menu) : objet du menu à enregistrer
+        """
+        name = obj._name
+        if name in self._dict:
             self._raise_error('register', f'menu "{name}" already exists')
 
-        predecessor = menu_obj.predecessor
-        predecessor_type = menu_obj.predecessor_type
+        predecessor = obj._predecessor
+        if predecessor not in self._dict and predecessor is not None:
+            self._raise_error('register', f'predecessor menu "{predecessor}" does not exist')
 
-        # vérifie que le predecessor existe (si ce n'est pas None)
-        if predecessor is not None:
-            if predecessor_type == "state":
-                from ..states import states_manager
-                if states_manager.get_state_object(predecessor) is None:
-                    self._raise_error('register', f'predecessor state "{predecessor}" does not exist')
-            elif predecessor_type == "menu":
-                if predecessor not in self._all_menus:
-                    self._raise_error('register', f'predecessor menu "{predecessor}" does not exist')
-
-        # enregistrement
-        self._all_menus[name] = {
+        self._dict[name] = {
             "predecessor": predecessor,
-            "predecessor_type": predecessor_type,
             "successors": [],
-            "menu_obj": menu_obj
+            "object": obj
         }
 
-        # ajoute comme successeur du predecessor (si ce n'est pas None/screen)
-        if predecessor is not None and predecessor_type == "menu":
-            self._all_menus[predecessor]["successors"].append(name)
+        if predecessor is not None:
+            self._dict[predecessor]["successors"].append(name)
+        self._update_zorder()
+    
+    # ======================================== PREDICATS ========================================
+    def __contains__(self, menu: str | Menu):
+        """Vérifie l'enregistrement d'un menu"""
+        if isinstance(menu, str):
+            return menu in self._dict
+        
+    def is_active(self, name: str) -> bool:
+        """Vérifie qu'un menu soit actif"""
+        return name in self._active_menus
 
     # ======================================== ACTIVATION ========================================
     def activate(self, name: str):
-        """Active un menu"""
-        if name not in self._all_menus:
+        """
+        Active un menu
+
+        Args:
+            name (str) : nom du menu
+        """
+        if name not in self._dict:
             self._raise_error('activate', f'menu "{name}" does not exist')
         if name in self._active_menus:
-            return  # déjà actif
+            return
+        self._active_menus.append(name)
+        self._sort_active_menus()
+        self._dict[name]["object"].on_enter()
 
-        self._active_menus.add(name)
-        self._all_menus[name]["menu_obj"].on_enter()
+    def deactivate(self, name: str, pruning: bool = True):
+        """
+        Désactive un menu
 
-    def deactivate(self, name: str):
-        """Désactive un menu et tout son sous-arbre"""
-        if name not in self._all_menus:
+        Args:
+            name (str) : nom du menu à désactiver
+            pruning (bool, optional) : fermeture de tous les menus successeurs
+        """
+        if name not in self._dict:
             return
         if name not in self._active_menus:
             return
+        if not pruning:
+            obj = self._dict[name]["object"]
+            obj.on_exit()
+            self._active_menus.remove(name)
+            return
         self._deactivate_subtree(name)
+        self._sort_active_menus()
 
     def deactivate_all(self):
         """Désactive tous les menus actifs"""
-        # on_exit sur tous (pas de garantie d'ordre particulier entre branches indépendantes)
         for name in list(self._active_menus):
-            self._all_menus[name]["menu_obj"].on_exit()
-        self._active_menus = set()
+            self._dict[name]["object"].on_exit()
+        self._active_menus = []
 
     # ======================================== SWITCH ========================================
-    def switch(self, predecessor_name: str, to_close, to_activate: str):
+    def switch(self, to_close: str | Iterable[str], to_activate: str, pruning: bool = True):
         """
-        Sur un predecessor donné, ferme un ou plusieurs successeurs et active un autre.
+        Ferme un ou plusieurs menu(s) et en active un autre
 
         Args:
-            predecessor_name (str) : nom du predecessor qui effectue le switch
-            to_close (str | Iterable[str]) : successeur(s) à fermer
-            to_activate (str) : successeur à activer
+            to_close (str | Iterable[str]) : menu(s) à fermer
+            to_activate (str) : menu à activer
+            pruning (bool, optional) : femeture des menus successeurs
         """
-        if predecessor_name not in self._all_menus:
-            self._raise_error('switch', f'menu "{predecessor_name}" does not exist')
-
-        successors = self._all_menus[predecessor_name]["successors"]
-
-        # normalise to_close en liste
         if isinstance(to_close, str):
             to_close = [to_close]
         else:
             to_close = list(to_close)
 
-        # vérifie que to_activate est un successeur du predecessor
-        if to_activate not in successors:
-            self._raise_error('switch', f'"{to_activate}" is not a successor of "{predecessor_name}"')
+        if any(tc not in self._dict for tc in to_close):
+            self._raise_error('switch', 'Invalid menus to close')
+        if to_activate not in self._dict:
+            self._raise_error('switch', f'{to_activate} menu does not exist')
 
-        # vérifie que tous les to_close sont des successeurs du predecessor
         for name in to_close:
-            if name not in successors:
-                self._raise_error('switch', f'"{name}" is not a successor of "{predecessor_name}"')
-
-        # ferme les successeurs demandés (avec propagation sous-arbre)
-        for name in to_close:
-            self.deactivate(name)
-
-        # active le successeur cible
+            self.deactivate(name, pruning=pruning)
         self.activate(to_activate)
 
     # ======================================== Z-ORDER ========================================
@@ -183,45 +234,44 @@ class MenusManager:
 
         Args:
             name (str) : menu à réordoner
-            direction (str) : "devant", "derriere", "premier_plan", "dernier_plan", "fixer_plan"
-            index (int | None) : utilisé uniquement avec "fixer_plan"
+            direction (str) : "forward", "backward", "front", "back", "index"
+            index (int | None) : utilisé uniquement avec "index"
         """
-        if name not in self._all_menus:
+        if name not in self._dict:
             self._raise_error('reorder', f'menu "{name}" does not exist')
 
-        predecessor = self._all_menus[name]["predecessor"]
-
-        # si pas de predecessor menu, pas de liste à réordoner
-        if predecessor is None or self._all_menus[name]["predecessor_type"] != "menu":
+        predecessor = self._dict[name]["predecessor"]
+        if predecessor is None:
             return
 
-        successors = self._all_menus[predecessor]["successors"]
+        successors = self._dict[predecessor]["successors"]
         if name not in successors:
-            return  # ne devrait pas arriver mais just in case
+            return
 
         i = successors.index(name)
-
-        if direction == "devant":
+        if direction == "forward":
             if i < len(successors) - 1:
                 successors[i], successors[i + 1] = successors[i + 1], successors[i]
 
-        elif direction == "derriere":
+        elif direction == "backward":
             if i > 0:
                 successors[i], successors[i - 1] = successors[i - 1], successors[i]
 
-        elif direction == "premier_plan":
+        elif direction == "front":
             successors.remove(name)
             successors.append(name)
 
-        elif direction == "dernier_plan":
+        elif direction == "back":
             successors.remove(name)
             successors.insert(0, name)
 
-        elif direction == "fixer_plan":
+        elif direction == "index":
             if index is None:
-                self._raise_error('reorder', '"fixer_plan" requires an index')
+                self._raise_error('reorder', '"index" requires an index')
             successors.remove(name)
             successors.insert(index, name)
+
+        self._update_zorder()
 
     # ======================================== COORDONNÉES ========================================
     def _get_chain(self, name: str) -> list:
@@ -233,126 +283,83 @@ class MenusManager:
         current = name
         while current is not None:
             chain.append(current)
-            if current in self._all_menus:
-                current = self._all_menus[current]["predecessor"]
+            if current in self._dict:
+                current = self._dict[current]["predecessor"]
             else:
-                # c'est un State — on s'arrête ici
                 break
         return chain
 
-    def absolute(self, point: tuple, menu_name: str) -> tuple:
+    def absolute(self, point: tuple[Real, Real], menu_name: str) -> tuple[float, float]:
         """
-        Convertit un point relatif à un menu en coordonnées absolues (screen/virtual_screen).
-        Remonte la chaîne en accumulant les surface_rect.topleft.
+        Convertit un point relatif à un menu en coordonnées absolues
 
         Args:
-            point (tuple) : (x, y) relatif au menu
+            point (tuple[Real, Real]) : (x, y) relatif au menu
             menu_name (str) : nom du menu de référence
         """
-        if menu_name not in self._all_menus:
+        if menu_name not in self._dict:
             self._raise_error('absolute', f'menu "{menu_name}" does not exist')
 
-        x, y = point
+        x, y = map(float, point)
         chain = self._get_chain(menu_name)
 
-        # accumule les offsets de chaque nœud de la chaîne
         for name in chain:
-            if name in self._all_menus:
-                rect = self._all_menus[name]["menu_obj"].surface_rect
-                x += rect.x
-                y += rect.y
-            else:
-                # c'est un State — récupère son offset via le states_manager
-                from ..states import states_manager
-                state_obj = states_manager.get_state_object(name)
-                if state_obj is not None and hasattr(state_obj, 'surface_rect'):
-                    x += state_obj.surface_rect.x
-                    y += state_obj.surface_rect.y
+            rect = None
+            if hasattr(self._dict[name]["object"], 'surface_rect'):
+                rect = self._dict[name]["object"].surface_rect
+            x += rect.x if rect is not None else 0
+            y += rect.y if rect is not None else 0
 
         return (x, y)
 
-    def relative(self, point: tuple, menu_name: str) -> tuple:
+    def relative(self, point: tuple[Real, Real], menu_name: str) -> tuple[float, float]:
         """
-        Convertit un point absolu (screen/virtual_screen) en coordonnées relatives à un menu.
-        Fait l'inverse de absolute().
+        Convertit un point absol en coordonnées relatives à un menu
 
         Args:
-            point (tuple) : (x, y) en coordonnées absolues
+            point (tuple[Real, Real]) : (x, y) en coordonnées absolues
             menu_name (str) : nom du menu de référence
         """
-        if menu_name not in self._all_menus:
+        if menu_name not in self._dict:
             self._raise_error('relative', f'menu "{menu_name}" does not exist')
 
-        x, y = point
+        x, y = map(float, point)
         chain = self._get_chain(menu_name)
 
-        # soustrait les offsets dans le même ordre (même accumulation, même résultat inversé)
         for name in chain:
-            if name in self._all_menus:
-                rect = self._all_menus[name]["menu_obj"].surface_rect
-                x -= rect.x
-                y -= rect.y
-            else:
-                from ..states import states_manager
-                state_obj = states_manager.get_state_object(name)
-                if state_obj is not None and hasattr(state_obj, 'surface_rect'):
-                    x -= state_obj.surface_rect.x
-                    y -= state_obj.surface_rect.y
+            rect = None
+            if hasattr(self._dict[name]["object"], 'surface_rect'):
+                rect = self._dict[name]["object"].surface_rect
+            x -= rect.x if rect is not None else 0
+            y -= rect.y if rect is not None else 0
 
         return (x, y)
 
-    # ======================================== UPDATE ========================================
-    def _draw_tree(self, name: str, parent_surface: pygame.Surface):
-        """
-        Dessine récursivement un menu et ses successeurs actifs.
-        L'ordre des successeurs dans la liste = ordre de draw (index 0 = arrière-plan).
-        """
-        if name not in self._active_menus:
-            return
-
-        menu_obj = self._all_menus[name]["menu_obj"]
-
-        # update + draw sur la surface du parent
-        menu_obj.update()
-        menu_obj.draw(parent_surface)
-
-        # dessine les successeurs actifs sur la surface de ce menu
-        for successor in self._all_menus[name]["successors"]:
-            self._draw_tree(successor, menu_obj.surface)
-
+    # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """
-        Exécute update + draw de tous les menus actifs.
-        Part des racines (menus sans predecessor menu) et descend récursivement.
+        Exécute update de tous les menus actifs
         """
-        from .. import screen
+        self._update_hovered()
+        for name in self._active_menus:
+            obj = self._dict[name]["object"]
+            if hasattr(obj, 'update'):
+                obj.update()
 
-        for name, data in self._all_menus.items():
-            if name not in self._active_menus:
+    def draw(self):
+        """
+        Exécute draw de tous les menus actifs et affichés 
+        """
+        for name in self._active_menus:
+            predecessor = self._dict[name]["predecessor"]
+            if predecessor is not None and predecessor not in self._active_menus:
                 continue
 
-            predecessor = data["predecessor"]
-            predecessor_type = data["predecessor_type"]
-
-            # on ne part que des racines de l'arbre des menus
-            # racine = predecessor est None ou predecessor est un State
-            if predecessor_type == "menu":
-                continue  # sera traité par la récursion depuis son ancestor
-
-            # détermine la surface parent
-            if predecessor is None:
-                # pas de predecessor → screen.surface
-                parent_surface = screen.surface
-            else:
-                # predecessor est un State
-                from ..states import states_manager
-                state_obj = states_manager.get_state_object(predecessor)
-                if state_obj is None:
-                    continue
-                parent_surface = getattr(state_obj, 'surface', screen.surface)
-
-            self._draw_tree(name, parent_surface)
-
+            obj = self._dict[name]["object"]
+            if hasattr(obj, 'draw'):
+                if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
+                else: predecessor_surface = screen.surface
+                obj.draw(predecessor_surface)
 
 # ======================================== INSTANCE ========================================
 menus_manager = MenusManager()
