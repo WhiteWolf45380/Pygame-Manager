@@ -15,14 +15,6 @@ class Reshapable(Protocol):
         """Redimensionne l'objet"""
         ...
 
-if TYPE_CHECKING:
-    from .._vector import VectorObject
-    from .._point import PointObject
-    from .._segment import SegmentObject
-    from .._line import LineObject
-    from .._circle import CircleObject
-    from .._rect import RectObject
-
 # ======================================== FONCTIONS UTILES ========================================
 def _raise_error(obj: object, method: str, text: str):
     """Lève une erreur"""
@@ -97,12 +89,6 @@ def _to_color(color: pygame.Color | Iterable[int], fallback: object=None, raised
 __all__ = [
     "Sequence",
     "Reshapable",
-    "VectorObject",
-    "PointObject",
-    "SegmentObject",
-    "LineObject",
-    "CircleObject",
-    "RectObject",
     "_raise_error",
     "_deepcopy",
     "_to_color"

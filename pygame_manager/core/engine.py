@@ -1,5 +1,5 @@
 import pygame
-from ..context import context
+from .. import context
 from pygame_manager import managers
 
 

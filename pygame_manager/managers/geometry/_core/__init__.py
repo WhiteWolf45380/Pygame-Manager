@@ -14,12 +14,6 @@ __all__ = [
 
     "Sequence",
     "Reshapable",
-    "VectorObject",
-    "PointObject",
-    "SegmentObject",
-    "LineObject",
-    "CircleObject",
-    "RectObject",
     "_raise_error",
     "_deepcopy",
     "_to_color",

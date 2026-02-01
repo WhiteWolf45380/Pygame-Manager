@@ -1,13 +1,14 @@
 from pathlib import Path
 
-class Context:
-    def __init__(self):
-        self.engine = None
+managers_dir = Path(__file__).parent / "managers"
 
-        managers_dir = Path(__file__).parent / "managers"
-        for p in managers_dir.iterdir():
-            if (p.is_dir() and not p.name.startswith("_") and (p / "__init__.py").exists()):
-                setattr(self, p.name, None)
+engine = None
+__all__ = ["engine"]
 
-context = Context()
-__all__ = [context.__dict__.keys()]
+for p in managers_dir.iterdir():
+    if (p.is_dir() and not p.name.startswith("_") and (p / "__init__.py").exists()):
+        globals()[p.name] = None
+        __all__.append(p.name)
+
+def __getattr__(name):
+    raise AttributeError(f"context has no attribute {name!r}")
