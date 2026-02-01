@@ -15,7 +15,7 @@ class Menu:
     Ne pas override _name, _predecessor
     N'override surface, surface_rect, draw(surface) qu'en connaissance des conséquences
     """
-    def __init__(self, name: str, predecessor: str = None, rect: geometry.Rect=(0, 0, 1920, 1080), hoverable: bool = True):
+    def __init__(self, name: str, predecessor: str = None, rect: pygame.Rect=(0, 0, 1920, 1080), hoverable: bool = True):
         """
         Args:
             name (str) : nom du menu (doit être unique)
