@@ -1,18 +1,13 @@
-import os
+from pathlib import Path
 
 class Context:
-    engine = None
-
     def __init__(self):
-        # chemin vers le dossier managers
-        managers_path = os.path.join(os.path.dirname(__file__), "managers")
-        
-        # lister les fichiers *_manager.py sans les importer
-        for filename in os.listdir(managers_path):
-            if filename.endswith("_manager.py"):
-                # enlever l'extension et le suffixe "_manager"
-                attr = filename[:-12].lower()  # "_manager.py" = 12 caractères
-                setattr(self, attr, None)
+        self.engine = None
 
-# instance globale
+        managers_dir = Path(__file__).parent / "managers"
+        for p in managers_dir.iterdir():
+            if (p.is_dir() and not p.name.startswith("_") and (p / "__init__.py").exists()):
+                setattr(self, p.name, None)
+
 context = Context()
+__all__ = [context.__dict__.keys()]
