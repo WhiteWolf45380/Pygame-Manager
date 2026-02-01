@@ -16,7 +16,7 @@ class StatesManager:
         self._dict = {}           # { name: { "layer": int, "state_obj": State } }
         self._active_states = {}  # { layer: name }
 
-        self.state = State
+        self.State = State
 
     def __repr__(self):
         if self._active_states:
