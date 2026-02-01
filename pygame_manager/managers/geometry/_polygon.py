@@ -10,11 +10,11 @@ class PolygonObject:
     __slots__ = ["_vertices", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around"]
     PRECISION = 9
 
-    def __init__(self, *points: geometry.Point):
+    def __init__(self, *points: context.geometry.Point):
         # sommets
         if len(points) < 3:
             _raise_error(self, '__init__', 'Polygon must have at least 3 vertices')
-        self._vertices = [geometry._to_point(p, copy=True) for p in points]
+        self._vertices = [context.geometry._to_point(p, copy=True) for p in points]
         for v in self._vertices:
             v.reshape(2)
 
@@ -32,7 +32,7 @@ class PolygonObject:
         """Représentation du polygone"""
         return f"Polygon({', '.join(repr(v) for v in self._vertices)})"
 
-    def __iter__(self) -> Iterator[geometry.Point]:
+    def __iter__(self) -> Iterator[context.geometry.Point]:
         """Itération sur les sommets"""
         for vertex in self._vertices:
             yield vertex.copy()
@@ -42,14 +42,14 @@ class PolygonObject:
         return hash(tuple(v.to_tuple() for v in self._vertices))
 
     # ======================================== GETTERS ========================================
-    def __getitem__(self, i: int | slice) -> geometry.Point | list[geometry.Point]:
+    def __getitem__(self, i: int | slice) -> context.geometry.Point | list[context.geometry.Point]:
         """Renvoie le sommet de rang i"""
         if isinstance(i, slice):
             return [v.copy() for v in self._vertices[i]]
         return self._vertices[i].copy()
 
     @property
-    def vertices(self) -> list[geometry.Point]:
+    def vertices(self) -> list[context.geometry.Point]:
         """Renvoie la liste des sommets"""
         return [v.copy() for v in self._vertices]
 
@@ -63,13 +63,13 @@ class PolygonObject:
         return len(self._vertices)
 
     @property
-    def edges(self) -> list[geometry.Segment]:
+    def edges(self) -> list[context.geometry.Segment]:
         """Renvoie la liste des arêtes"""
         n = self.n
-        return [geometry.Segment(self._vertices[i], self._vertices[(i + 1) % n]) for i in range(n)]
+        return [context.geometry.Segment(self._vertices[i], self._vertices[(i + 1) % n]) for i in range(n)]
 
     @property
-    def center(self) -> geometry.Point:
+    def center(self) -> context.geometry.Point:
         """Renvoie le centre de masse du polygone (centroïde)"""
         return self._center()
 
@@ -123,11 +123,11 @@ class PolygonObject:
         return self._border_around
 
     # ======================================== SETTERS ========================================
-    def __setitem__(self, i: int, point: geometry.Point):
+    def __setitem__(self, i: int, point: context.geometry.Point):
         """Fixe le sommet de rang i"""
         if not isinstance(i, int):
             _raise_error(self, '__setitem__', 'Invalid index argument')
-        point = geometry._to_point(point, copy=True)
+        point = context.geometry._to_point(point, copy=True)
         point.reshape(2)
         self._vertices[i] = point
 
@@ -170,42 +170,42 @@ class PolygonObject:
         self._border_around = value
 
     # ======================================== OPERATIONS ========================================
-    def __add__(self, vector: geometry.Vector) -> geometry.Polygon:
+    def __add__(self, vector: context.geometry.Vector) -> context.geometry.Polygon:
         """Renvoie l'image du polygone par le vecteur donné"""
-        vector = geometry._to_vector(vector, raised=False)
+        vector = context.geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
         result._translate(vector)
         return result
 
-    def __radd__(self, vector: geometry.Vector) -> geometry.Polygon:
+    def __radd__(self, vector: context.geometry.Vector) -> context.geometry.Polygon:
         """Renvoie l'image du polygone par le vecteur donné"""
-        vector = geometry._to_vector(vector, raised=False)
+        vector = context.geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
         result._translate(vector)
         return result
 
-    def __sub__(self, vector: geometry.Vector) -> geometry.Polygon:
+    def __sub__(self, vector: context.geometry.Vector) -> context.geometry.Polygon:
         """Renvoie l'image du polygone par l'opposé du vecteur donné"""
-        vector = geometry._to_vector(vector, raised=False)
+        vector = context.geometry._to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
         result._translate(-vector)
         return result
 
     # ======================================== PREDICATS & COLLISIONS ========================================
-    def collidepoint(self, point: geometry.Point) -> bool:
+    def collidepoint(self, point: context.geometry.Point) -> bool:
         """
         Vérifie que le point se trouve dans le polygone (ray casting)
 
         Args:
-            point (geometry.Point) : point à vérifier
+            point (context.geometry.Point) : point à vérifier
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._collidepoint(point)
 
-    def _collidepoint(self, point: geometry.Point) -> bool:
+    def _collidepoint(self, point: context.geometry.Point) -> bool:
         """Implémentation interne de collidepoint (ray casting)"""
         px, py = point.x, point.y
         n = self.n
@@ -231,34 +231,34 @@ class PolygonObject:
 
         return inside
 
-    def collideline(self, line: geometry.Line) -> bool:
+    def collideline(self, line: context.geometry.Line) -> bool:
         """
         Vérifie que la ligne croise le polygone
 
         Args:
-            line (geometry.Line) : ligne à vérifier
+            line (context.geometry.Line) : ligne à vérifier
         """
-        if not isinstance(line, geometry.Line):
+        if not isinstance(line, context.geometry.Line):
             _raise_error(self, 'collideline', 'Invalid line argument')
         return self._collideline(line)
 
-    def _collideline(self, line: geometry.Line) -> bool:
+    def _collideline(self, line: context.geometry.Line) -> bool:
         """Implémentation interne de collideline"""
         intersections = self._line_intersection(line)
         return intersections is not None and len(intersections) > 0
 
-    def collidesegment(self, segment: geometry.Segment) -> bool:
+    def collidesegment(self, segment: context.geometry.Segment) -> bool:
         """
         Vérifie que le segment croise le polygone
 
         Args:
-            segment (geometry.Segment) : segment à vérifier
+            segment (context.geometry.Segment) : segment à vérifier
         """
-        if not isinstance(segment, geometry.Segment):
+        if not isinstance(segment, context.geometry.Segment):
             _raise_error(self, 'collidesegment', 'Invalid segment argument')
         return self._collidesegment(segment)
 
-    def _collidesegment(self, segment: geometry.Segment) -> bool:
+    def _collidesegment(self, segment: context.geometry.Segment) -> bool:
         """Implémentation interne de collidesegment"""
         if self._collidepoint(segment._start) or self._collidepoint(segment._end):
             return True
@@ -268,21 +268,21 @@ class PolygonObject:
         n = self.n
         for i in range(n):
             j = (i + 1) % n
-            if geometry.segment_segment_collide(sx1, sy1, sx2, sy2, self._vertices[i].x, self._vertices[i].y, self._vertices[j].x, self._vertices[j].y):
+            if context.geometry.segment_segment_collide(sx1, sy1, sx2, sy2, self._vertices[i].x, self._vertices[i].y, self._vertices[j].x, self._vertices[j].y):
                 return True
         return False
 
-    def colliderect(self, rect: geometry.Rect) -> bool:
+    def colliderect(self, rect: context.geometry.Rect) -> bool:
         """
         Vérifie la collision avec un rectangle
 
         Args:
-            rect (geometry.Rect) : rectangle à vérifier
+            rect (context.geometry.Rect) : rectangle à vérifier
         """
-        rect = geometry._to_rect(rect)
+        rect = context.geometry._to_rect(rect)
         return self._colliderect(rect)
 
-    def _colliderect(self, rect: geometry.Rect) -> bool:
+    def _colliderect(self, rect: context.geometry.Rect) -> bool:
         """Implémentation interne de colliderect"""
         # un sommet du polygone dans le rect
         for v in self._vertices:
@@ -307,23 +307,23 @@ class PolygonObject:
             px1, py1 = self._vertices[i].x, self._vertices[i].y
             px2, py2 = self._vertices[j].x, self._vertices[j].y
             for rx1, ry1, rx2, ry2 in rect_edges:
-                if geometry.segment_segment_collide(px1, py1, px2, py2, rx1, ry1, rx2, ry2):
+                if context.geometry.segment_segment_collide(px1, py1, px2, py2, rx1, ry1, rx2, ry2):
                     return True
 
         return False
 
-    def collidecircle(self, circle: geometry.Circle) -> bool:
+    def collidecircle(self, circle: context.geometry.Circle) -> bool:
         """
         Vérifie la collision avec un cercle
 
         Args:
-            circle (geometry.Circle) : cercle à vérifier
+            circle (context.geometry.Circle) : cercle à vérifier
         """
-        if not isinstance(circle, geometry.Circle):
+        if not isinstance(circle, context.geometry.Circle):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
         return self._collidecircle(circle)
 
-    def _collidecircle(self, circle: geometry.Circle) -> bool:
+    def _collidecircle(self, circle: context.geometry.Circle) -> bool:
         """Implémentation interne de collidecircle"""
         # le centre du cercle est dans le polygone
         if self._collidepoint(circle._center):
@@ -339,23 +339,23 @@ class PolygonObject:
             if circle._collidepoint(self._vertices[i]):
                 return True
             # une arête du polygone est à moins de rayon du centre
-            if geometry.segment_point_distance(self._vertices[i].x, self._vertices[i].y, self._vertices[j].x, self._vertices[j].y, cx, cy) <= r:
+            if context.geometry.segment_point_distance(self._vertices[i].x, self._vertices[i].y, self._vertices[j].x, self._vertices[j].y, cx, cy) <= r:
                 return True
 
         return False
 
-    def collidepolygon(self, polygon: geometry.Polygon) -> bool:
+    def collidepolygon(self, polygon: context.geometry.Polygon) -> bool:
         """
         Vérifie la collision avec un autre polygone
 
         Args:
-            polygon (geometry.Polygon) : polygone à vérifier
+            polygon (context.geometry.Polygon) : polygone à vérifier
         """
-        if not isinstance(polygon, geometry.Polygon):
+        if not isinstance(polygon, context.geometry.Polygon):
             _raise_error(self, 'collidepolygon', 'Invalid polygon argument')
         return self._collidepolygon(polygon)
 
-    def _collidepolygon(self, polygon: geometry.Polygon) -> bool:
+    def _collidepolygon(self, polygon: context.geometry.Polygon) -> bool:
         """Implémentation interne de collidepolygon"""
         # un sommet de l'un est dans l'autre
         for v in self._vertices:
@@ -374,13 +374,13 @@ class PolygonObject:
             ax2, ay2 = self._vertices[i2].x, self._vertices[i2].y
             for j in range(n2):
                 j2 = (j + 1) % n2
-                if geometry.segment_segment_collide(ax1, ay1, ax2, ay2, polygon._vertices[j].x, polygon._vertices[j].y, polygon._vertices[j2].x, polygon._vertices[j2].y):
+                if context.geometry.segment_segment_collide(ax1, ay1, ax2, ay2, polygon._vertices[j].x, polygon._vertices[j].y, polygon._vertices[j2].x, polygon._vertices[j2].y):
                     return True
 
         return False
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> geometry.Polygon:
+    def copy(self) -> context.geometry.Polygon:
         """Renvoie une copie du polygone"""
         return _deepcopy(self)
 
@@ -392,53 +392,53 @@ class PolygonObject:
         """Renvoie les sommets en liste de listes"""
         return [v.to_list() for v in self._vertices]
 
-    def scale(self, ratio: Real, center: geometry.Point = None):
+    def scale(self, ratio: Real, center: context.geometry.Point = None):
         """
         Redimensionne le polygone depuis un centre
 
         Args:
             ratio (Real) : ratio de redimensionnement
-            center (geometry.Point, optional) : centre de redimensionnement (défaut: centroïde)
+            center (context.geometry.Point, optional) : centre de redimensionnement (défaut: centroïde)
         """
         if not isinstance(ratio, Real) or ratio <= 0:
             _raise_error(self, 'scale', 'Invalid ratio argument')
         if center is None:
             center = self._center()
         else:
-            center = geometry._to_point(center)
+            center = context.geometry._to_point(center)
         self._scale(ratio, center)
 
-    def _scale(self, ratio: Real, center: geometry.Point):
+    def _scale(self, ratio: Real, center: context.geometry.Point):
         """Implémentation interne de scale"""
         for i in range(self.n):
             v = self._vertices[i]
-            self._vertices[i] = geometry.Point(
+            self._vertices[i] = context.geometry.Point(
                 center.x + (v.x - center.x) * ratio,
                 center.y + (v.y - center.y) * ratio,
             )
 
-    def translate(self, vector: geometry.Vector):
+    def translate(self, vector: context.geometry.Vector):
         """
         Translate le polygone selon un vecteur
 
         Args:
-            vector (geometry.Vector) : vecteur de translation
+            vector (context.geometry.Vector) : vecteur de translation
         """
-        vector = geometry._to_vector(vector)
+        vector = context.geometry._to_vector(vector)
         self._translate(vector)
 
-    def _translate(self, vector: geometry.Vector):
+    def _translate(self, vector: context.geometry.Vector):
         """Implémentation interne de translate"""
         for i in range(self.n):
             self._vertices[i] = self._vertices[i] + vector
 
-    def rotate(self, angle: Real, center: geometry.Point = None, degrees: bool = False):
+    def rotate(self, angle: Real, center: context.geometry.Point = None, degrees: bool = False):
         """
         Tourne le polygone autour d'un centre
 
         Args:
             angle (Real) : angle de rotation
-            center (geometry.Point, optional) : centre de rotation (défaut: centroïde)
+            center (context.geometry.Point, optional) : centre de rotation (défaut: centroïde)
             degrees (bool) : si True, angle en degrés
         """
         if not isinstance(angle, Real):
@@ -446,10 +446,10 @@ class PolygonObject:
         if center is None:
             center = self._center()
         else:
-            center = geometry._to_point(center)
+            center = context.geometry._to_point(center)
         self._rotate(angle, center, degrees=degrees)
 
-    def _rotate(self, angle: Real, center: geometry.Point, degrees: bool = False):
+    def _rotate(self, angle: Real, center: context.geometry.Point, degrees: bool = False):
         """Implémentation interne de rotate"""
         if degrees:
             angle = math.radians(angle)
@@ -460,23 +460,23 @@ class PolygonObject:
         for i in range(self.n):
             dx = self._vertices[i].x - cx
             dy = self._vertices[i].y - cy
-            self._vertices[i] = geometry.Point(
+            self._vertices[i] = context.geometry.Point(
                 cx + dx * cos_a - dy * sin_a,
                 cy + dx * sin_a + dy * cos_a,
             )
 
-    def line_intersection(self, line: geometry.Line) -> tuple[geometry.Point] | None:
+    def line_intersection(self, line: context.geometry.Line) -> tuple[context.geometry.Point] | None:
         """
         Renvoie les points d'intersection entre la ligne et le polygone
 
         Args:
-            line (geometry.Line) : ligne à tester
+            line (context.geometry.Line) : ligne à tester
         """
-        if not isinstance(line, geometry.Line):
+        if not isinstance(line, context.geometry.Line):
             _raise_error(self, 'line_intersection', 'Invalid line argument')
         return self._line_intersection(line)
 
-    def _line_intersection(self, line: geometry.Line) -> tuple[geometry.Point] | None:
+    def _line_intersection(self, line: context.geometry.Line) -> tuple[context.geometry.Point] | None:
         """Implémentation interne de line_intersection"""
         ox, oy = line.get_origin().x, line.get_origin().y
         vx, vy = line.get_vector().x, line.get_vector().y
@@ -485,9 +485,9 @@ class PolygonObject:
         n = self.n
         for i in range(n):
             j = (i + 1) % n
-            result = geometry.line_segment_intersection(ox, oy, vx, vy, self._vertices[i].x, self._vertices[i].y, self._vertices[j].x, self._vertices[j].y)
+            result = context.geometry.line_segment_intersection(ox, oy, vx, vy, self._vertices[i].x, self._vertices[i].y, self._vertices[j].x, self._vertices[j].y)
             if result is not None:
-                points.append(geometry.Point(*result))
+                points.append(context.geometry.Point(*result))
 
         # suppression des doublons
         unique_points = []
@@ -519,7 +519,7 @@ class PolygonObject:
             area -= self._vertices[j].x * self._vertices[i].y
         return area / 2.0
 
-    def _center(self) -> geometry.Point:
+    def _center(self) -> context.geometry.Point:
         """Centroïde du polygone"""
         n = self.n
         a = self._signed_area()
@@ -528,7 +528,7 @@ class PolygonObject:
             # polygone dégénéré : retourne la moyenne des sommets
             cx = sum(v.x for v in self._vertices) / n
             cy = sum(v.y for v in self._vertices) / n
-            return geometry.Point(cx, cy)
+            return context.geometry.Point(cx, cy)
 
         cx, cy = 0.0, 0.0
         for i in range(n):
@@ -539,7 +539,7 @@ class PolygonObject:
 
         cx /= (6.0 * a)
         cy /= (6.0 * a)
-        return geometry.Point(cx, cy)
+        return context.geometry.Point(cx, cy)
 
     def _is_convex(self) -> bool:
         """Vérifie la convexité via le signe du produit vectoriel consécutif"""

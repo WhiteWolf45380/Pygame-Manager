@@ -1,6 +1,6 @@
 # ======================================== IMPORTS ========================================
 import pygame
-from ...context import menus, geometry, screen
+from ... import context
 
 # ======================================== SUPERCLASS ========================================
 class Menu:
@@ -23,14 +23,13 @@ class Menu:
             rect (RectObject, optional) : dimensions du menu (accepte aussi les tuples (x, y, width, height))
             hoverable (bool, optional) : peut être survolé
         """
-        self.manager = menus
-        rect = geometry._to_rect(rect, raised=False)
+        rect = context.geometry._to_rect(rect, raised=False)
 
         # vérifications
         if not isinstance(name, str): self._raise_error('__init__', 'Invalid name argument')
-        if name in self.manager: self._raise_error('__init__', f'Menu "{name}" already exists')
+        if name in context.menus: self._raise_error('__init__', f'Menu "{name}" already exists')
         if not isinstance(predecessor, str): self._raise_error('__init__', 'Invalid predecessor argument')
-        if predecessor not in self.manager: self._raise_error('__init__', f'Menu "{predecessor}" does not exist')
+        if predecessor not in context.menus: self._raise_error('__init__', f'Menu "{predecessor}" does not exist')
         if rect is None: self._raise_error('__init__', 'Invalid rect argument')
         if not isinstance(hoverable, bool): self._raise_error('__init__', 'Invalid hoverable argument')
 
@@ -45,7 +44,7 @@ class Menu:
         self.surface = pygame.Surface((self.surface_width, self.surface_height))
 
         # auto-registration
-        self.manager.register(self)
+        context.menus.register(self)
 
     def _raise_error(self, method: str, text: str):
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
@@ -73,7 +72,7 @@ class Menu:
     # ======================================== ACTIVATION ========================================
     def activate(self):
         """Active le menu"""
-        self.manager.activate(self._name)
+        context.menus.activate(self._name)
 
     def deactivate(self, pruning: bool = True):
         """
@@ -82,11 +81,11 @@ class Menu:
         Args:
             pruning (bool, optional) : fermeture automatique des successeurs
         """
-        self.manager.deactivate(self._name, pruning=pruning)
+        context.menus.deactivate(self._name, pruning=pruning)
 
     def is_active(self) -> bool:
         """Vérifie que le menu soit actif"""
-        return self.manager.is_active(self.name)
+        return context.menus.is_active(self.name)
 
     def switch(self, to_activate: str, pruning: bool = True):
         """
@@ -96,42 +95,42 @@ class Menu:
             to_activate (str): Menu à activer
             pruning (bool, optional) : fermeture automatique des successeurs
         """
-        self.manager.switch(self._name, to_activate, pruning=pruning)
+        context.menus.switch(self._name, to_activate, pruning=pruning)
 
     # ======================================== Z-ORDER ========================================
     def move_forward(self):
         """Déplace le menu vers l'avant dans le Z-order"""
-        self.manager.reorder(self._name, "forward")
+        context.menus.reorder(self._name, "forward")
 
     def move_backward(self):
         """Déplace le menu vers l'arrière dans le Z-order"""
-        self.manager.reorder(self._name, "backward")
+        context.menus.reorder(self._name, "backward")
 
     def bring_to_front(self):
         """Place le menu au premier plan dans le Z-order"""
-        self.manager.reorder(self._name, "front")
+        context.menus.reorder(self._name, "front")
 
     def send_to_back(self):
         """Place le menu au dernier plan dans le Z-order"""
-        self.manager.reorder(self._name, "back")
+        context.menus.reorder(self._name, "back")
 
     def set_index(self, n: int):
         """Place le menu à l'indice n dans le Z-order"""
-        self.manager.reorder(self._name, "index", n)
+        context.menus.reorder(self._name, "index", n)
 
     # ======================================== COORDONNEES ========================================
     def get_absolute(self, point: tuple) -> tuple:
         """Converts a point relative to this menu into absolute (screen) coordinates"""
-        return self.manager.absolute(point, self._name)
+        return context.menus.absolute(point, self._name)
 
     def get_relative(self, point: tuple) -> tuple:
         """Converts an absolute point (screen) into coordinates relative to this menu"""
-        return self.manager.relative(point, self._name)
+        return context.menus.relative(point, self._name)
     
     @property
     def mouse_pos(self) -> tuple[float, float]:
         """Renvoie la position relative de la souris"""
-        return self.get_relative(screen.get_mouse_pos())
+        return self.get_relative(context.screen.get_mouse_pos())
     
     @property
     def mouse_x(self) -> float:

@@ -1,6 +1,5 @@
 # ======================================== IMPORTS ========================================
 from ._core import *
-from ...context import ui, screen, menus
 
 # ======================================== OBJET ========================================
 class RectButtonObject:
@@ -98,7 +97,7 @@ class RectButtonObject:
         if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
-        ui._append(self)
+        context.ui._append(self)
 
         # surface
         self._surface = None
@@ -175,7 +174,7 @@ class RectButtonObject:
         self._callback = callback
 
         # menu maître
-        self._menu = menu if menu in menus else None
+        self._menu = menu if menu in context.menus else None
         self._zorder = zorder
 
         # préchargement
@@ -238,19 +237,19 @@ class RectButtonObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que le bouton soit survolé"""
-        return ui.hovered_object == self
+        return context.ui.hovered_object == self
     
     @property
     def hovered(self) -> bool:
         """Vérifie que le bouton soit survolé"""
-        return ui.hovered_object == self
+        return context.ui.hovered_object == self
     
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le bouton"""
         if self._menu is not None:
             mouse_pos = self._menu.mouse_pos
         else:
-            mouse_pos = screen.get_mouse_pos()
+            mouse_pos = context.screen.get_mouse_pos()
         return self._rect.collidepoint(mouse_pos)
     
     # ======================================== DESSIN DU BOUTON ========================================
@@ -291,7 +290,7 @@ class RectButtonObject:
         if not self._visible:
             return
     
-        surface = screen.surface
+        surface = context.screen.surface
         if self._menu is not None and hasattr(self.menu, 'surface'):
             surface = self._menu.surface
         

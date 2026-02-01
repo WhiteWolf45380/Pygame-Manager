@@ -8,12 +8,12 @@ class SegmentObject:
     Object géométrique nD : Segment
     """
     __slots__ = ["_start", "_end", "_color", "_width", "_dashed", "_dash", "_gap"]
-    def __init__(self, start: geometry.Point, end: geometry.Point):
+    def __init__(self, start: context.geometry.Point, end: context.geometry.Point):
         # point de départ
-        self._start = geometry._to_point(start, copy=True)
+        self._start = context.geometry._to_point(start, copy=True)
 
         # point d'arrivée
-        self._end = geometry._to_point(end, copy=True)
+        self._end = context.geometry._to_point(end, copy=True)
 
         # paramètres d'affichage
         self._color = (0, 0, 0)
@@ -40,37 +40,37 @@ class SegmentObject:
         """Renvoie la dimension du segment"""
         return self._start.dim
     
-    def __getitem__(self, i: int) -> geometry.Point:
+    def __getitem__(self, i: int) -> context.geometry.Point:
         """Renvoie l'une des deux extremités du segment"""
         if isinstance(i, slice): return NotImplemented
         if isinstance(i, int) and i in (0, 1):
             return self._start if i == 0 else self._end
         _raise_error(self, '__getitem__', 'Invalid index')
 
-    def get_start(self) -> geometry.Point:
+    def get_start(self) -> context.geometry.Point:
         """Renvoie la première extremité du segment"""
         return self._start.copy()
     
     @property
-    def P1(self) -> geometry.Point:
+    def P1(self) -> context.geometry.Point:
         """Renvoie la première extremité du segment"""
         return self._start.copy()
 
-    def get_end(self) -> geometry.Point:
+    def get_end(self) -> context.geometry.Point:
         """Renvoie la seconde extremité du segment"""
         return self._end.copy()
     
     @property
-    def P2(self) -> geometry.Point:
+    def P2(self) -> context.geometry.Point:
         """Renvoie la seconde extremité du segment"""
         return self._end.copy()
     
     @property
-    def midpoint(self) -> geometry.Point:
+    def midpoint(self) -> context.geometry.Point:
         """Renvoie le point au milieu du segment"""
         return self._start + 0.5 * (self._end - self._start)
     
-    def get_vector(self) -> geometry.Vector:
+    def get_vector(self) -> context.geometry.Vector:
         """Renvoie un vecteur directeur normalisé du segment"""
         return (self._end - self._start).normalized
     
@@ -105,26 +105,26 @@ class SegmentObject:
         return self._gap
 
     # ======================================== SETTERS ========================================
-    def set_start(self, point: geometry.Point):
+    def set_start(self, point: context.geometry.Point):
         """Fixe la première extremité du segment"""
-        self._start = geometry._to_point(point, copy=True)
+        self._start = context.geometry._to_point(point, copy=True)
         self._start(self._end)
 
     @P1.setter
-    def P1(self, point: geometry.Point):
+    def P1(self, point: context.geometry.Point):
         """Fixe la première extremité du segment"""
-        self._start = geometry._to_point(point, copy=True)
+        self._start = context.geometry._to_point(point, copy=True)
         self._start(self._end)
     
-    def set_end(self, point: geometry.Point):
+    def set_end(self, point: context.geometry.Point):
         """Fixe la seconde extremité du segment"""
-        self._end = geometry._to_point(point, copy=True)
+        self._end = context.geometry._to_point(point, copy=True)
         self._end(self._start)
     
     @P2.setter
-    def P2(self, point: geometry.Point):
+    def P2(self, point: context.geometry.Point):
         """Fixe la seconde extremité du segment"""
-        self._end = geometry._to_point(point, copy=True)
+        self._end = context.geometry._to_point(point, copy=True)
         self._end(self._start)
 
     @color.setter
@@ -154,31 +154,31 @@ class SegmentObject:
         self._dash = length
     
     # ======================================== COMPARATEURS ========================================
-    def __eq__(self, segment: geometry.Segment) -> bool:
+    def __eq__(self, segment: context.geometry.Segment) -> bool:
         """Vérifie la correspondance de deux segments"""
-        if not isinstance(segment, geometry.Segment): return False
+        if not isinstance(segment, context.geometry.Segment): return False
         return (self._start == segment._start and self._end == segment._end) or (self._start == segment._end and self._end == segment._start)
     
-    def __ne__(self, segment: geometry.Segment) -> bool:
+    def __ne__(self, segment: context.geometry.Segment) -> bool:
         """Vérifie la non correspondance de deux segments"""
         return not self == segment
     
-    def __contains__(self, point: geometry.Point) -> bool:
+    def __contains__(self, point: context.geometry.Point) -> bool:
         """Vérifie qu'un point soit compris dans le segment"""
-        return self._contains(geometry._to_point(point))
+        return self._contains(context.geometry._to_point(point))
     
     # ======================================== PREDICATS ========================================
-    def contains(self, point: geometry.Point) -> bool:
+    def contains(self, point: context.geometry.Point) -> bool:
         """
         Vérifie qu'un point soit compris dans le segment
 
         Args:
-            point (geometry.Point) : point à vérifier
+            point (context.geometry.Point) : point à vérifier
         """        
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._contains(point)
     
-    def _contains(self, point: geometry.Point) -> bool:
+    def _contains(self, point: context.geometry.Point) -> bool:
         """Implémentation interne de contains"""        
         self._start._equalize(point)
         u, v = self.get_vector(), point - self._start
@@ -192,113 +192,113 @@ class SegmentObject:
                 return 0 <= t <= self.length
         return True
     
-    def is_orthogonal(self, segment: geometry.Segment) -> bool:
+    def is_orthogonal(self, segment: context.geometry.Segment) -> bool:
         """
         Vérifie que le segment est orthogonal à un autre segment
 
         Args:
-            segment (geometry.Segment) : segment à vérifier
+            segment (context.geometry.Segment) : segment à vérifier
         """
-        if not isinstance(segment, geometry.Segment): 
+        if not isinstance(segment, context.geometry.Segment): 
             _raise_error(self, 'is_orthogonal', 'Invalid segment argument')
         return self._is_orthogonal(segment)
     
-    def _is_orthogonal(self, segment: geometry.Segment) -> bool:
+    def _is_orthogonal(self, segment: context.geometry.Segment) -> bool:
         """Implémentation interne de is_orthogonal"""
         return self.get_vector()._is_orthogonal(segment.get_vector())
     
-    def is_parallel(self, segment: geometry.Segment) -> bool:
+    def is_parallel(self, segment: context.geometry.Segment) -> bool:
         """
         Vérifie si le segment est parallèle à un autre segment
         
         Args:
-            segment (geometry.Segment) : segment à vérifier
+            segment (context.geometry.Segment) : segment à vérifier
         """
-        if not isinstance(segment, geometry.Segment): 
+        if not isinstance(segment, context.geometry.Segment): 
             _raise_error(self, 'is_parallel', 'Invalid segment argument')
         return self._is_parallel(segment)
     
-    def _is_parallel(self, segment: geometry.Segment) -> bool:
+    def _is_parallel(self, segment: context.geometry.Segment) -> bool:
         """Implémentation interne de is_parallel"""
         return self.get_vector()._is_collinear(segment.get_vector())
     
-    def is_secant(self, segment: geometry.Segment) -> bool:
+    def is_secant(self, segment: context.geometry.Segment) -> bool:
         """
         Vérifie si le segment est sécant avec un autre segment
         
         Args:
-            segment (geometry.Segment) : segment à vérifier
+            segment (context.geometry.Segment) : segment à vérifier
         """
-        if not isinstance(segment, geometry.Segment): 
+        if not isinstance(segment, context.geometry.Segment): 
             _raise_error(self, 'is_secant', 'Invalid segment argument')
         return self._is_secant(segment)
     
-    def _is_secant(self, segment: geometry.Segment) -> bool:
+    def _is_secant(self, segment: context.geometry.Segment) -> bool:
         """Implémentation interne de is_secant"""
         return not self._is_parallel(segment) and self._intersection(segment) is not None
 
     # ======================================== COLLISIONS ========================================
-    def collidepoint(self, point: geometry.Point) -> bool:
+    def collidepoint(self, point: context.geometry.Point) -> bool:
         """
         Vérifie qu'un point touche le segment
         
         Args:
-            point (geometry.Point) : segment à vérifier
+            point (context.geometry.Point) : segment à vérifier
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._collidepoint(point)
     
-    def _collidepoint(self, point: geometry.Point) -> bool:
+    def _collidepoint(self, point: context.geometry.Point) -> bool:
         """Implémentation interne de collidepoint"""
         return self._contains(point)
     
-    def collidesegment(self, segment: geometry.Segment) -> bool:
+    def collidesegment(self, segment: context.geometry.Segment) -> bool:
         """
         Vérifie que deux segments se touchent
 
         Args:
-            segment (geometry.Segment) : segment à vérifier
+            segment (context.geometry.Segment) : segment à vérifier
         """
-        if not isinstance(segment, geometry.Segment): 
+        if not isinstance(segment, context.geometry.Segment): 
             _raise_error(self, 'is_orthogonal', 'Invalid segment argument')
         return self._collidesegment(segment)
     
-    def _collidesegment(self, segment: geometry.Segment) -> bool:
+    def _collidesegment(self, segment: context.geometry.Segment) -> bool:
         """Implémentation interne de collidesegment"""
         return self.intersection(segment) is not None
     
-    def collideline(self, line: geometry.Line) -> bool:
+    def collideline(self, line: context.geometry.Line) -> bool:
         """Vérifie qu'une ligne touche le segment"""
-        if not isinstance(line, geometry.Line):
+        if not isinstance(line, context.geometry.Line):
             _raise_error(self, 'collideline', 'Invalid line argument')
         return self._collideline(line)
     
-    def _collideline(self, line: geometry.Line) -> bool:
+    def _collideline(self, line: context.geometry.Line) -> bool:
         """Implémentation interne de collideline"""
         return line._collidesegment(self)
     
-    def collidecircle(self, circle: geometry.Circle) -> bool:
+    def collidecircle(self, circle: context.geometry.Circle) -> bool:
         """Vérifie qu'un cercle touche le segment"""
-        if not isinstance(circle, geometry.Circle):
+        if not isinstance(circle, context.geometry.Circle):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
         return self._collidecircle(circle)
     
-    def _collidecircle(self, circle: geometry.Circle) -> bool:
+    def _collidecircle(self, circle: context.geometry.Circle) -> bool:
         """Implémentation interne de collidecircle"""
         return circle._collidesegment(self)
     
-    def colliderect(self, rect: geometry.Rect) -> bool:
+    def colliderect(self, rect: context.geometry.Rect) -> bool:
         """Vérifie qu'un rectangle touche le segment"""
-        if not isinstance(rect, geometry.Rect):
+        if not isinstance(rect, context.geometry.Rect):
             _raise_error(self, 'colliderect', 'Invalid rect argument')
         return self._colliderect(rect)
     
-    def _colliderect(self, rect: geometry.Rect) -> bool:
+    def _colliderect(self, rect: context.geometry.Rect) -> bool:
         """Implémentation interne de colliderect"""
         return rect._collidesegment(self)
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> geometry.Segment:
+    def copy(self) -> context.geometry.Segment:
         """Renvoie une copie du segment"""
         return _deepcopy(self)
     
@@ -334,17 +334,17 @@ class SegmentObject:
         for obj in objs:
             obj.reshape(dim)
     
-    def project(self, point: geometry.Point) -> geometry.Point:
+    def project(self, point: context.geometry.Point) -> context.geometry.Point:
         """
         Renvoie le projeté d'un point sur le segment
 
         Args:
-            point (geometry.Point) : point à projeter
+            point (context.geometry.Point) : point à projeter
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._project(point)
     
-    def _project(self, point: geometry.Point) -> geometry.Point:
+    def _project(self, point: context.geometry.Point) -> context.geometry.Point:
         """Implémentation interne de project"""
         self.equalize(point)
         
@@ -361,32 +361,32 @@ class SegmentObject:
         
         return A + t * AB
 
-    def distance(self, point: geometry.Point) -> float:
+    def distance(self, point: context.geometry.Point) -> float:
         """
         Renvoie la distance entre un point et le segment
 
         Args:
-            point (geometry.Point) : point distant
+            point (context.geometry.Point) : point distant
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._distance(point)
     
-    def _distance(self, point: geometry.Point) -> float:
+    def _distance(self, point: context.geometry.Point) -> float:
         """Implémentation interne de distance"""
         return point._distance(self._project(point))
 
-    def intersection(self, segment: geometry.Segment) -> geometry.Point | None:
+    def intersection(self, segment: context.geometry.Segment) -> context.geometry.Point | None:
         """
         Renvoie le point d'intersection du segment et d'un autre segment
 
         Args:
-            segment (geometry.Segment) : second segment
+            segment (context.geometry.Segment) : second segment
         """
-        if not isinstance(segment, geometry.Segment):
+        if not isinstance(segment, context.geometry.Segment):
             _raise_error(self, "intersection", "Invalid segment argument")
         return self._intersection(segment)
     
-    def _intersection(self, segment: geometry.Segment) -> geometry.Point | None:
+    def _intersection(self, segment: context.geometry.Segment) -> context.geometry.Point | None:
         """Implémentation interne de intersection"""            
         # si parallèles, pas d'intersection unique
         if self.is_parallel(segment):
@@ -414,32 +414,32 @@ class SegmentObject:
                         return None
         return None
                 
-    def angle_with(self, segment: geometry.Segment) -> float:
+    def angle_with(self, segment: context.geometry.Segment) -> float:
         """
         Renvoie l'angle entre deux segments (en radians)
 
         Args:
-            segment (geometry.Segment) : second segment
+            segment (context.geometry.Segment) : second segment
         """
-        if not isinstance(segment, geometry.Segment):
+        if not isinstance(segment, context.geometry.Segment):
             _raise_error(self, "angle_with", "Invalid segment argument")
         return self._angle_with(segment)
     
-    def _angle_with(self, segment: geometry.Segment) -> float:
+    def _angle_with(self, segment: context.geometry.Segment) -> float:
         """Implémentation interne de angle_with"""
         return self.get_vector()._angle_with(segment.get_vector())
 
-    def translate(self, vector: geometry.Vector) -> geometry.Segment:
+    def translate(self, vector: context.geometry.Vector) -> context.geometry.Segment:
         """
         Translate le segment selon un vecteur
 
         Args:
-            vector (geometry.Vector) : vecteur de translation
+            vector (context.geometry.Vector) : vecteur de translation
         """
-        vector = geometry._to_vector(vector)
+        vector = context.geometry._to_vector(vector)
         self._translate(vector)
 
-    def _translate(self, vector: geometry.Vector) -> geometry.Segment:
+    def _translate(self, vector: context.geometry.Vector) -> context.geometry.Segment:
         """Implémentation interne de translate"""
         self._start = self._start + vector
         self._end = self._end + vector

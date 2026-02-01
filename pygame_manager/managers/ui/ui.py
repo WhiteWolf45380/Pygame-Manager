@@ -1,6 +1,5 @@
 # ======================================== IMPORTS ========================================
 from ._core import *
-from ...context import menus
 from ._rect_button import RectButtonObject
 from ._circle_button import CircleButtonObject
 from ._rect_selector import RectSelectorObject
@@ -67,7 +66,7 @@ class UiManager:
 
     def _update_hover(self):
         """Actualise le survol"""
-        hovered_menu = menus.hovered
+        hovered_menu = context.menus.hovered
         self._hovered_object = None
         for obj in reversed(self._objects):
             if obj.menu == hovered_menu and obj.collidemouse():

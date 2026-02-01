@@ -1,6 +1,5 @@
 # ======================================== IMPORTS ========================================
 from ._core import *
-from ...context import ui, screen, time, menus
 
 # ======================================== OBJET ========================================
 class TextCaseObject:
@@ -112,7 +111,7 @@ class TextCaseObject:
         if menu is not None and not isinstance(menu, str): _raise_error(self, '__init__', 'Invalid menu argument')
 
         # auto-registration
-        ui._append(self)
+        context.ui._append(self)
 
         # zorder
         self._zorder = 0
@@ -173,7 +172,7 @@ class TextCaseObject:
         self._callback = callback
 
         # menu maître
-        self._menu = menu if menu in menus else None
+        self._menu = menu if menu in context.menus else None
 
         # paramètres dynamiques
         self._visible = True
@@ -251,16 +250,16 @@ class TextCaseObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que la zone soit survolée"""
-        return ui.hovered_object == self
+        return context.ui.hovered_object == self
 
     @property
     def hovered(self) -> bool:
         """Vérifie que la zone soit survolée"""
-        return ui.hovered_object == self
+        return context.ui.hovered_object == self
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur la zone"""
-        mouse_pos = self._menu.mouse_pos if self._menu is not None else screen.get_mouse_pos()
+        mouse_pos = self._menu.mouse_pos if self._menu is not None else context.screen.get_mouse_pos()
         return self._rect.collidepoint(mouse_pos)
 
     # ======================================== INTERACTION ========================================
@@ -368,7 +367,7 @@ class TextCaseObject:
         """Actualisation par frame"""
         # clignotement du cursor
         if self._focused:
-            self._cursor_timer += time.dt
+            self._cursor_timer += context.time.dt
             if self._cursor_timer >= self._cursor_blink_rate:
                 self._cursor_visible = not self._cursor_visible
                 self._cursor_timer = 0.0
@@ -385,7 +384,7 @@ class TextCaseObject:
         if not self._visible:
             return
 
-        surface = screen.surface
+        surface = context.screen.surface
         if self._menu is not None and hasattr(self._menu, 'surface'):
             surface = self._menu.surface
 

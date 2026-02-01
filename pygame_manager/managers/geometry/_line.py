@@ -8,10 +8,10 @@ class LineObject:
     Object géométrique nD : Droite
     """
     __slots__ = ["_origin", "_vector", "_color", "_width", "_dashed", "_dash", "_gap"]
-    def __init__(self, point: geometry.Point, vector: geometry.Vector):        
+    def __init__(self, point: context.geometry.Point, vector: context.geometry.Vector):        
         # représentation paramétrique
-        self._origin = geometry._to_point(point, copy=True)
-        self._vector = geometry._to_vector(vector, copy=True)
+        self._origin = context.geometry._to_point(point, copy=True)
+        self._vector = context.geometry._to_vector(vector, copy=True)
         if vector.is_null():
             _raise_error(self, "__init__", "direction vector cannot be null vector")
         self._origin.equalize(self._vector)
@@ -41,7 +41,7 @@ class LineObject:
         """Renvoie la dimension de la droite"""
         return self._origin.dim
     
-    def __getitem__(self, t: Real) -> geometry.Point:
+    def __getitem__(self, t: Real) -> context.geometry.Point:
         """Renvoie le point de la droite de paramètre t, P : O + t * v"""
         if isinstance(t, slice):
             n = t.stop if t.stop is not None else 1
@@ -50,21 +50,21 @@ class LineObject:
             return tuple(self.point(start + i*step) for i in range(n))
         return self.point(t)
 
-    def get_origin(self) -> geometry.Point:
+    def get_origin(self) -> context.geometry.Point:
         """Renvoie l'origine de la droite"""
         return self._origin.copy()
     
-    def get_vector(self) -> geometry.Vector:
+    def get_vector(self) -> context.geometry.Vector:
         """Renvoie un vecteur directeur de la droite"""
         return self._vector.copy()
     
     @property
-    def unique_point(self) -> geometry.Point:
+    def unique_point(self) -> context.geometry.Point:
         """Renvoie le point unique d'une droite"""
-        return self._project(geometry.Point(0))
+        return self._project(context.geometry.Point(0))
     
     @property
-    def unique_vector(self) -> geometry.Vector:
+    def unique_vector(self) -> context.geometry.Vector:
         """Renvoie le vecteur directeur unique d'une droite"""
         sign = 1
         for component in self._vector:
@@ -109,14 +109,14 @@ class LineObject:
         return self._gap
 
     # ======================================== SETTERS ========================================
-    def set_origin(self, point: geometry.Point):
+    def set_origin(self, point: context.geometry.Point):
         """Modifie l'origine de la droite"""
-        self._origin = geometry._to_point(point, copy=True)
+        self._origin = context.geometry._to_point(point, copy=True)
         self._origin.equalize(self._vector)
     
-    def set_vector(self, vector: geometry.Vector):
+    def set_vector(self, vector: context.geometry.Vector):
         """Modifie le vecteur directeur de la droite"""
-        self._vector = geometry._to_vector(vector, copy=True)
+        self._vector = context.geometry._to_vector(vector, copy=True)
         if self._vector.is_null(): 
             _raise_error(self, "set_vector", "direction vector cannot be null vector")
         self._vector.equalize(self._origin)
@@ -148,97 +148,97 @@ class LineObject:
         self._dash = length
     
     # ======================================== COMPARATEURS ========================================
-    def __eq__(self, line: geometry.Line) -> bool:
+    def __eq__(self, line: context.geometry.Line) -> bool:
         """Vérifie la correspondance de deux droites"""
-        if not isinstance(line, geometry.Line): return False
+        if not isinstance(line, context.geometry.Line): return False
         return (self._origin in line and self._vector.is_collinear(line._vector))
     
-    def __ne__(self, line: geometry.Line) -> bool:
+    def __ne__(self, line: context.geometry.Line) -> bool:
         """Vérifie la non correspondance de deux droites"""
         return not self == line
     
-    def __contains__(self, point: geometry.Point) -> bool:
+    def __contains__(self, point: context.geometry.Point) -> bool:
         """Vérifie qu'un point soit compris dans la droite"""
-        return self._contains(geometry._to_point(point))
+        return self._contains(context.geometry._to_point(point))
     
     # ======================================== PREDICATS ========================================
-    def contains(self, point: geometry.Point) -> bool:
+    def contains(self, point: context.geometry.Point) -> bool:
         """
         Vérifie qu'un point soit compris dans la droite
 
         Args:
-            point (geometry.Point) ; point à vérifier
+            point (context.geometry.Point) ; point à vérifier
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._contains(point)
     
-    def _contains(self, point: geometry.Point) -> bool:
+    def _contains(self, point: context.geometry.Point) -> bool:
         """Implémentation interne de contains"""
         self._origin.equalize(point)
         return self._vector._is_collinear(point - self)
     
-    def is_orthogonal(self, line: geometry.Line) -> bool:
+    def is_orthogonal(self, line: context.geometry.Line) -> bool:
         """
         Vérifie si deux droites sont orthogonales
 
         Args:
-            line (geometry.Line) : Droite à vérifier
+            line (context.geometry.Line) : Droite à vérifier
         """
-        if not isinstance(line, geometry.Line): 
+        if not isinstance(line, context.geometry.Line): 
             _raise_error(self, 'is_orthogonal', 'Invalid line argument')
         return self._is_orthogonal(line)
     
-    def _is_orthogonal(self, line: geometry.Line) -> bool:
+    def _is_orthogonal(self, line: context.geometry.Line) -> bool:
         """Implémentation interne de is_orthogonal"""
         return self._vector._is_orthogonal(line._vector)
     
-    def is_parallel(self, line: geometry.Line) -> bool:
+    def is_parallel(self, line: context.geometry.Line) -> bool:
         """Vérifie si deux droites sont parallèles"""
-        if not isinstance(line, geometry.Line): 
+        if not isinstance(line, context.geometry.Line): 
             _raise_error(self, 'is_parallel', 'Invalid line argument')
         return self._is_parallel(line)
     
-    def _is_parallel(self, line: geometry.Line) -> bool:
+    def _is_parallel(self, line: context.geometry.Line) -> bool:
         """Implémentation interne de is_parallel"""
         return self._vector._is_collinear(line._vector)
     
-    def is_secant(self, line: geometry.Line) -> bool:
+    def is_secant(self, line: context.geometry.Line) -> bool:
         """Vérifie si deux droites sont sécantes"""
-        if not isinstance(line, geometry.Line): 
+        if not isinstance(line, context.geometry.Line): 
             _raise_error(self, 'is_secant', 'Invalid line argument')
         return self._is_secant(line)
     
-    def _is_secant(self, line: geometry.Line) -> bool:
+    def _is_secant(self, line: context.geometry.Line) -> bool:
         """Implémentation interne de is_secant"""
         return not self._is_parallel(line) and self._intersection(line) is not None
 
     # ======================================== COLLISIONS ========================================
-    def collidepoint(self, point: geometry.Point) -> bool:
+    def collidepoint(self, point: context.geometry.Point) -> bool:
         """Vérifie qu'un point touche la droite"""
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._collidepoint(point)
     
-    def _collidepoint(self, point: geometry.Point) -> bool:
+    def _collidepoint(self, point: context.geometry.Point) -> bool:
         """Implémentation interne de collidepoint"""
         return self._contains(point)
     
-    def collideline(self, line: geometry.Line) -> bool:
+    def collideline(self, line: context.geometry.Line) -> bool:
         """Vérifie que deux droites se touchent"""
-        if not isinstance(line, geometry.Line):
+        if not isinstance(line, context.geometry.Line):
             _raise_error(self, 'collideline', 'Invalid line argument')
         return self._collideline(line)
     
-    def _collideline(self, line: geometry.Line) -> bool:
+    def _collideline(self, line: context.geometry.Line) -> bool:
         """Implémentation interne de collideline"""
         return self._intersection(line) is not None or self == line
     
-    def collidesegment(self, segment: geometry.Segment) -> bool:
+    def collidesegment(self, segment: context.geometry.Segment) -> bool:
         """Vérifie qu'un segment touche la droite"""
-        if not isinstance(segment, geometry.Segment):
+        if not isinstance(segment, context.geometry.Segment):
             _raise_error(self, 'collidesegment', 'Invalid segment argument')
         return self._collidesegment(segment)
     
-    def _collidesegment(self, segment: geometry.Segment) -> bool:
+    def _collidesegment(self, segment: context.geometry.Segment) -> bool:
         """Implémentation interne de collidesegment"""        
         if self.contains(segment._start) or self.contains(segment._end):
             return True
@@ -247,7 +247,7 @@ class LineObject:
         P2 = segment._end
         u = P2 - P1
         
-        temp_line = geometry.Line(P1, u)
+        temp_line = context.geometry.Line(P1, u)
         intersection = self._intersection(temp_line)
         
         if intersection is None:
@@ -255,28 +255,28 @@ class LineObject:
         
         return intersection in segment
     
-    def collidecircle(self, circle: geometry.Circle) -> bool:
+    def collidecircle(self, circle: context.geometry.Circle) -> bool:
         """Vérifie qu'un cercle touche la droite"""
-        if not isinstance(circle, geometry.Circle):
+        if not isinstance(circle, context.geometry.Circle):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
         return self._collidecircle(circle)
     
-    def _collidecircle(self, circle: geometry.Circle) -> bool:
+    def _collidecircle(self, circle: context.geometry.Circle) -> bool:
         """Implémentation interne de collidecircle"""
         return circle._collideline(self)
     
-    def colliderect(self, rect: geometry.Rect) -> bool:
+    def colliderect(self, rect: context.geometry.Rect) -> bool:
         """Vérifie qu'un rectangle touche la droite"""
-        if not isinstance(rect, geometry.Rect):
+        if not isinstance(rect, context.geometry.Rect):
             _raise_error(self, 'colliderect', 'Invalid rect argument')
         return self._colliderect(rect)
     
-    def _colliderect(self, rect: geometry.Rect) -> bool:
+    def _colliderect(self, rect: context.geometry.Rect) -> bool:
         """Vérifie qu'un rectangle touche la droite"""
         return rect._collideline(self)
 
     # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self) -> geometry.Line:
+    def copy(self) -> context.geometry.Line:
         """Renvoie une copie de la droite"""
         return _deepcopy(self)
     
@@ -312,7 +312,7 @@ class LineObject:
         for obj in objs:
             obj.reshape(dim)
     
-    def point(self, t: float) -> geometry.Point:
+    def point(self, t: float) -> context.geometry.Point:
         """
         Renvoie le point de paramètre t, P : O + t * v
 
@@ -323,53 +323,53 @@ class LineObject:
             _raise_error(self, "point", "Invalid t argument")
         return self._point(t)
     
-    def _point(self, t: float) -> geometry.Point:
+    def _point(self, t: float) -> context.geometry.Point:
         """Implémentation interne de point"""
         return self._origin + self._vector * float(t)
     
-    def project(self, point: geometry.Point) -> geometry.Point:
+    def project(self, point: context.geometry.Point) -> context.geometry.Point:
         """
         Renvoie le projeté d'un point sur la droite
 
         Args:
-            point (geometry.Point) : point à projeter
+            point (context.geometry.Point) : point à projeter
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._project(point)
     
-    def _project(self, point: geometry.Point) -> geometry.Point:
+    def _project(self, point: context.geometry.Point) -> context.geometry.Point:
         """Implémentation interne de project"""
         self._equalize(point)
         A, v = self._origin, self._vector
         AP = point - A
         return A + (AP._dot(v) / v._dot(v)) * v
 
-    def distance(self, point: geometry.Point) -> float:
+    def distance(self, point: context.geometry.Point) -> float:
         """
         Renvoie la distance entre un point et une droite
 
         Args:
-            point (geometry.Point) : point distant
+            point (context.geometry.Point) : point distant
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._distance(point)
     
-    def _distance(self, point: geometry.Point) -> float:
+    def _distance(self, point: context.geometry.Point) -> float:
         """Implémentation interne de distance"""
         return point._distance(self._project(point))
 
-    def intersection(self, line: geometry.Line):
+    def intersection(self, line: context.geometry.Line):
         """
         Renvoie le point d'intersection de deux droites
 
         Args:
-            line (geometry.Line) : seconde droite
+            line (context.geometry.Line) : seconde droite
         """
-        if not isinstance(line, geometry.Line): 
+        if not isinstance(line, context.geometry.Line): 
             _raise_error(self, "intersection", "Invalid line argument")
         return self._intersection(line)
     
-    def _intersection(self, line: geometry.Line):
+    def _intersection(self, line: context.geometry.Line):
         """Implémentation interne de intersection"""
         if self.is_parallel(line):
             return None
@@ -391,47 +391,47 @@ class LineObject:
                     return P1 + u1 * t
         return None
                 
-    def angle_with(self, line: geometry.Line) -> float:
+    def angle_with(self, line: context.geometry.Line) -> float:
         """
         Renvoie l'angle entre deux droites (en radians)
 
         Args:
-            line (geometry.Line) : seconde droite
+            line (context.geometry.Line) : seconde droite
         """
-        if not isinstance(line, geometry.Line):
+        if not isinstance(line, context.geometry.Line):
             _raise_error(self, "angle_with", "Invalid line argument")
         return self._angle_with(line)
     
-    def _angle_with(self, line: geometry.Line) -> float:
+    def _angle_with(self, line: context.geometry.Line) -> float:
         """Implémentation interne de angle_with"""
         return self._vector._angle_with(line._vector)
 
-    def symmetric(self, point: geometry.Point) -> geometry.Point:
+    def symmetric(self, point: context.geometry.Point) -> context.geometry.Point:
         """
         Renvoie le symétrique d'un point par rapport à la droite
 
         Args:
-            point (geometry.Point) : point dont on cherche le symétrique
+            point (context.geometry.Point) : point dont on cherche le symétrique
         """
-        point = geometry._to_point(point)
+        point = context.geometry._to_point(point)
         return self._symmetric(point)
     
-    def _symmetric(self, point: geometry.Point) -> geometry.Point:
+    def _symmetric(self, point: context.geometry.Point) -> context.geometry.Point:
         """Implémentation interne de symmetric"""
         H = self._project(point)
         return H + (H - point)
 
-    def translate(self, vector: geometry.Vector) -> geometry.Line:
+    def translate(self, vector: context.geometry.Vector) -> context.geometry.Line:
         """
         Translate la droite selon un vecteur
 
         Args:
-            vector (geometry.Vector) : vecteur de translation
+            vector (context.geometry.Vector) : vecteur de translation
         """
-        vector = geometry._to_vector(vector)
+        vector = context.geometry._to_vector(vector)
         self._translate(vector)
 
-    def _translate(self, vector: geometry.Vector) -> geometry.Line:
+    def _translate(self, vector: context.geometry.Vector) -> context.geometry.Line:
         """Implémentation interne de translate"""
         self._origin += vector
 
@@ -454,10 +454,10 @@ class LineObject:
 
         # Lignes des bordures
         borders = {
-            "left": geometry.Line((x_min, y_min), (0, 1)),
-            "top": geometry.Line((x_min, y_min), (1, 0)),
-            "right": geometry.Line((x_max, y_max), (0, 1)),
-            "bottom": geometry.Line((x_min, y_max), (1, 0))
+            "left": context.geometry.Line((x_min, y_min), (0, 1)),
+            "top": context.geometry.Line((x_min, y_min), (1, 0)),
+            "right": context.geometry.Line((x_max, y_max), (0, 1)),
+            "bottom": context.geometry.Line((x_min, y_max), (1, 0))
         }
 
         points = []

@@ -11,10 +11,13 @@ from typing import (
     Tuple,
 )
 
+from .... import context
+
 # ======================================== EXPORTS ========================================
 __all__ = [
     "pygame",
     "Real",
     "Iterable",
     "Tuple",
+    "context"
 ]

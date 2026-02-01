@@ -1,6 +1,5 @@
 # ======================================== IMPORTS ========================================
 from ._core import *
-from ...context import states, menus
 
 # ======================================== SUPER-CLASSE ========================================
 class State:
@@ -31,23 +30,22 @@ class State:
         self._bound_menus = []
 
         # auto-registration
-        self.manager = states
-        self.manager.register(self._name, self, layer=self._layer)
+        context.states.register(self._name, self, layer=self._layer)
     
     # ======================================== CALLBACKS ========================================
     def on_enter(self):
         """Appelé quand le state devient actif"""
         for menu_name in self._bound_menus:
-            if menu_name not in menus:
+            if menu_name not in context.menus:
                 continue
-            menus.activate(menu_name)
+            context.menus.activate(menu_name)
 
     def on_exit(self):
         """Appelé quand le state devient inactif — désactive les bound menus"""
         for menu_name in self._bound_menus:
-            if menu_name not in menus:
+            if menu_name not in context.menus:
                 continue
-            menus.deactivate(menu_name)
+            context.menus.deactivate(menu_name)
 
     # ======================================== BIND ========================================
     def bind_menu(self, menu_name: str):
@@ -68,12 +66,12 @@ class State:
     # ======================================== RACCOURCIS ========================================
     def activate(self):
         """Active l'état"""
-        self.manager.activate(self.name)
+        context.states.activate(self.name)
 
     def deactivate(self):
         """Désactive l'état"""
-        self.manager.deactivate(self.name)
+        context.states.deactivate(self.name)
 
     def is_active(self) -> bool:
         """Vérifie l'activation de l'état"""
-        return self.manager.is_active(self.name)
+        return context.states.is_active(self.name)

@@ -1,6 +1,5 @@
 # ======================================== IMPORTS ========================================
 from ._core import *
-from ...context import ui, screen, menus
 
 # ======================================== OBJET ========================================
 class CircleSelectorObject:
@@ -108,8 +107,8 @@ class CircleSelectorObject:
         if menu is not None and not isinstance(menu, str): _raise_error(self, '__init__', 'Invalid menu argument')
 
         # auto-registration
-        ui._append(self)
-        ui._add_selection(selection_id)
+        context.ui._append(self)
+        context.ui._add_selection(selection_id)
 
         # zorder
         self._zorder = 0
@@ -206,7 +205,7 @@ class CircleSelectorObject:
         self._callback = callback
 
         # menu maître
-        self._menu = menu if menu in menus else None
+        self._menu = menu if menu in context.menus else None
 
         # préchargement
         self._preloaded = {}
@@ -246,7 +245,7 @@ class CircleSelectorObject:
     @property
     def selected(self) -> bool:
         """Vérifie que le sélecteur soit actif dans son groupe"""
-        return ui._selections.get(self._selection_id) == self._selector_id
+        return context.ui._selections.get(self._selection_id) == self._selector_id
 
     # ======================================== SETTERS ========================================
     @zorder.setter
@@ -273,16 +272,16 @@ class CircleSelectorObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return ui.hovered_object == self
+        return context.ui.hovered_object == self
 
     @property
     def hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return ui.hovered_object == self
+        return context.ui.hovered_object == self
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le sélecteur (distance au centre <= rayon)"""
-        mouse_pos = self._menu.mouse_pos if self._menu is not None else screen.get_mouse_pos()
+        mouse_pos = self._menu.mouse_pos if self._menu is not None else context.screen.get_mouse_pos()
         dx = mouse_pos[0] - self._center[0]
         dy = mouse_pos[1] - self._center[1]
         return dx * dx + dy * dy <= self._radius * self._radius
@@ -331,7 +330,7 @@ class CircleSelectorObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def select(self):
         """Sélectionne ce sélecteur dans son groupe et lance le callback"""
-        ui._select(self._selection_id, self._selector_id)
+        context.ui._select(self._selection_id, self._selector_id)
         self._callback()
 
     def update(self):
@@ -349,7 +348,7 @@ class CircleSelectorObject:
         if not self._visible:
             return
 
-        surface = screen.surface
+        surface = context.screen.surface
         if self._menu is not None and hasattr(self._menu, 'surface'):
             surface = self._menu.surface
 

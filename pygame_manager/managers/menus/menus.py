@@ -1,8 +1,7 @@
 # ======================================== IMPORTS ========================================
 from typing import Iterable
 from numbers import Real
-import pygame
-from ...context import screen
+from ... import context
 from ._menu import Menu
 
 # ======================================== MANAGER ========================================
@@ -358,7 +357,7 @@ class MenusManager:
             obj = self._dict[name]["object"]
             if hasattr(obj, 'draw'):
                 if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
-                else: predecessor_surface = screen.surface
+                else: predecessor_surface = context.screen.surface
                 obj.draw(predecessor_surface)
 
 # ======================================== INSTANCE ========================================
