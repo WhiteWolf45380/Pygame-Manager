@@ -15,7 +15,7 @@ class MenusManager:
         self._active_menus = []
         self._hovered = None
 
-        self.menu = Menu
+        self.Menu = Menu
 
     def _raise_error(self, method: str, text: str):
         """
