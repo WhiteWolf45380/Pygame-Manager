@@ -1,16 +1,8 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-
-
-# Lazy imports
-def _lazy_import_point():
-    from ._point import PointObject, _to_point
-    return PointObject, _to_point
-
-def _lazy_import_vector():
-    from ._vector import VectorObject, _to_vector
-    return VectorObject, _to_vector
+from ._point import PointObject, _to_point
+from ._vector import VectorObject, _to_vector
 
 # ======================================== OBJET ========================================
 class SegmentObject:
@@ -18,13 +10,12 @@ class SegmentObject:
     Object géométrique nD : Segment
     """
     __slots__ = ["_start", "_end", "_color", "_width", "_dashed", "_dash", "_gap"]
-    def __init__(self, start, end):
-        PointObject, _to_point = _lazy_import_point()
+    def __init__(self, start: PointObject, end: PointObject):
         # point de départ
-        self._start = _to_point(start)
+        self._start = _to_point(start, copy=True)
 
         # point d'arrivée
-        self._end = _to_point(end)
+        self._end = _to_point(end, copy=True)
 
         # paramètres d'affichage
         self._color = (0, 0, 0)
@@ -51,38 +42,37 @@ class SegmentObject:
         """Renvoie la dimension du segment"""
         return self._start.dim
     
-    def __getitem__(self, i: int):
+    def __getitem__(self, i: int) -> PointObject:
         """Renvoie l'une des deux extremités du segment"""
-        if isinstance(i, slice):
-            return NotImplemented
+        if isinstance(i, slice): return NotImplemented
         if isinstance(i, int) and i in (0, 1):
             return self._start if i == 0 else self._end
         _raise_error(self, '__getitem__', 'Invalid index')
 
-    def get_start(self):
+    def get_start(self) -> PointObject:
         """Renvoie la première extremité du segment"""
         return self._start.copy()
     
     @property
-    def P1(self):
+    def P1(self) -> PointObject:
         """Renvoie la première extremité du segment"""
         return self._start.copy()
 
-    def get_end(self):
+    def get_end(self) -> PointObject:
         """Renvoie la seconde extremité du segment"""
         return self._end.copy()
     
     @property
-    def P2(self):
+    def P2(self) -> PointObject:
         """Renvoie la seconde extremité du segment"""
         return self._end.copy()
     
     @property
-    def midpoint(self):
+    def midpoint(self) -> PointObject:
         """Renvoie le point au milieu du segment"""
         return self._start + 0.5 * (self._end - self._start)
     
-    def get_vector(self):
+    def get_vector(self) -> VectorObject:
         """Renvoie un vecteur directeur normalisé du segment"""
         return (self._end - self._start).normalized
     
@@ -117,27 +107,27 @@ class SegmentObject:
         return self._gap
 
     # ======================================== SETTERS ========================================
-    def set_start(self, point):
+    def set_start(self, point: PointObject):
         """Fixe la première extremité du segment"""
-        PointObject, _to_point = _lazy_import_point()
-        self._start, self._end = _to_point(point).equalized(self._end)
+        self._start = _to_point(point, copy=True)
+        self._start(self._end)
 
     @P1.setter
-    def P1(self, point):
+    def P1(self, point: PointObject):
         """Fixe la première extremité du segment"""
-        PointObject, _to_point = _lazy_import_point()
-        self._start, self._end = _to_point(point).equalized(self._end)
+        self._start = _to_point(point, copy=True)
+        self._start(self._end)
     
-    def set_end(self, point):
+    def set_end(self, point: PointObject):
         """Fixe la seconde extremité du segment"""
-        PointObject, _to_point = _lazy_import_point()
-        self._start, self._end = self._start.equalized(_to_point(point))
+        self._end = _to_point(point, copy=True)
+        self._end(self._start)
     
     @P2.setter
-    def P2(self, point):
+    def P2(self, point: PointObject):
         """Fixe la seconde extremité du segment"""
-        PointObject, _to_point = _lazy_import_point()
-        self._start, self._end = self._start.equalized(_to_point(point))
+        self._end = _to_point(point, copy=True)
+        self._end(self._start)
 
     @color.setter
     def color(self, color: pygame.Color):
@@ -169,31 +159,35 @@ class SegmentObject:
     def __eq__(self, segment: SegmentObject) -> bool:
         """Vérifie la correspondance de deux segments"""
         if not isinstance(segment, SegmentObject): return False
-        return (self._start == segment._start and self._end == segment._end) or \
-               (self._start == segment._end and self._end == segment._start)
+        return (self._start == segment._start and self._end == segment._end) or (self._start == segment._end and self._end == segment._start)
     
     def __ne__(self, segment: SegmentObject) -> bool:
         """Vérifie la non correspondance de deux segments"""
         return not self == segment
     
-    def __contains__(self, point) -> bool:
+    def __contains__(self, point: PointObject) -> bool:
         """Vérifie qu'un point soit compris dans le segment"""
-        return self.contains(point)
+        return self._contains(_to_point(point))
     
     # ======================================== PREDICATS ========================================
-    def contains(self, point) -> bool:
-        """Vérifie qu'un point soit compris dans le segment"""
-        PointObject, _to_point = _lazy_import_point()
-        VectorObject, _ = _lazy_import_vector()
-        
+    def contains(self, point: PointObject) -> bool:
+        """
+        Vérifie qu'un point soit compris dans le segment
+
+        Args:
+            point (PointObject) : point à vérifier
+        """        
         point = _to_point(point)
-        A, B = self._start.equalized(point)
-        u, v = self.get_vector(), B - A
+        return self._contains(point)
+    
+    def _contains(self, point: PointObject) -> bool:
+        """Implémentation interne de contains"""        
+        self._start._equalize(point)
+        u, v = self.get_vector(), point - self._start
         
-        if not u.is_collinear(v):
+        if not u._is_collinear(v):
             return False
         
-        # Vérifier que le point est entre start et end
         for i in range(u.dim):
             if u[i] != 0:
                 t = v[i] / u[i]
@@ -201,52 +195,112 @@ class SegmentObject:
         return True
     
     def is_orthogonal(self, segment: SegmentObject) -> bool:
-        """Vérifie que le segment est orthogonal à un autre segment"""
+        """
+        Vérifie que le segment est orthogonal à un autre segment
+
+        Args:
+            segment (SegmentObject) : segment à vérifier
+        """
         if not isinstance(segment, SegmentObject): 
             _raise_error(self, 'is_orthogonal', 'Invalid segment argument')
-        return self.get_vector().is_orthogonal(segment.get_vector())
+        return self._is_orthogonal(segment)
+    
+    def _is_orthogonal(self, segment: SegmentObject) -> bool:
+        """Implémentation interne de is_orthogonal"""
+        return self.get_vector()._is_orthogonal(segment.get_vector())
     
     def is_parallel(self, segment: SegmentObject) -> bool:
-        """Vérifie si le segment est parallèle à un autre segment"""
+        """
+        Vérifie si le segment est parallèle à un autre segment
+        
+        Args:
+            segment (SegmentObject) : segment à vérifier
+        """
         if not isinstance(segment, SegmentObject): 
             _raise_error(self, 'is_parallel', 'Invalid segment argument')
-        return self.get_vector().is_collinear(segment.get_vector())
+        return self._is_parallel(segment)
+    
+    def _is_parallel(self, segment: SegmentObject) -> bool:
+        """Implémentation interne de is_parallel"""
+        return self.get_vector()._is_collinear(segment.get_vector())
     
     def is_secant(self, segment: SegmentObject) -> bool:
-        """Vérifie si le segment est sécant avec un autre segment"""
+        """
+        Vérifie si le segment est sécant avec un autre segment
+        
+        Args:
+            segment (SegmentObject) : segment à vérifier
+        """
         if not isinstance(segment, SegmentObject): 
             _raise_error(self, 'is_secant', 'Invalid segment argument')
-        return not self.is_parallel(segment) and self.intersection(segment) is not None
+        return self._is_secant(segment)
+    
+    def _is_secant(self, segment: SegmentObject) -> bool:
+        """Implémentation interne de is_secant"""
+        return not self._is_parallel(segment) and self._intersection(segment) is not None
 
     # ======================================== COLLISIONS ========================================
-    def collidepoint(self, point) -> bool:
-        """Vérifie qu'un point touche le segment"""
-        return self.contains(point)
+    def collidepoint(self, point: PointObject) -> bool:
+        """
+        Vérifie qu'un point touche le segment
+        
+        Args:
+            point (PointObject) : segment à vérifier
+        """
+        point = _to_point(point)
+        return self._collidepoint(point)
+    
+    def _collidepoint(self, point: PointObject) -> bool:
+        """Implémentation interne de collidepoint"""
+        return self._contains(point)
     
     def collidesegment(self, segment: SegmentObject) -> bool:
-        """Vérifie que deux segments se touchent"""
+        """
+        Vérifie que deux segments se touchent
+
+        Args:
+            segment (SegmentObject) : segment à vérifier
+        """
+        if not isinstance(segment, SegmentObject): 
+            _raise_error(self, 'is_orthogonal', 'Invalid segment argument')
+        return self._collidesegment(segment)
+    
+    def _collidesegment(self, segment: SegmentObject) -> bool:
+        """Implémentation interne de collidesegment"""
         return self.intersection(segment) is not None
     
-    def collideline(self, line) -> bool:
+    def collideline(self, line: LineObject) -> bool:
         """Vérifie qu'une ligne touche le segment"""
         from ._line import LineObject
         if not isinstance(line, LineObject):
             _raise_error(self, 'collideline', 'Invalid line argument')
-        return line.collidesegment(self)
+        return self._collideline(line)
     
-    def collidecircle(self, circle) -> bool:
+    def _collideline(self, line: LineObject) -> bool:
+        """Implémentation interne de collideline"""
+        return line._collidesegment(self)
+    
+    def collidecircle(self, circle: CircleObject) -> bool:
         """Vérifie qu'un cercle touche le segment"""
         from ._circle import CircleObject
         if not isinstance(circle, CircleObject):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
-        return circle.collidesegment(self)
+        return self._collidecircle(circle)
     
-    def colliderect(self, rect) -> bool:
+    def _collidecircle(self, circle: CircleObject) -> bool:
+        """Implémentation interne de collidecircle"""
+        return circle._collidesegment(self)
+    
+    def colliderect(self, rect: RectObject) -> bool:
         """Vérifie qu'un rectangle touche le segment"""
         from ._rect import RectObject
         if not isinstance(rect, RectObject):
             _raise_error(self, 'colliderect', 'Invalid rect argument')
-        return rect.collidesegment(self)
+        return self._colliderect(rect)
+    
+    def _colliderect(self, rect: RectObject) -> bool:
+        """Implémentation interne de colliderect"""
+        return rect._collidesegment(self)
 
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self) -> SegmentObject:
@@ -268,84 +322,65 @@ class SegmentObject:
         self._start.reshape(dim)
         self._end.reshape(dim)
 
-    def equalized(self, *segments: tuple[SegmentObject]):
+    def equalize(self, *objs: Reshapable):
         """
-        Egalise les dimensions de le segment et plusieurs autres segments
+        Egalise les dimensions du point et de plusieurs autres objets géométriques
 
         Args:
-            segments (tuple[SegmentObject]) : ensemble des segments à mettre sur la même dimension
+            objs (tuple[Reshapable]) : ensemble des objets à mettre sur la même dimension
         """
-        if any(not isinstance(s, SegmentObject) for s in segments): 
-            _raise_error(self, 'equalized', 'Invalid segments arguments')
-        segments_list = list(segments)
-        if self not in segments_list: 
-            segments_list = [self] + segments_list
-        dim = max(segments_list, key=lambda s: s.dim).dim
-        equalized_segments = []
-        for segment in segments_list:
-            s = segment.copy()
-            s.reshape(dim)
-            equalized_segments.append(s)
-        return tuple(equalized_segments)
-
-    def equalized_with_objects(self, *objects):
-        """
-        Egalise les dimensions du segment et de plusieurs autres points ou vecteurs
-
-        Args:
-            objects (tuple[PointObject|VectorObject]) : ensemble des objets géométriques
-        """
-        PointObject, _ = _lazy_import_point()
-        VectorObject, _ = _lazy_import_vector()
-        
-        if any(not isinstance(o, (PointObject, VectorObject)) for o in objects): 
-            _raise_error(self, 'equalized_with_objects', 'Invalid objects arguments')
-        objects_list = [self] + list(objects)
-        dim = max(objects_list, key=lambda o: o.dim).dim
-        equalized_objects = []
-        for obj in objects_list:
-            o = obj.copy()
-            o.reshape(dim)
-            equalized_objects.append(o)
-        return tuple(equalized_objects)
+        if any(not isinstance(obj, Reshapable) for obj in objs): _raise_error(self, 'equalize', 'Invalid objs arguments')
+        self._equalize(*objs)
     
-    def project(self, point):
+    def _equalize(self, *objs: Reshapable):
+        """Implémentation interne de equalize"""
+        if self not in objs: objs = (self, *objs)
+        dim = max(objs, key=lambda o: o.dim).dim
+        for obj in objs:
+            obj.reshape(dim)
+    
+    def project(self, point: PointObject) -> PointObject:
         """
         Renvoie le projeté d'un point sur le segment
 
         Args:
             point (PointObject) : point à projeter
         """
-        PointObject, _to_point = _lazy_import_point()
         point = _to_point(point)
-        s, P = self.equalized_with_objects(point)
+        return self._project(point)
+    
+    def _project(self, point: PointObject) -> PointObject:
+        """Implémentation interne de project"""
+        self.equalize(point)
         
-        A = s._start
-        B = s._end
+        A = self._start
+        B = self._end
         AB = B - A
-        AP = P - A
+        AP = point - A
         
         if AB.is_null():
             return A.copy()
         
         t = AP.dot(AB) / AB.dot(AB)
-        t = max(0, min(1, t))  # Clamper entre 0 et 1
+        t = max(0, min(1, t))
         
         return A + t * AB
 
-    def distance(self, point) -> float:
+    def distance(self, point: PointObject) -> float:
         """
         Renvoie la distance entre un point et le segment
 
         Args:
             point (PointObject) : point distant
         """
-        PointObject, _to_point = _lazy_import_point()
         point = _to_point(point)
-        proj = self.project(point)
-        return point.distance(proj)
+        return self._distance(point)
+    
+    def _distance(self, point: PointObject) -> float:
+        """Implémentation interne de distance"""
+        return point._distance(self._project(point))
 
-    def intersection(self, segment: SegmentObject):
+    def intersection(self, segment: SegmentObject) -> PointObject | None:
         """
         Renvoie le point d'intersection du segment et d'un autre segment
 
@@ -354,21 +389,24 @@ class SegmentObject:
         """
         if not isinstance(segment, SegmentObject):
             _raise_error(self, "intersection", "Invalid segment argument")
-            
+        return self._intersection(segment)
+    
+    def _intersection(self, segment: SegmentObject) -> PointObject | None:
+        """Implémentation interne de intersection"""            
         # si parallèles, pas d'intersection unique
         if self.is_parallel(segment):
             return None
         
-        s1, s2 = self.equalized(segment)
-        P1, u1 = s1._start, s1._end - s1._start
-        P2, u2 = s2._start, s2._end - s2._start
+        self.equalize(segment)
+        P1, u1 = self._start, self._end - self._start
+        P2, u2 = segment._start, segment._end - segment._start
 
         v = P2 - P1
         if not v.is_coplanar(u1, u2):
             return None
 
-        for i in range(s1.dim):
-            for j in range(i + 1, s1.dim):             
+        for i in range(self.dim):
+            for j in range(i + 1, self.dim):             
                 det = u1[i] * (-u2[j]) - u1[j] * (-u2[i])
                 
                 if abs(det) > 1e-10:
@@ -390,23 +428,29 @@ class SegmentObject:
         """
         if not isinstance(segment, SegmentObject):
             _raise_error(self, "angle_with", "Invalid segment argument")
-        return self.get_vector().angle_with(segment.get_vector())
+        return self._angle_with(segment)
+    
+    def _angle_with(self, segment: SegmentObject) -> float:
+        """Implémentation interne de angle_with"""
+        return self.get_vector()._angle_with(segment.get_vector())
 
-    def translate(self, vector):
+    def translate(self, vector: VectorObject) -> SegmentObject:
         """
         Translate le segment selon un vecteur
 
         Args:
             vector (VectorObject) : vecteur de translation
         """
-        VectorObject, _to_vector = _lazy_import_vector()
         vector = _to_vector(vector)
+        self._translate(vector)
+
+    def _translate(self, vector: VectorObject) -> SegmentObject:
+        """Implémentation interne de translate"""
         self._start = self._start + vector
         self._end = self._end + vector
 
     # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, color: pygame.Color=None, width: int=None, 
-             dashed: bool=None, dash: int=None, gap: int=None):
+    def draw(self, surface: pygame.Surface, color: pygame.Color=None, width: int=None, dashed: bool=None, dash: int=None, gap: int=None):
         """Dessine le segment"""
         if not isinstance(surface, pygame.Surface): 
             _raise_error(self, 'draw', 'Invalid surface argument')
@@ -427,9 +471,7 @@ class SegmentObject:
         else:
             pygame.draw.line(surface, color, start_pos, end_pos, width)
 
-    def _draw_dashed(self, surface: pygame.Surface, color: tuple[int], 
-                     start: tuple[float, float], end: tuple[float, float], 
-                     width: int, dash: int, gap: int):
+    def _draw_dashed(self, surface: pygame.Surface, color: tuple[int], start: tuple[float, float], end: tuple[float, float], width: int, dash: int, gap: int):
         """Dessine un segment en pointillés"""
         x1, y1 = start
         x2, y2 = end

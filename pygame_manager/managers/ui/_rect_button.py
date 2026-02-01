@@ -29,7 +29,7 @@ class RectButtonObject:
             hover_effect_factor: float = 0.95,
             hover_effect_speed: float = 1.0,
             callback: callable = lambda: None,
-            state: str=None
+            menu: object=None
         ):
         """
         Args:
@@ -52,7 +52,7 @@ class RectButtonObject:
             hover_effect_ratio (float, optional) : facteur de dezoom lors du survol
             hover_effect_speed (float, optional) : facteur de vitesse de dezoom au moment du survol (0 pour instantanné)
             callback (callable, optional) : action en cas de pression du bouton
-            state (str, optional) : état maître pour affichage automatique sur la surface
+            menu (object, optional) : menu maître pour affichage automatique sur la surface
         """
         # auto-registration
         from .ui import ui_manager
@@ -63,6 +63,14 @@ class RectButtonObject:
         from ..geometry._rect import RectObject
         self._rect = RectObject((x, y), width, height)
 
-    def update(self, surface: pygame.Surface):
+    def update(self):
         """Actualisation par frame"""
         pass
+
+    def draw(self):
+        """Dessin par frame"""
+        if self._menu is not None and hasattr(self._menu, 'surface'):
+            pygame.draw.rect(self._menu.surface, )
+        else:
+            from ... import screen
+            pygame.draw.rect(screen.surface, )

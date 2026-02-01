@@ -32,6 +32,8 @@ class UiManager:
         for obj in self._objects:
             if hasattr(obj, 'update') and callable(obj.update):
                 obj.update()
+            if hasattr(obj, 'draw') and callable(obj.draw):
+                obj.draw()
 
 # ======================================== INSTANCE ========================================
 ui_manager = UiManager()

@@ -12,6 +12,13 @@ __all__ = [
     "Tuple",
 
     "Sequence",
+    "Reshapable",
+    "VectorObject",
+    "PointObject",
+    "SegmentObject",
+    "LineObject",
+    "CircleObject",
+    "RectObject",
     "_raise_error",
     "_deepcopy",
     "_to_color",

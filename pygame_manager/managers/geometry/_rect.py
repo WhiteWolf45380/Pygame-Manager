@@ -880,7 +880,7 @@ class RectObject:
         if not isinstance(surface, pygame.Surface): 
             _raise_error(self, 'draw', 'Invalid surface argument')
         
-        # Paramètres d'affichage
+        # paramètres d'affichage
         rect = self.rect
         filling = self._filling if filling is None else filling
         color = self._color if color is None else _to_color(color)
@@ -894,21 +894,14 @@ class RectObject:
         border_bottomleft_radius = self._border_bottomleft_radius
         border_bottomright_radius = self._border_bottomright_radius
 
-        # Remplissage
+        # remplissage
         if filling:
-            pygame.draw.rect(surface, color, rect, 0, border_radius, 
-                           border_topleft_radius, border_topright_radius, 
-                           border_bottomleft_radius, border_bottomright_radius)
+            pygame.draw.rect(surface, color, rect, 0, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)
         
-        # Bordure
+        # bordure
         if border:
             if border_around:
-                rect_around = pygame.Rect(rect.left - border_width, rect.top - border_width, 
-                                         rect.width + 2 * border_width, rect.height + 2 * border_width)
-                pygame.draw.rect(surface, border_color, rect_around, border_width, border_radius, 
-                               border_topleft_radius, border_topright_radius, 
-                               border_bottomleft_radius, border_bottomright_radius)
+                rect_around = pygame.Rect(rect.left - border_width, rect.top - border_width, rect.width + 2 * border_width, rect.height + 2 * border_width)
+                pygame.draw.rect(surface, border_color, rect_around, border_width, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)
             else:
-                pygame.draw.rect(surface, border_color, rect, border_width, border_radius, 
-                               border_topleft_radius, border_topright_radius, 
-                               border_bottomleft_radius, border_bottomright_radius)
+                pygame.draw.rect(surface, border_color, rect, border_width, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)

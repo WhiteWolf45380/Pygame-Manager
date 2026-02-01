@@ -1,15 +1,8 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-
-# Lazy imports
-def _lazy_import_point():
-    from ._point import PointObject, _to_point
-    return PointObject, _to_point
-
-def _lazy_import_vector():
-    from ._vector import VectorObject, _to_vector
-    return VectorObject, _to_vector
+from ._point import PointObject, _to_point
+from ._vector import VectorObject, _to_vector
 
 # ======================================== OBJET ========================================
 class LineObject:
@@ -17,16 +10,13 @@ class LineObject:
     Object géométrique nD : Droite
     """
     __slots__ = ["_origin", "_vector", "_color", "_width", "_dashed", "_dash", "_gap"]
-    def __init__(self, point, vector):
-        PointObject, _to_point = _lazy_import_point()
-        VectorObject, _to_vector = _lazy_import_vector()
-        
+    def __init__(self, point: PointObject, vector: VectorObject):        
         # représentation paramétrique
-        point = _to_point(point)
-        vector = _to_vector(vector)
+        self._origin = _to_point(point, copy=True)
+        self._vector = _to_vector(vector, copy=True)
         if vector.is_null():
             _raise_error(self, "__init__", "direction vector cannot be null vector")
-        self._origin, self._vector = point.equalized_with_vectors(vector)
+        self._origin.equalize(self._vector)
 
         # paramètres d'affichage
         self._color = (0, 0, 0)
@@ -53,7 +43,7 @@ class LineObject:
         """Renvoie la dimension de la droite"""
         return self._origin.dim
     
-    def __getitem__(self, t):
+    def __getitem__(self, t: Real) -> PointObject:
         """Renvoie le point de la droite de paramètre t, P : O + t * v"""
         if isinstance(t, slice):
             n = t.stop if t.stop is not None else 1
@@ -62,22 +52,21 @@ class LineObject:
             return tuple(self.point(start + i*step) for i in range(n))
         return self.point(t)
 
-    def get_origin(self):
+    def get_origin(self) -> PointObject:
         """Renvoie l'origine de la droite"""
         return self._origin.copy()
     
-    def get_vector(self):
+    def get_vector(self) -> VectorObject:
         """Renvoie un vecteur directeur de la droite"""
         return self._vector.copy()
     
     @property
-    def unique_point(self):
+    def unique_point(self) -> PointObject:
         """Renvoie le point unique d'une droite"""
-        PointObject, _ = _lazy_import_point()
-        return self.project(PointObject(0))
+        return self._project(PointObject(0))
     
     @property
-    def unique_vector(self):
+    def unique_vector(self) -> VectorObject:
         """Renvoie le vecteur directeur unique d'une droite"""
         sign = 1
         for component in self._vector:
@@ -86,7 +75,7 @@ class LineObject:
                 break
         return (sign * self._vector.normalized)
     
-    def get_cartesian_equation(self) -> dict:
+    def get_cartesian_equation(self) -> dict[float]:
         """Renvoie l'équation cartésienne en 2D : ax + by + c = 0"""
         line = self.copy()
         line.reshape(2)
@@ -122,19 +111,17 @@ class LineObject:
         return self._gap
 
     # ======================================== SETTERS ========================================
-    def set_origin(self, point):
+    def set_origin(self, point: PointObject):
         """Modifie l'origine de la droite"""
-        PointObject, _to_point = _lazy_import_point()
-        point = _to_point(point)
-        self._origin, self._vector = point.equalized_with_vectors(self._vector)
+        self._origin = _to_point(point, copy=True)
+        self._origin.equalize(self._vector)
     
-    def set_vector(self, vector):
+    def set_vector(self, vector: VectorObject):
         """Modifie le vecteur directeur de la droite"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector)
-        if vector.is_null(): 
+        self._vector = _to_vector(vector, copy=True)
+        if self._vector.is_null(): 
             _raise_error(self, "set_vector", "direction vector cannot be null vector")
-        self._origin, self._vector = self._origin.equalized_with_vectors(vector)
+        self._vector.equalize(self._origin)
 
     @color.setter
     def color(self, color: pygame.Color):
@@ -166,88 +153,132 @@ class LineObject:
     def __eq__(self, line: LineObject) -> bool:
         """Vérifie la correspondance de deux droites"""
         if not isinstance(line, LineObject): return False
-        return (self._origin in line and self._vector.is_collinear(line.get_vector()))
+        return (self._origin in line and self._vector.is_collinear(line._vector))
     
     def __ne__(self, line: LineObject) -> bool:
         """Vérifie la non correspondance de deux droites"""
         return not self == line
     
-    def __contains__(self, point) -> bool:
+    def __contains__(self, point: PointObject) -> bool:
         """Vérifie qu'un point soit compris dans la droite"""
-        return self.contains(point)
+        return self._contains(_to_point(point))
     
     # ======================================== PREDICATS ========================================
-    def contains(self, point) -> bool:
-        """Vérifie qu'un point soit compris dans la droite"""
-        PointObject, _to_point = _lazy_import_point()
-        A, B = self._origin.equalized(_to_point(point))
-        return self._vector.is_collinear(B - A)
+    def contains(self, point: PointObject) -> bool:
+        """
+        Vérifie qu'un point soit compris dans la droite
+
+        Args:
+            point (PointObject) ; point à vérifier
+        """
+        point = _to_point(point)
+        return self._contains(point)
+    
+    def _contains(self, point: PointObject) -> bool:
+        """Implémentation interne de contains"""
+        self._origin.equalize(point)
+        return self._vector._is_collinear(point - self)
     
     def is_orthogonal(self, line: LineObject) -> bool:
-        """Vérifie si deux droites sont orthogonales"""
+        """
+        Vérifie si deux droites sont orthogonales
+
+        Args:
+            line (LineObject) : Droite à vérifier
+        """
         if not isinstance(line, LineObject): 
             _raise_error(self, 'is_orthogonal', 'Invalid line argument')
-        return self._vector.is_orthogonal(line.get_vector())
+        return self._is_orthogonal(line)
+    
+    def _is_orthogonal(self, line: LineObject) -> bool:
+        """Implémentation interne de is_orthogonal"""
+        return self._vector._is_orthogonal(line._vector)
     
     def is_parallel(self, line: LineObject) -> bool:
         """Vérifie si deux droites sont parallèles"""
         if not isinstance(line, LineObject): 
             _raise_error(self, 'is_parallel', 'Invalid line argument')
-        return self._vector.is_collinear(line.get_vector())
+        return self._is_parallel(line)
+    
+    def _is_parallel(self, line: LineObject) -> bool:
+        """Implémentation interne de is_parallel"""
+        return self._vector._is_collinear(line._vector)
     
     def is_secant(self, line: LineObject) -> bool:
         """Vérifie si deux droites sont sécantes"""
         if not isinstance(line, LineObject): 
             _raise_error(self, 'is_secant', 'Invalid line argument')
-        return not self.is_parallel(line) and self.intersection(line) is not None
+        return self._is_secant(line)
+    
+    def _is_secant(self, line: LineObject) -> bool:
+        """Implémentation interne de is_secant"""
+        return not self._is_parallel(line) and self._intersection(line) is not None
 
     # ======================================== COLLISIONS ========================================
-    def collidepoint(self, point) -> bool:
+    def collidepoint(self, point: PointObject) -> bool:
         """Vérifie qu'un point touche la droite"""
-        return self.contains(point)
+        point = _to_point(point)
+        return self._collidepoint(point)
+    
+    def _collidepoint(self, point: PointObject) -> bool:
+        """Implémentation interne de collidepoint"""
+        return self._contains(point)
     
     def collideline(self, line: LineObject) -> bool:
         """Vérifie que deux droites se touchent"""
-        return self.intersection(line) is not None or self == line
+        if not isinstance(line, LineObject):
+            _raise_error(self, 'collideline', 'Invalid line argument')
+        return self._collideline(line)
     
-    def collidesegment(self, segment) -> bool:
+    def _collideline(self, line: LineObject) -> bool:
+        """Implémentation interne de collideline"""
+        return self._intersection(line) is not None or self == line
+    
+    def collidesegment(self, segment: SegmentObject) -> bool:
         """Vérifie qu'un segment touche la droite"""
         from ._segment import SegmentObject
         if not isinstance(segment, SegmentObject):
             _raise_error(self, 'collidesegment', 'Invalid segment argument')
-        
-        # Vérifier si un des points du segment est sur la droite
+        return self._collidesegment(segment)
+    
+    def _collidesegment(self, segment: SegmentObject) -> bool:
+        """Implémentation interne de collidesegment"""        
         if self.contains(segment.P1) or self.contains(segment.P2):
             return True
         
-        # Sinon vérifier l'intersection
-        P1 = segment.P1
-        P2 = segment.P2
+        P1 = segment._start
+        P2 = segment._end
         u = P2 - P1
         
-        # Créer une ligne à partir du segment
         temp_line = LineObject(P1, u)
-        intersection = self.intersection(temp_line)
+        intersection = self._intersection(temp_line)
         
         if intersection is None:
             return False
         
-        # Vérifier que l'intersection est sur le segment
         return intersection in segment
     
-    def collidecircle(self, circle) -> bool:
+    def collidecircle(self, circle: CircleObject) -> bool:
         """Vérifie qu'un cercle touche la droite"""
         from ._circle import CircleObject
         if not isinstance(circle, CircleObject):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
-        return circle.collideline(self)
+        return self._collidecircle(circle)
     
-    def colliderect(self, rect) -> bool:
+    def _collidecircle(self, circle: CircleObject) -> bool:
+        """Implémentation interne de collidecircle"""
+        return circle._collideline(self)
+    
+    def colliderect(self, rect: RectObject) -> bool:
         """Vérifie qu'un rectangle touche la droite"""
         from ._rect import RectObject
         if not isinstance(rect, RectObject):
             _raise_error(self, 'colliderect', 'Invalid rect argument')
-        return rect.collideline(self)
+        return self._colliderect(rect)
+    
+    def _colliderect(self, rect: RectObject) -> bool:
+        """Vérifie qu'un rectangle touche la droite"""
+        return rect._collideline(self)
 
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self) -> LineObject:
@@ -269,48 +300,24 @@ class LineObject:
         self._origin.reshape(dim)
         self._vector.reshape(dim)
 
-    def equalized(self, *lines: tuple[LineObject]) -> Tuple[Self, *tuple[LineObject]]:
+    def equalize(self, *objs: Reshapable):
         """
-        Egalise les dimensions de la droite et plusieurs autres droites
+        Egalise les dimensions du point et de plusieurs autres objets géométriques
 
         Args:
-            lines (tuple[LineObject]) : ensemble des droites à mettre sur la même dimension
+            objs (tuple[Reshapable]) : ensemble des objets à mettre sur la même dimension
         """
-        if any(not isinstance(d, LineObject) for d in lines): 
-            _raise_error(self, 'equalized', 'Invalid lines arguments')
-        lines_list = list(lines)
-        if self not in lines_list: 
-            lines_list = [self] + lines_list
-        dim = max(lines_list, key=lambda l: l.dim).dim
-        equalized_lines = []
-        for line in lines_list:
-            l = line.copy()
-            l.reshape(dim)
-            equalized_lines.append(l)
-        return tuple(equalized_lines)
-
-    def equalized_with_objects(self, *objects) -> Tuple[Self, *tuple]:
-        """
-        Egalise les dimensions de la droite et de plusieurs autres points ou vecteurs
-
-        Args:
-            objects (tuple[PointObject|VectorObject]) : ensemble des objets géométriques
-        """
-        PointObject, _ = _lazy_import_point()
-        VectorObject, _ = _lazy_import_vector()
-        
-        if any(not isinstance(o, (PointObject, VectorObject)) for o in objects): 
-            _raise_error(self, 'equalized_with_objects', 'Invalid objects arguments')
-        objects_list = [self] + list(objects)
-        dim = max(objects_list, key=lambda o: o.dim).dim
-        equalized_objects = []
-        for obj in objects_list:
-            o = obj.copy()
-            o.reshape(dim)
-            equalized_objects.append(o)
-        return tuple(equalized_objects)
+        if any(not isinstance(obj, Reshapable) for obj in objs): _raise_error(self, 'equalize', 'Invalid objs arguments')
+        self._equalize(*objs)
     
-    def point(self, t: float):
+    def _equalize(self, *objs: Reshapable):
+        """Implémentation interne de equalize"""
+        if self not in objs: objs = (self, *objs)
+        dim = max(objs, key=lambda o: o.dim).dim
+        for obj in objs:
+            obj.reshape(dim)
+    
+    def point(self, t: float) -> PointObject:
         """
         Renvoie le point de paramètre t, P : O + t * v
 
@@ -319,31 +326,42 @@ class LineObject:
         """
         if not isinstance(t, Real): 
             _raise_error(self, "point", "Invalid t argument")
+        return self._point(t)
+    
+    def _point(self, t: float) -> PointObject:
+        """Implémentation interne de point"""
         return self._origin + self._vector * float(t)
     
-    def project(self, point):
+    def project(self, point: PointObject) -> PointObject:
         """
         Renvoie le projeté d'un point sur la droite
 
         Args:
             point (PointObject) : point à projeter
         """
-        PointObject, _to_point = _lazy_import_point()
-        d, P = self.equalized_with_objects(_to_point(point))
-        A, v = d.get_origin(), d.get_vector()
-        AP = P - A
-        return A + (AP.dot(v) / v.dot(v)) * v
+        point = _to_point(point)
+        return self._project(point)
+    
+    def _project(self, point: PointObject) -> PointObject:
+        """Implémentation interne de project"""
+        self._equalize(point)
+        A, v = self._origin, self._vector
+        AP = point - A
+        return A + (AP._dot(v) / v._dot(v)) * v
 
-    def distance(self, point) -> float:
+    def distance(self, point: PointObject) -> float:
         """
         Renvoie la distance entre un point et une droite
 
         Args:
             point (PointObject) : point distant
         """
-        PointObject, _to_point = _lazy_import_point()
         point = _to_point(point)
-        return point.distance(self.project(point))
+        return self._distance(point)
+    
+    def _distance(self, point: PointObject) -> float:
+        """Implémentation interne de distance"""
+        return point._distance(self._project(point))
 
     def intersection(self, line: LineObject):
         """
@@ -354,14 +372,16 @@ class LineObject:
         """
         if not isinstance(line, LineObject): 
             _raise_error(self, "intersection", "Invalid line argument")
-        
-        # si parallèles, pas d'intersection unique
+        return self._intersection(line)
+    
+    def _intersection(self, line: LineObject):
+        """Implémentation interne de intersection"""
         if self.is_parallel(line):
             return None
         
         d1, d2 = self.equalized(line)
-        P1, u1 = d1.get_origin(), d1.get_vector()
-        P2, u2 = d2.get_origin(), d2.get_vector()
+        P1, u1 = d1._origin, d1._vector
+        P2, u2 = d2._origin, d2._vector
 
         v = P2 - P1
         if not v.is_coplanar(u1, u2):
@@ -385,35 +405,43 @@ class LineObject:
         """
         if not isinstance(line, LineObject):
             _raise_error(self, "angle_with", "Invalid line argument")
-        return self._vector.angle_with(line.get_vector())
+        return self._angle_with(line)
+    
+    def _angle_with(self, line: LineObject) -> float:
+        """Implémentation interne de angle_with"""
+        return self._vector._angle_with(line._vector)
 
-    def symmetry(self, point):
+    def symmetric(self, point: PointObject) -> PointObject:
         """
         Renvoie le symétrique d'un point par rapport à la droite
 
         Args:
             point (PointObject) : point dont on cherche le symétrique
         """
-        PointObject, _to_point = _lazy_import_point()
         point = _to_point(point)
-        H = self.project(point)
+        return self._symmetric(point)
+    
+    def _symmetric(self, point: PointObject) -> PointObject:
+        """Implémentation interne de symmetric"""
+        H = self._project(point)
         return H + (H - point)
 
-    def translate(self, vector):
+    def translate(self, vector: VectorObject) -> LineObject:
         """
         Translate la droite selon un vecteur
 
         Args:
             vector (VectorObject) : vecteur de translation
         """
-        VectorObject, _to_vector = _lazy_import_vector()
         vector = _to_vector(vector)
-        self._origin = self._origin + vector
+        self._translate(vector)
+
+    def _translate(self, vector: VectorObject) -> LineObject:
+        """Implémentation interne de translate"""
+        self._origin += vector
 
     # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, x_min: float=None, x_max: float=None, 
-             y_min: float=None, y_max: float=None, color: pygame.Color=None, 
-             width: int=None, dashed: bool=None, dash: int=None, gap: int=None):
+    def draw(self, surface: pygame.Surface, x_min: float=None, x_max: float=None, y_min: float=None, y_max: float=None, color: pygame.Color=None, width: int=None, dashed: bool=None, dash: int=None, gap: int=None):
         """Dessine la droite"""
         if not isinstance(surface, pygame.Surface): 
             _raise_error(self, 'draw', 'Invalid surface argument')
@@ -438,7 +466,7 @@ class LineObject:
         }
 
         points = []
-        for border_name, border in borders.items():
+        for border in borders.values():
             p = self.intersection(border)
             if p is None:
                 continue
@@ -446,7 +474,6 @@ class LineObject:
             if x_min <= x <= x_max and y_min <= y <= y_max:
                 points.append((x, y))
 
-        # Supprimer les doublons
         points = list(dict.fromkeys(points))
         if len(points) < 2:
             return
@@ -460,9 +487,7 @@ class LineObject:
         else:
             pygame.draw.line(surface, color, start_pos, end_pos, width)
 
-    def _draw_dashed(self, surface: pygame.Surface, color: tuple[int], 
-                     start: tuple[float, float], end: tuple[float, float], 
-                     width: int, dash: int, gap: int):
+    def _draw_dashed(self, surface: pygame.Surface, color: tuple[int], start: tuple[float, float], end: tuple[float, float], width: int, dash: int, gap: int):
         """Dessine une droite en pointillés"""
         x1, y1 = start
         x2, y2 = end

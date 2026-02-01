@@ -1,17 +1,13 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-
-# Import lazy pour éviter les dépendances circulaires
-def _lazy_import_vector():
-    from ._vector import VectorObject, _to_vector
-    return VectorObject, _to_vector
+from ._vector import VectorObject, _to_vector
 
 # ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
-def _to_point(point: PointObject | Iterable[Real], fallback: object=None, raised: bool=True, method: str='_to_point', message: str='Invalid point argument'):
+def _to_point(point: PointObject | Iterable[Real], copy: bool=False, fallback: object=None, raised: bool=True, method: str='_to_point', message: str='Invalid point argument'):
     """tente de convertir si besoin l'objet en Point"""
     if isinstance(point, PointObject):
-        return point.copy()
+        return point if not copy else point.copy()
     if isinstance(point, Sequence) and all(isinstance(c, Real) for c in point):
         return PointObject(*point)
     return fallback if fallback is not None else _raise_error(PointObject, method, message) if raised else None
@@ -98,32 +94,29 @@ class PointObject:
         self[2] = z
 
     # ======================================== OPERATIONS ========================================
-    def __add__(self, vector) -> PointObject:
+    def __add__(self, vector: VectorObject) -> PointObject:
         """Renvoie l'image du point par le vecteur donné"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector, fallback=NotImplemented)
-        if vector is NotImplemented: return NotImplemented
-        return self.translate(vector)
+        vector = _to_vector(vector, raised=False)
+        if vector is None: return NotImplemented
+        return self._translate(vector)
     
-    def __radd__(self, vector) -> PointObject:
+    def __radd__(self, vector: VectorObject) -> PointObject:
         """Renvoie l'image du point par le vecteur donné"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector, fallback=NotImplemented)
-        if vector is NotImplemented: return NotImplemented
-        return self.translate(vector)
+        vector = _to_vector(vector, raised=False)
+        if vector is None: return NotImplemented
+        return self._translate(vector)
 
-    def __sub__(self, vector) -> PointObject:
+    def __sub__(self, vector: VectorObject) -> PointObject:
         """Renvoie l'image du point par l'opposé du vecteur"""
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector, fallback=NotImplemented)
-        if vector is NotImplemented: return NotImplemented
+        vector = _to_vector(vector, raised=False)
+        if vector is None: return NotImplemented
         return self.translate(-vector)
     
-    def __rsub__(self, point: PointObject):
+    def __rsub__(self, point: PointObject) -> VectorObject:
         """Renvoie le vecteur point -> Self"""
-        point = _to_point(point, fallback=NotImplemented)
-        if point is NotImplemented: return NotImplemented
-        return self.vector_to(point)
+        point = _to_point(point, raised=False)
+        if point is None: return NotImplemented
+        return self._vector_to(point)
 
     def __pos__(self) -> PointObject:
         """Copie"""
@@ -136,10 +129,10 @@ class PointObject:
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, point: PointObject) -> bool:
         """Vérifie la correspondance de deux points"""
-        point = _to_point(point, raised=False, method='__eq__')
+        point = _to_point(point, raised=False)
         if point is None: return False
-        A, B = self.equalized(point)
-        return all(A[i] == B[i] for i in range(A.dim))
+        self._equalize(point)
+        return all(self[i] == point[i] for i in range(self.dim))
     
     def __ne__(self, point: PointObject) -> bool:
         """Vérifie la non correspondance de deux points"""
@@ -161,14 +154,24 @@ class PointObject:
         return True
     
     def is_aligned(self, *points: PointObject) -> bool:
-        """Vérifie que les points soient alignés"""
+        """
+        Vérifie que les points soient alignés
+
+        Args:
+            points (tuple[PointObject]) : points dont on veut vérifier l'alignement
+        """
         points = list(map(_to_point, points))
+        return self._is_aligned(*points)
+    
+    def _is_aligned(self, *points: PointObject) -> bool:
+        """Implémentation interne de is_aligned"""
+        self._equalize(*points)
+        points = (self, *points)
         if len(points) < 2: return True
-        all_points = self.equalized(*points)
-        vector0 = all_points[1] - all_points[0]
+        vector0 = points[1] - points[0]
         if not vector0:
-            return all((p - all_points[0]).is_null() for p in all_points[2:])
-        return all(vector0.is_collinear(p - all_points[0]) for p in all_points[2:])
+            return all((p - points[0]).is_null() for p in points[2:])
+        return all(vector0._is_collinear(p - points[0]) for p in points[2:])
     
     def is_close(self, point: PointObject, epsilon: float=1e-10) -> bool:
         """
@@ -178,8 +181,14 @@ class PointObject:
             point (PointObject) : second point
             epsilon (float) : seuil de tolérance d'écart
         """
-        p1, p2 = self.equalized(point)
-        return all(abs(p2[k] - p1[k]) < epsilon for k in range(p1.dim))
+        if not isinstance(epsilon, Real): _raise_error(self, 'is_close', 'Invalid epsilon argument')
+        point = _to_point(point)
+        return self._is_close(point, epsilon=epsilon)
+    
+    def _is_close(self, point: PointObject, epsilon: float=1e-10) -> bool:
+        """Implémentation interne de is_close"""
+        self._equalize(point)
+        return all(abs(point[k] - self[k]) < epsilon for k in range(self.dim))
     
     # ======================================== METHODES INTERACTIVES ========================================
     def copy(self) -> PointObject:
@@ -194,9 +203,8 @@ class PointObject:
         """Renvoie les coordonnées du point en liste"""
         return list(self._pos)
     
-    def to_vector(self):
-        """Renvoie le vecteur 0 -> self"""
-        VectorObject, _ = _lazy_import_vector()
+    def to_vector(self) -> VectorObject:
+        """Renvoie le vecteur O -> Self"""
         return VectorObject(*self)
     
     def reshape(self, dim: int=0):
@@ -209,8 +217,7 @@ class PointObject:
                 = 0 : reshape automatique (suppression des zéros de fin)
                 > 0 : strictement dim éléments
         """
-        if not isinstance(dim, int):
-            _raise_error(self, 'reshape', 'Invalid dimension argument')
+        if not isinstance(dim, int): _raise_error(self, 'reshape', 'Invalid dimension argument')
         if dim == 0:
             last_nonzero = next((i for i in reversed(range(len(self._pos))) if self._pos[i] != 0), None)
             self._pos = self._pos[:last_nonzero + 1] if last_nonzero is not None else [0.0]
@@ -221,40 +228,22 @@ class PointObject:
         else:
             self._pos.extend([0.0] * (dim - len(self._pos)))
 
-    def equalized(self, *points: PointObject) -> Tuple[Self, *tuple[PointObject]]:
+    def equalize(self, *objs: Reshapable):
         """
-        Egalise les dimensions du point et de plusieurs autres points
+        Egalise les dimensions du point et de plusieurs autres objets géométriques
 
         Args:
-            points (tuple[PointObject]) : ensemble des points à mettre sur la même dimension
+            objs (tuple[Reshapable]) : ensemble des objets à mettre sur la même dimension
         """
-        points = list(map(_to_point, points))
-        if self not in points: points = (self, *points)
-        dim = max(points, key=lambda p: p.dim).dim
-        equalized_points = []
-        for point in points:
-            p = point.copy()
-            p.reshape(dim)
-            equalized_points.append(p)
-        return tuple(equalized_points)
+        if any(not isinstance(obj, Reshapable) for obj in objs): _raise_error(self, 'equalize', 'Invalid objs arguments')
+        self._equalize(*objs)
     
-    def equalized_with_vectors(self, *vectors) -> Tuple[Self, *tuple]:
-        """
-        Egalise les dimensions du point avec plusieurs vecteurs
-
-        Args:
-            vectors (tuple[VectorObject]) : ensemble des vecteurs à mettre sur la même dimension
-        """
-        VectorObject, _to_vector = _lazy_import_vector()
-        vectors = list(map(_to_vector, vectors))
-        objects = [self] + vectors
-        dim = max(objects, key=lambda v: v.dim).dim
-        equalized_objects = []
-        for obj in objects:
-            o = obj.copy()
-            o.reshape(dim)
-            equalized_objects.append(o)
-        return tuple(equalized_objects)
+    def _equalize(self, *objs: Reshapable):
+        """Implémentation interne de equalize"""
+        if self not in objs: objs = (self, *objs)
+        dim = max(objs, key=lambda o: o.dim).dim
+        for obj in objs:
+            obj.reshape(dim)
     
     def distance(self, point: PointObject) -> float:
         """
@@ -264,31 +253,40 @@ class PointObject:
             point (PointObject) : second point
         """
         point = _to_point(point, method='distance')
+        return self._distance(point)
+    
+    def _distance(self, point: PointObject) -> float:
+        """Implémentation interne de distance"""
         return (self - point).norm
     
-    def vector_to(self, point: PointObject):
+    def vector_to(self, point: PointObject) -> VectorObject:
         """
         Renvoie le vecteur Self -> point
 
         Args:
             point (PointObject) : le point d'arrivée
         """
-        VectorObject, _ = _lazy_import_vector()
         point = _to_point(point, method='vector_to')
-        A, B = self.equalized(point)
-        return VectorObject(*(b - a for a, b in zip(A, B)))
+        return self._vector_to(point)
     
-    def translate(self, vector):
+    def _vector_to(self, point: PointObject) -> VectorObject:
+        """Implémentation interne de vector_to"""
+        self._equalize(point)
+        return VectorObject(*(b - a for a, b in zip(self, point)))
+    
+    def translate(self, vector: VectorObject) -> PointObject:
         """
         Renvoie l'image du point par un vecteur
 
         Args:
             vector (VectorObject) : vecteur de translation
         """
-        VectorObject, _to_vector = _lazy_import_vector()
         vector = _to_vector(vector)
-        A, u = self.equalized_with_vectors(vector)
-        return PointObject(*tuple(A[i] + u[i] for i in range(A.dim)))
+        return self._translate(vector)
+    
+    def _translate(self, vector: VectorObject) -> PointObject:
+        """Implémentation interne de translate"""
+        return PointObject(*tuple(self[i] + vector[i] for i in range(self.dim)))
     
     def midpoint(self, point: PointObject) -> PointObject:
         """
@@ -298,8 +296,12 @@ class PointObject:
             point (PointObject) : second point
         """
         point = _to_point(point, method='midpoint')
-        A, B = self.equalized(point)
-        return PointObject(*((A[i] + B[i]) / 2 for i in range(A.dim)))
+        return self._midpoint(point)
+    
+    def _midpoint(self, point: PointObject) -> PointObject:
+        """Implémentation interne de midpoint"""
+        self._equalize(point)
+        return PointObject(*((self[i] + point[i]) / 2 for i in range(self.dim)))
     
     def barycenter(self, *points: PointObject, weights: Iterable[float]=None) -> PointObject:
         """
@@ -328,16 +330,22 @@ class PointObject:
             if any(not isinstance(w, Real) for w in weights):
                 _raise_error(self, 'barycenter', 'Weights must be numbers')
         
+        return self._barycenter(*points, weights)
+    
+    def _barycenter(self, *points: PointObject, weights: Iterable[float]=None) -> PointObject:
+        """Implémentation interne de barycenter"""
+        n = len(points)
+        
         total_weight = sum(weights)
         if total_weight == 0:
             _raise_error(self, 'barycenter', 'Total weight cannot be zero')
         
-        equalized_points = self.equalized(*points)
-        dim = equalized_points[0].dim
+        self.equalize(*points)
+        dim = points[0].dim
         barycenter_coords = []
         
         for i in range(dim):
-            coord = sum(weights[j] * equalized_points[j][i] for j in range(n)) / total_weight
+            coord = sum(weights[j] * points[j][i] for j in range(n)) / total_weight
             barycenter_coords.append(coord)
         
         return PointObject(*barycenter_coords)

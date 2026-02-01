@@ -1,15 +1,8 @@
 # ======================================== IMPORTS ========================================
 from __future__ import annotations
 from ._core import *
-
-# Lazy imports
-def _lazy_import_point():
-    from ._point import PointObject, _to_point
-    return PointObject, _to_point
-
-def _lazy_import_vector():
-    from ._vector import VectorObject, _to_vector
-    return VectorObject, _to_vector
+from ._point import PointObject, _to_point
+from ._vector import VectorObject, _to_vector
 
 # ======================================== OBJET ========================================
 class CircleObject:
@@ -18,13 +11,18 @@ class CircleObject:
     """
     __slots__ = ["_center", "_radius", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around"]
     PRECISION = 9
-    def __init__(self, center, radius: Real):
-        PointObject, _to_point = _lazy_import_point()
-        
-        if not isinstance(radius, Real) or radius <= 0: 
-            _raise_error(self, '__init__', 'Invalid radius argument')
-        self._center = _to_point(center)
+    def __init__(self, center: PointObject, radius: Real):
+        """
+        Args:
+            center (PointObject) : point central du cercle
+            radius (Real) : rayon du cercle
+        """
+        # centre
+        self._center = _to_point(center, copy=True)
         self._center.reshape(2)
+
+        # rayon
+        if not isinstance(radius, Real) or radius <= 0:  _raise_error(self, '__init__', 'Invalid radius argument')
         self._radius = float(radius)
 
         # remplissage
@@ -52,7 +50,7 @@ class CircleObject:
     
     # ======================================== GETTERS ========================================
     @property
-    def center(self):
+    def center(self) -> PointObject:
         """Renvoie le point central"""
         return self._center.copy()
     
@@ -118,25 +116,19 @@ class CircleObject:
     
     # ======================================== SETTERS ========================================
     @center.setter
-    def center(self, point):
+    def center(self, point: PointObject):
         """Fixe le point central"""
-        PointObject, _to_point = _lazy_import_point()
-        point = _to_point(point)
-        self._center = point
+        self._center = _to_point(point, copy=True)
         self._center.reshape(2)
 
     @centerx.setter
     def centerx(self, coordinate: Real):
         """Fixe la coordonnée x du point central"""
-        if not isinstance(coordinate, Real):
-            _raise_error(self, 'set_centerx', 'Invalid coordinate argument')
         self._center.x = coordinate
 
     @centery.setter
     def centery(self, coordinate: Real):
         """Fixe la coordonnée y du point central"""
-        if not isinstance(coordinate, Real):
-            _raise_error(self, 'set_centery', 'Invalid coordinate argument')
         self._center.y = coordinate
 
     @radius.setter
@@ -206,53 +198,156 @@ class CircleObject:
         self._border_around = value
 
     # ======================================== PREDICATS ========================================
-    def collidepoint(self, point) -> bool:
-        """Vérifie qu'un point soit dans le cercle"""
-        PointObject, _to_point = _lazy_import_point()
+    def collidepoint(self, point: PointObject) -> bool:
+        """
+        Vérifie qu'un point soit dans le cercle
+
+        Args:
+            point (PointObject) : point à vérifier
+        """
         point = _to_point(point)
+        return self._collidepoint(point)
+    
+    def _collidepoint(self, point: PointObject) -> bool:
+        """Implémentation interne de collidepoint"""
         dist_sq = (point.x - self.centerx)**2 + (point.y - self.centery)**2
         return dist_sq <= self._radius**2
 
-    def collideline(self, line) -> bool:
-        """Vérifie que la droite croise le cercle"""
+    def collideline(self, line: LineObject) -> bool:
+        """
+        Vérifie que la droite croise le cercle
+
+        Args:
+            line (LineObject) : droite à vérifier
+        """
         from ._line import LineObject
         if not isinstance(line, LineObject):
             _raise_error(self, 'collideline', 'Invalid line argument')
-        dist = line.distance(self._center)
+        return self._collideline(line)
+    
+    def _collideline(self, line: LineObject) -> bool:
+        """Implémentation interne de collideline"""
+        dist = line._distance(self._center)
         return dist <= self._radius
 
-    def collidesegment(self, segment) -> bool:
-        """Vérifie que le segment croise le cercle"""
+    def collidesegment(self, segment: SegmentObject) -> bool:
+        """
+        Vérifie que le segment croise le cercle
+
+        Args:
+            segment (SegmentObject) : segment à vérifier
+        """
         from ._segment import SegmentObject
         if not isinstance(segment, SegmentObject):
             _raise_error(self, 'collidesegment', 'Invalid segment argument')
-        dist = segment.distance(self._center)
+        return self._collidesegment(segment)
+    
+    def _collidesegment(self, segment: SegmentObject) -> bool:
+        """Implémentation interne de collidesegment"""
+        dist = segment._distance(self._center)
         return dist <= self._radius
 
-    def colliderect(self, rect) -> bool:
-        """Vérifie la collision avec un rectangle"""
-        from ._rect import RectObject, _to_rect
+    def colliderect(self, rect: RectObject) -> bool:
+        """
+        Vérifie la collision avec un rectangle
+
+        Args:
+            rect (RectObject) : rectangle à vérifier
+        """
+        from ._rect import _to_rect
         rect = _to_rect(rect)
-        return rect.collidecircle(self)
+        return self._colliderect(rect)
+    
+    def _colliderect(self, rect: RectObject) -> bool:
+        """Implémentation interne de colliderect"""
+        return rect._collidecircle(self)
 
     def collidecircle(self, circle: CircleObject) -> bool:
-        """Vérifie la collision avec un autre cercle"""
-        if isinstance(circle, CircleObject):
-            center = circle.center
-            radius = circle.radius
-        elif isinstance(circle, (tuple, list)) and len(circle) == 2:
-            PointObject, _to_point = _lazy_import_point()
-            center = _to_point(circle[0])
-            radius = float(circle[1])
-        else:
-            _raise_error(self, 'collidecircle', 'Invalid circle argument')
-        
-        dist_sq = (self.centerx - center.x)**2 + (self.centery - center.y)**2
-        dist = math.sqrt(dist_sq)
-        return dist <= self._radius + radius
+        """
+        Vérifie la collision avec un autre cercle
 
-    # ======================================== METHODES DE COLLISION AVANCEES ========================================
-    def line_intersection(self, line):
+        Args:
+            circle (CircleObject) : cercle à vérifier
+        """
+        from ._circle import CircleObject
+        if not isinstance(circle, CircleObject):
+            _raise_error(self, 'collidecircle', 'Invalid circle argument')
+        return self._collidecircle(circle)
+    
+    def _collidecircle(self, circle: CircleObject) -> bool:
+        """Implémentation interne de collidecircle"""
+        dist_sq = (self.centerx - circle.centerx)**2 + (self.centery - circle.centery)**2
+        dist = math.sqrt(dist_sq)
+        return dist <= self._radius + circle.radius
+
+    # ======================================== METHODES INTERACTIVES ========================================
+    def copy(self) -> CircleObject:
+        """Renvoie une copie du cercle"""
+        return _deepcopy(self)
+    
+    def to_tuple(self) -> tuple[float]:
+        """Renvoie les propriétés dans un tuple"""
+        return (self.center.to_tuple(), self.radius)
+    
+    def to_list(self) -> tuple[float]:
+        """Renvoie les propriétés dans une liste"""
+        return [self.center.to_list(), self.radius]
+    
+    def scale(self, ratio: Real):
+        """
+        Redimensionne le cercle
+
+        Args:
+            ratio (Real) : ratio de redimensionnement
+        """
+        if not isinstance(ratio, Real) or ratio <= 0:
+            _raise_error(self, 'scale', 'Invalid ratio argument')
+        self._scale(ratio)
+
+    def _scale(self, ratio: Real):
+        """Implémentation interne de scale"""
+        self.radius = round(self.radius * float(ratio), self.PRECISION)
+    
+    def translate(self, vector: VectorObject):
+        """
+        Translate le cercle selon un vecteur
+
+        Args:
+            vector (VectorObject) : vecteur de translation
+        """
+        vector = _to_vector(vector)
+        self._translate(vector)
+
+    def _translate(self, vector: VectorObject):
+        """Implémentation interne de translate"""
+        self.centerx += vector.x
+        self.centery += vector.y
+    
+    def point_from_angle(self, angle: Real, degrees: bool = False) -> PointObject:
+        """
+        Renvoie le point sur le cercle à un angle donné
+        
+        Args:
+            angle (Real): angle
+            degrees (bool): si True, angle en degrés, sinon en radians
+        """
+        if not isinstance(angle, Real):
+            _raise_error(self, 'point_from_angle', 'Invalid angle argument')
+        if not isinstance(degrees, bool):
+            _raise_error(self, 'point_from_angle', 'Invalid degrees argument')
+        return self._point_from_angle(angle, degrees=degrees)
+    
+    def _point_from_angle(self, angle: Real, degrees: bool = False) -> PointObject:
+        """Implémentation interne de point_from_angle"""
+        if degrees:
+            angle = math.radians(angle)
+
+        x = self.centerx + self._radius * math.cos(angle)
+        y = self.centery + self._radius * math.sin(angle)
+        
+        return PointObject(x, y)
+
+    def line_intersection(self, line: LineObject) -> tuple[PointObject] | None:
         """
         Renvoie les points d'intersection entre le cercle et une droite
         
@@ -262,12 +357,13 @@ class CircleObject:
         Returns:
             tuple[PointObject] | None: 0, 1 ou 2 points d'intersection
         """
-        from ._line import LineObject
-        PointObject, _ = _lazy_import_point()
-        
+        from ._line import LineObject        
         if not isinstance(line, LineObject):
             _raise_error(self, 'line_intersection', 'Invalid line argument')
-        
+        return self._line_intersection(line)
+    
+    def _line_intersection(self, line: LineObject) -> tuple[PointObject] | None:
+        """Implémentation interne de line_intersection"""
         line = line.copy()
         line.reshape(2)
         
@@ -299,7 +395,7 @@ class CircleObject:
         
         return (P1, P2)
 
-    def segment_intersection(self, segment):
+    def segment_intersection(self, segment: SegmentObject) -> tuple[PointObject] | None:
         """
         Renvoie les points d'intersection entre le cercle et un segment
         
@@ -309,12 +405,14 @@ class CircleObject:
         Returns:
             tuple[PointObject] | None: 0, 1 ou 2 points d'intersection
         """
-        from ._segment import SegmentObject
-        from ._line import LineObject
-        
+        from ._segment import SegmentObject       
         if not isinstance(segment, SegmentObject):
             _raise_error(self, 'segment_intersection', 'Invalid segment argument')
-        
+        return self._segment_intersection(segment)
+    
+    def _segment_intersection(self, segment: SegmentObject) -> tuple[PointObject] | None:
+        """Implémentation interne de segment_intersection"""
+        from ._line import LineObject        
         line = LineObject(segment.P1, segment.get_vector())
         intersections = self.line_intersection(line)
         
@@ -328,7 +426,7 @@ class CircleObject:
         
         return tuple(valid_points) if valid_points else None
 
-    def rect_intersection(self, rect):
+    def rect_intersection(self, rect: RectObject) -> tuple[PointObject] | None:
         """
         Renvoie les points d'intersection entre le cercle et un rectangle
         
@@ -338,13 +436,14 @@ class CircleObject:
         Returns:
             tuple[PointObject] | None: liste des points d'intersection
         """
-        from ._rect import RectObject, _to_rect
-        from ._segment import SegmentObject
-        PointObject, _ = _lazy_import_point()
-        
+        from ._rect import _to_rect        
         rect = _to_rect(rect)
+        return self._rect_intersection(rect)
         
-        if not self.colliderect(rect):
+    def _rect_intersection(self, rect: RectObject) -> tuple[PointObject] | None:
+        """Implémentation interne de rect_intersection"""
+        from ._segment import SegmentObject
+        if not self._colliderect(rect):
             return None
         
         points = []
@@ -359,7 +458,7 @@ class CircleObject:
             ]
             
             for segment in segments:
-                intersections = self.segment_intersection(segment)
+                intersections = self._segment_intersection(segment)
                 if intersections:
                     points.extend(intersections)
         else:
@@ -381,7 +480,7 @@ class CircleObject:
             )
             
             for segment in [top_segment, bottom_segment, left_segment, right_segment]:
-                intersections = self.segment_intersection(segment)
+                intersections = self._segment_intersection(segment)
                 if intersections:
                     points.extend(intersections)
             
@@ -393,7 +492,7 @@ class CircleObject:
             ]
             
             for cx, cy in corners:
-                corner_points = self.circle_intersection((PointObject(cx, cy), r))
+                corner_points = self._circle_intersection((PointObject(cx, cy), r))
                 if corner_points:
                     points.extend(corner_points)
         
@@ -407,7 +506,7 @@ class CircleObject:
         
         return tuple(unique_points) if unique_points else None
 
-    def circle_intersection(self, circle):
+    def circle_intersection(self, circle: CircleObject) -> tuple[PointObject] | None:
         """
         Calcule l'intersection avec un autre cercle
         
@@ -416,24 +515,18 @@ class CircleObject:
             
         Returns:
             tuple[PointObject] | None: 0, 1 ou 2 points d'intersection
-        """
-        PointObject, _ = _lazy_import_point()
-        
-        if isinstance(circle, CircleObject):
-            x2, y2 = circle.centerx, circle.centery
-            r2 = circle.radius
-        elif isinstance(circle, (tuple, list)) and len(circle) == 2:
-            center = circle[0]
-            if not isinstance(center, PointObject):
-                PointObject, _to_point = _lazy_import_point()
-                center = _to_point(center)
-            x2, y2 = center.x, center.y
-            r2 = float(circle[1])
-        else:
+        """        
+        if not isinstance(circle, CircleObject):
             _raise_error(self, 'circle_intersection', 'Invalid circle argument')
-        
+        return self._circle_intersection(circle)
+    
+    def _circle_intersection(self, circle: CircleObject) -> tuple[PointObject] | None:
+        """Implémentation interne de circle_intersection"""        
         x1, y1 = self.centerx, self.centery
         r1 = self._radius
+
+        x2, y2 = circle.centerx, circle.centery
+        r2 = circle._radius
         
         dx = x2 - x1
         dy = y2 - y1
@@ -462,7 +555,7 @@ class CircleObject:
         
         return (PointObject(p1x, p1y), PointObject(p2x, p2y))
 
-    def get_collision_normal(self, rect, collision_point=None):
+    def rect_collision_normal(self, rect: RectObject, collision_point: PointObject=None) -> VectorObject:
         """
         Renvoie le vecteur normal au point de collision avec un rectangle
         
@@ -473,14 +566,14 @@ class CircleObject:
         Returns:
             VectorObject: vecteur normal normalisé pointant vers l'extérieur du rectangle
         """
-        from ._rect import RectObject, _to_rect
-        PointObject, _to_point = _lazy_import_point()
-        VectorObject, _ = _lazy_import_vector()
-        
+        from ._rect import _to_rect        
         rect = _to_rect(rect)
-        
+        return self._rect_collision_normal(rect, collision_point=collision_point)
+    
+    def _rect_collision_normal(self, rect: RectObject, collision_point: PointObject=None) -> VectorObject:
+        """Implémentation interne de rect_collision_normal"""        
         if collision_point is None:
-            collision_point = rect.closest_point(self._center)
+            collision_point = rect._closest_point(self._center)
         else:
             collision_point = _to_point(collision_point)
         
@@ -540,63 +633,8 @@ class CircleObject:
             return VectorObject(0, -1)
         return normal.normalized
 
-    # ======================================== METHODES INTERACTIVES ========================================
-    def copy(self):
-        """Renvoie une copie du cercle"""
-        return _deepcopy(self)
-    
-    def to_tuple(self):
-        """Renvoie les propriétés dans un tuple"""
-        return (self.center, self.radius)
-    
-    def to_list(self):
-        """Renvoie les propriétés dans une liste"""
-        return [self.center, self.radius]
-    
-    def point_from_angle(self, angle: Real, degrees: bool = False):
-        """
-        Renvoie le point sur le cercle à un angle donné
-        
-        Args:
-            angle (Real): angle
-            degrees (bool): si True, angle en degrés, sinon en radians
-        """
-        PointObject, _ = _lazy_import_point()
-        
-        if degrees:
-            angle = math.radians(angle)
-        
-        x = self.centerx + self._radius * math.cos(angle)
-        y = self.centery + self._radius * math.sin(angle)
-        
-        return PointObject(x, y)
-    
-    def scale(self, ratio: Real):
-        """
-        Redimensionne le cercle
-
-        Args:
-            ratio (Real) : ratio de redimensionnement
-        """
-        if not isinstance(ratio, Real) or ratio <= 0:
-            _raise_error(self, 'scale', 'Invalid ratio argument')
-        self.radius = round(self.radius * float(ratio), self.PRECISION)
-    
-    def translate(self, vector):
-        """
-        Translate le cercle selon un vecteur
-
-        Args:
-            vector (VectorObject) : vecteur de translation
-        """
-        VectorObject, _to_vector = _lazy_import_vector()
-        vector = _to_vector(vector)
-        self.centerx += vector.x
-        self.centery += vector.y
-
     # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, filling: bool = None, color: pygame.Color = None,
-            border: bool = None, border_color: pygame.Color = None, border_width: int = None):
+    def draw(self, surface: pygame.Surface, filling: bool = None, color: pygame.Color = None, border: bool = None, border_color: pygame.Color = None, border_width: int = None):
         """
         Dessine le cercle sur une surface donnée
 
@@ -611,7 +649,7 @@ class CircleObject:
         if not isinstance(surface, pygame.Surface):
             _raise_error(self, 'draw', 'Invalid surface argument')
         
-        # Paramètres d'affichage
+        # paramètres d'affichage
         filling = self._filling if filling is None else filling
         color = self._color if color is None else _to_color(color)
         border = self._border if border is None else border
@@ -622,15 +660,15 @@ class CircleObject:
         center_pos = (int(self.centerx), int(self.centery))
         radius = int(self._radius)
         
-        # Remplissage
+        # remplissage
         if filling:
             pygame.draw.circle(surface, color, center_pos, radius)
         
-        # Bordure
+        # bordure
         if border:
             if border_around:
-                # Bordure autour (rayon externe)
+                # bordure externe
                 pygame.draw.circle(surface, border_color, center_pos, radius + border_width, border_width)
             else:
-                # Bordure interne
+                # bordure interne
                 pygame.draw.circle(surface, border_color, center_pos, radius, border_width)

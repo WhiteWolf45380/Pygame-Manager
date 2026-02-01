@@ -3,10 +3,10 @@ from __future__ import annotations
 from ._core import *
 
 # ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
-def _to_vector(vector: VectorObject | Iterable[Real], fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument') -> VectorObject | object | None:
+def _to_vector(vector: VectorObject | Iterable[Real], copy:bool=False, fallback: object=None, raised: bool=True, method: str='_to_vector', message: str='Invalid vector argument') -> VectorObject | object | None:
     """tente de convertir si besoin l'objet en VectorObject"""
     if isinstance(vector, VectorObject):
-        return vector.copy()
+        return vector if not copy else vector.copy()
     if isinstance(vector, Sequence) and all(isinstance(c, Real) for c in vector):
         return VectorObject(*vector)
     return fallback if fallback is not None else _raise_error(VectorObject, method, message) if raised else None
@@ -106,7 +106,7 @@ class VectorObject:
     @property
     def norm(self) -> float:
         """Renvoie la norme du vecteur"""
-        return math.sqrt(sum(float(c)**2 for c in self._v))
+        return float(np.linalg.norm(self._v))
     
     def __abs__(self) -> float:
         """Renvoie la norme du vecteur"""
@@ -154,15 +154,15 @@ class VectorObject:
         """addition vectorielle"""
         vector = _to_vector(vector, method='__add__', raised=False)
         if vector is None: return NotImplemented
-        u, v = self.equalized(vector)
-        return VectorObject(*(u.array + v.array))
+        self._equalize(vector)
+        return VectorObject(*(self.array + vector.array))
 
     def __sub__(self, vector: VectorObject) -> VectorObject:
         """Soustraction vectorielle"""
         vector = _to_vector(vector, method='__sub__', raised=False)
         if vector is None: return NotImplemented
-        u, v = self.equalized(vector)
-        return VectorObject(*(u.array - v.array))
+        self._equalize(vector)
+        return VectorObject(*(self.array - vector.array))
     
     def __mul__(self, scalar: Real) -> VectorObject:
         """Multiplication par un scalaire"""
@@ -184,23 +184,23 @@ class VectorObject:
         """Rapport scalaire entre deux vecteurs colinéaires"""
         vector = _to_vector(vector, method='__rtruediv__', raised=False)
         if vector is None: return NotImplemented
-        u, v = self.equalized(vector)
-        if not u.is_collinear(v): return NotImplemented
-        for i in range(u.dim):
-            if u[i] != 0: return v[i] / u[i]
+        self._equalize(vector)
+        if not self.is_collinear(vector): return NotImplemented
+        for i in range(self.dim):
+            if self[i] != 0: return vector[i] / self[i]
         return 0.0
     
     def __matmul__(self, vector: VectorObject) -> float:
         """Produit scalaire"""
         vector = _to_vector(vector, method='__dot__', raised=False)
         if vector is None: return NotImplemented
-        return self.dot(vector)
+        return self._dot(vector)
     
     def __xor__(self, vector: VectorObject) -> VectorObject:
         """Produit vectoriel"""
         vector = _to_vector(vector, method='__cross__', raised=False)
         if vector is None: return NotImplemented
-        return self.cross(vector)
+        return self._cross(vector)
     
     def __pos__(self) -> VectorObject:
         """Copie"""
@@ -214,10 +214,9 @@ class VectorObject:
     def __eq__(self, vector: VectorObject) -> bool:
         """Vérifie la correspondance de deux vecteurs"""
         vector = _to_vector(vector, raised=False)
-        if vector is None:
-            return False
-        u, v = self.equalized(vector)
-        return all(u[i] == v[i] for i in range(u.dim))
+        if vector is None:return False
+        self._equalize(vector)
+        return all(self[i] == vector[i] for i in range(self.dim))
     
     def __ne__(self, vector: VectorObject) -> bool:
         """Vérifie la non correspondance de deux vecteurs"""
@@ -246,9 +245,13 @@ class VectorObject:
             vector (VectorObject) : second vecteur
         """
         _to_vector(vector, method='is_orthogonal')
+        return self._is_orthogonal(vector)
+    
+    def _is_orthogonal(self, vector: VectorObject) -> bool:
+        """Implémentation interne de is_orthogonal"""
         if self.is_null() or vector.is_null():
             return True
-        return np.isclose(self.dot(vector), 0)
+        return np.isclose(self._dot(vector), 0)
 
     def is_collinear(self, vector: VectorObject) -> bool:
         """
@@ -258,9 +261,13 @@ class VectorObject:
             vector (VectorObject) : second vecteur
         """
         vector = _to_vector(vector, method='is_collinear')
+        return self._is_collinear(vector)
+    
+    def _is_collinear(self, vector: VectorObject) -> bool:
+        """Implémentation interne de is_collinear"""
         if self.is_null() or vector.is_null():
             return True
-        return abs(self.dot(vector)) == self.norm * vector.norm
+        return abs(self._dot(vector)) == self.norm * vector.norm
     
     def is_coplanar(self, *vectors: VectorObject) -> bool:
         """
@@ -270,21 +277,25 @@ class VectorObject:
             vectors (tuple[VectorObject]): vecteurs à tester avec Self
         """
         vectors = list(map(_to_vector, vectors))
-        
-        equalized = self.equalized(*vectors)
-        dim = equalized[0].dim
+        return self._is_coplanar(*vectors)
+    
+    def _is_coplanar(self, *vectors: VectorObject) -> bool:
+        """Implémentation interne de is_coplanar"""
+        self._equalize(*vectors)
+        vectors = (self, *vectors)
+        dim = vectors[0].dim
         
         # toujours coplanaire en 1D / 2D
-        if dim <= 2 or len(equalized) < 3:
+        if dim <= 2 or len(vectors) < 3:
             return True
         
         # produit mixte pour 3D
-        if dim == 3 and len(equalized) == 3:
-            v1, v2, v3 = equalized
-            return abs(v1.dot(v2.cross(v3))) < 1e-10
+        if dim == 3 and len(vectors) == 3:
+            v1, v2, v3 = vectors
+            return abs(v1._dot(v2._cross(v3))) < 1e-10
         
         # méthode générale : élimination de Gauss
-        matrix = [[v[i] for v in equalized] for i in range(dim)]
+        matrix = [[v[i] for v in vectors] for i in range(dim)]
         return self._compute_rank(matrix) <= 2
 
     # ======================================== METHODES INTERACTIVES ========================================
@@ -314,8 +325,7 @@ class VectorObject:
                 = 0 : reshape automatique (suppression des zéros de fin)
                 > 0 : strictement dim éléments
         """
-        if not isinstance(dim, int):
-            _raise_error(self, 'reshape', 'Invalid dim argument')
+        if not isinstance(dim, int): _raise_error(self, 'reshape', 'Invalid dim argument')
         if dim == 0:
             self._v = self._v[: np.max(np.nonzero(self._v)[0]) + 1] if np.any(self._v != 0) else np.array([0.0], dtype=np.float32)
         elif dim < 0:
@@ -325,23 +335,22 @@ class VectorObject:
         else:
             self._v = np.concatenate([self._v, np.zeros(dim - len(self), dtype=np.float32)])
 
-    def equalized(self, *vectors: VectorObject) -> Tuple[Self, *tuple[VectorObject]]:
+    def equalize(self, *objs: Reshapable):
         """
-        Egalise les dimensions de plusieurs vecteurs
+        Egalise les dimensions du point et de plusieurs autres objets géométriques
 
         Args:
-            vectors (tuple[VectorObject]) : ensemble de vecteurs à mettre sur la même dimension
+            objs (tuple[Reshapable]) : ensemble des objets à mettre sur la même dimension
         """
-        vectors = list(map(_to_vector, vectors))
-        if self not in vectors:
-            vectors = (self, *vectors)
-        dim = max(vectors, key=lambda v: v.dim).dim
-        equalized_vectors = []
-        for vector in vectors:
-            v = vector.copy()
-            v.reshape(dim)
-            equalized_vectors.append(v)
-        return tuple(equalized_vectors)
+        if any(not isinstance(obj, Reshapable) for obj in objs): _raise_error(self, 'equalize', 'Invalid objs arguments')
+        self._equalize(*objs)
+    
+    def _equalize(self, *objs: Reshapable):
+        """Implémentation interne de equalize"""
+        if self not in objs: objs = (self, *objs)
+        dim = max(objs, key=lambda o: o.dim).dim
+        for obj in objs:
+            obj.reshape(dim)
 
     def dot(self, vector: VectorObject) -> float:
         """
@@ -351,8 +360,12 @@ class VectorObject:
             vector (VectorObject) : second vecteur
         """
         vector = _to_vector(vector, method='dot')
-        u, v = self.equalized(vector)
-        return float(np.dot(u.array, v.array))
+        return self._dot(vector)
+    
+    def _dot(self, vector: VectorObject) -> float:
+        """Implémentation interne de dot"""
+        self._equalize(vector)
+        return float(np.dot(self.array, vector.array))
     
     def cross(self, vector: VectorObject) -> VectorObject:
         """
@@ -362,8 +375,12 @@ class VectorObject:
             vector (VectorObject) : second vecteur
         """
         vector = _to_vector(vector, method='cross')
-        u, v = self.equalized(vector)
-        return VectorObject(*np.cross(u.array, v.array))
+        return self._cross(vector)
+    
+    def _cross(self, vector: VectorObject) -> VectorObject:
+        """Implémentation interne de cross"""
+        self._equalize(vector)
+        return VectorObject(*np.cross(self.array, vector.array))
     
     def angle_with(self, vector: VectorObject, degrees: bool=False) -> float:
         """
@@ -375,7 +392,11 @@ class VectorObject:
         """
         vector = _to_vector(vector, method='angle_with')
         if self.is_null() or vector.is_null(): _raise_error(self, 'angle_with', 'Cannot define an angle with null vector')
-        cos_angle = self.dot(vector) / (self.norm * vector.norm)
+        return self._angle_with(vector, degrees=degrees)
+    
+    def _angle_with(self, vector: VectorObject, degrees: bool=False) -> float:
+        """Implémentation interne de angle_with"""
+        cos_angle = self._dot(vector) / (self.norm * vector.norm)
         cos_angle = max(-1.0, min(1.0, cos_angle))  # Clamp pour éviter les erreurs d'arrondi
         angle = float(np.arccos(cos_angle))
         if degrees:
@@ -390,7 +411,11 @@ class VectorObject:
             vecteur (VectorObject) : vecteur à projeter
         """
         vector = _to_vector(vector, method='projection')
-        return (vector.dot(self) / self.dot(self)) * self
+        return self._projection(vector)
+    
+    def _projection(self, vector: VectorObject) -> VectorObject:
+        """Implémentation interne de projection"""
+        return (vector._dot(self) / self._dot(self)) * self
     
     def distance(self, vector: VectorObject) -> float:
         """
@@ -400,4 +425,8 @@ class VectorObject:
             vector (VectorObject) : second vecteur
         """
         vector = _to_vector(vector, method='distance')
+        return self._distance(vector)
+    
+    def _distance(self, vector: VectorObject) -> float:
+        """Implémentation interne de distance"""
         return (self - vector).norm

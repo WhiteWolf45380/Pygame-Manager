@@ -1,8 +1,27 @@
 # ======================================== IMPORTS ========================================
-from .imports import np, pygame, Iterable
+from .imports import *
+from typing import Protocol, TYPE_CHECKING
 
 # ======================================== FAMILLES DE TYPES ========================================
 Sequence = (tuple, list, np.ndarray)
+
+class Reshapable(Protocol):
+    @property
+    def dim(self) -> int:
+        """Renvoie la dimension de l'objet"""
+        ...
+
+    def reshape(self, dim: int) -> None:
+        """Redimensionne l'objet"""
+        ...
+
+if TYPE_CHECKING:
+    from .._vector import VectorObject
+    from .._point import PointObject
+    from .._segment import SegmentObject
+    from .._line import LineObject
+    from .._circle import CircleObject
+    from .._rect import RectObject
 
 # ======================================== FONCTIONS UTILES ========================================
 def _raise_error(obj: object, method: str, text: str):
@@ -70,13 +89,20 @@ def _to_color(color: pygame.Color | Iterable[int], fallback: object=None, raised
     """Transforme en couleur pygame si besoin l'est"""
     if isinstance(color, pygame.Color):
         return color
-    elif isinstance(color, Sequence) and len(color) in (3, 4) and any(not isinstance(c, int) or not 0 <= c <= 255 for c in color):
+    elif isinstance(color, Sequence) and len(color) in (3, 4) and all(isinstance(c, int) and 0 <= c <= 255 for c in color):
         return pygame.Color(color)
     return fallback if fallback is not None else _raise_error(pygame.Color, method, message) if raised else None
 
 # ======================================== EXPORTS ========================================
 __all__ = [
     "Sequence",
+    "Reshapable",
+    "VectorObject",
+    "PointObject",
+    "SegmentObject",
+    "LineObject",
+    "CircleObject",
+    "RectObject",
     "_raise_error",
     "_deepcopy",
     "_to_color"
