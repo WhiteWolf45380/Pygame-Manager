@@ -28,5 +28,5 @@ __all__ = [
     "Iterator",
     "Self",
     "Tuple",
-    "geometry"
+    "context"
 ]

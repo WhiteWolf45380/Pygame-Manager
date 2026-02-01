@@ -6,7 +6,7 @@ __all__ = [
     "Real",
     "Iterable",
     "Tuple",
-    "context"
+    "context",
 
     "Sequence",
     "_raise_error",
