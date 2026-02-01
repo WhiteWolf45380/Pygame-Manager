@@ -1,6 +1,6 @@
 import pygame
 from pygame_manager import managers
-from context import context
+from ..context import context
 
 class Engine:
     def __init__(self):
