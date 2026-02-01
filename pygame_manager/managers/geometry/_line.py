@@ -243,7 +243,7 @@ class LineObject:
     
     def _collidesegment(self, segment: SegmentObject) -> bool:
         """Implémentation interne de collidesegment"""        
-        if self.contains(segment.P1) or self.contains(segment.P2):
+        if self.contains(segment._start) or self.contains(segment._end):
             return True
         
         P1 = segment._start

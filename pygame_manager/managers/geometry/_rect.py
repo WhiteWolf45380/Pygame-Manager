@@ -5,10 +5,10 @@ from ._point import PointObject, _to_point
 from ._vector import VectorObject, _to_vector
 
 # ======================================== TRANSFORMATION INTERMEDIAIRE ========================================
-def _to_rect(rect, fallback: object=None, raised: bool=True, method: str='_to_rect', message: str='Invalid rect argument'):
+def _to_rect(rect: RectObject, copy: bool=False, fallback: object=None, raised: bool=True, method: str='_to_rect', message: str='Invalid rect argument'):
     """Transforme l'objet en rect si besoin l'est"""
     if isinstance(rect, RectObject):
-        return rect.copy()
+        return rect.copy() if copy else rect
     elif isinstance(rect, pygame.Rect):
         return RectObject(rect.x, rect.y, rect.width, rect.height)
     elif isinstance(rect, Sequence) and len(rect) == 4 and all(isinstance(c, Real) for c in rect):
@@ -24,30 +24,31 @@ class RectObject:
                 "_border_topleft_radius", "_border_topright_radius", "_border_bottomleft_radius", "_border_bottomright_radius"]
     
     def __init__(self, point: PointObject, width: Real, height: Real):
-        # Point
+        # point haut gauche
         self._O = _to_point(point)       
         self._O.reshape(2)
 
-        # Dimensions
+        # largeur
         if not isinstance(width, Real) or width <= 0:
             _raise_error(self, '__init__', 'Invalid width argument')
         self._w = VectorObject(width, 0)
 
+        # hauteur
         if not isinstance(height, Real) or height <= 0:
             _raise_error(self, '__init__', 'Invalid height argument')
         self._h = VectorObject(0, height)
 
-        # Remplissage
+        # remplissage
         self._filling = True
         self._color = (255, 255, 255)
 
-        # Bordure
+        # bordure
         self._border = False
         self._border_color = (0, 0, 0)
         self._border_width = 1
         self._border_around = False
 
-        # Forme
+        # forme
         self._border_radius = -1
         self._border_topleft_radius = -1
         self._border_topright_radius = -1
@@ -78,6 +79,7 @@ class RectObject:
         """Renvoie l'objet pygame.Rect"""
         return pygame.Rect(*map(int, [self.x, self.y, self.width, self.height]))
     
+    # position
     def get_pos(self) -> PointObject:
         """Renvoie le point positionnel"""
         return self._O.copy()
@@ -93,9 +95,9 @@ class RectObject:
         return self._O.y
     
     @property
-    def topleft(self) -> tuple[float, float]:
-        """Renvoie les coordonnées du point haut gauche"""
-        return (self.x, self.y)
+    def topleft(self) -> PointObject:
+        """Renvoie le point haut gauche"""
+        return self._O.copy()
     
     @property
     def top(self) -> float:
@@ -103,9 +105,9 @@ class RectObject:
         return self.y
     
     @property
-    def topright(self) -> tuple[float, float]:
-        """Renvoie les coordonnées du point haut droit"""
-        return (self.x + self.width, self.y)
+    def topright(self) -> PointObject:
+        """Renvoie le point haut droit"""
+        return self._O + self._w
     
     @property
     def right(self) -> float:
@@ -113,9 +115,9 @@ class RectObject:
         return self.x + self.width
     
     @property
-    def bottomright(self) -> tuple[float, float]:
-        """Renvoie les coordonnées du point bas droit"""
-        return (self.x + self.width, self.y + self.height)
+    def bottomright(self) -> PointObject:
+        """Renvoie le du point bas droit"""
+        return self._O + self._w + self._h
     
     @property
     def bottom(self) -> float:
@@ -123,9 +125,9 @@ class RectObject:
         return self.y + self.height
     
     @property
-    def bottomleft(self) -> tuple[float, float]:
-        """Renvoie les coordonnées du point bas gauche"""
-        return (self.x, self.y + self.height)
+    def bottomleft(self) -> PointObject:
+        """Renvoie le du point bas gauche"""
+        return self._O + self._h
     
     @property
     def left(self) -> float:
@@ -133,9 +135,9 @@ class RectObject:
         return self.x
     
     @property
-    def center(self) -> tuple[float, float]:
-        """Renvoie les coordonnées du centre"""
-        return (self.x + self.width / 2, self.y + self.height / 2)
+    def center(self) -> PointObject:
+        """Renvoie le point central"""
+        return self._O + 0.5 * (self._w + self._h)
     
     @property
     def centerx(self) -> float:
@@ -147,6 +149,7 @@ class RectObject:
         """Renvoie la coordonnée y du centre"""
         return self.y + self.height / 2
 
+    # taille
     def get_size(self) -> tuple[float, float]:
         """Renvoie les dimensions du rect"""
         return (self.width, self.height)
@@ -176,6 +179,7 @@ class RectObject:
         """Renvoie l'aire"""
         return self.width * self.height
     
+    # paramètres d'affichage
     @property
     def filling(self) -> bool:
         """Vérifie le remplissage"""
@@ -237,6 +241,7 @@ class RectObject:
         return self._border_bottomright_radius
 
     # ======================================== SETTERS ========================================
+    # position
     @x.setter
     def x(self, coordinate: Real):
         """Fixe la coordonnée x"""
@@ -411,7 +416,7 @@ class RectObject:
         vector = _to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
-        result.translate(vector)
+        result._translate(vector)
         return result
     
     def __radd__(self, vector: VectorObject) -> RectObject:
@@ -419,7 +424,7 @@ class RectObject:
         vector = _to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
-        result.translate(vector)
+        result._translate(vector)
         return result
     
     def __sub__(self, vector: VectorObject) -> RectObject:
@@ -427,36 +432,33 @@ class RectObject:
         vector = _to_vector(vector, raised=False)
         if vector is None: return NotImplemented
         result = self.copy()
-        result.translate(-vector)
-        return result
-
-    def __rsub__(self, vector: VectorObject) -> RectObject:
-        """Renvoie l'image du rect par l'opposé du vecteur donné"""
-        vector = _to_vector(vector, raised=False)
-        if vector is None: return NotImplemented
-        result = self.copy()
-        result.translate(-vector)
+        result._translate(-vector)
         return result
     
     # ======================================== PREDICATS & COLLISIONS ========================================
     def collidepoint(self, point: PointObject) -> bool:
-        """Vérifie que le point se trouve dans le rect"""
+        """
+        Vérifie que le point se trouve dans le rect
+
+        Args:
+            point (PointObject) : point à vérifier
+        """
         point = _to_point(point)
+        return self._collidepoint(point)
+    
+    def _collidepoint(self, point: PointObject) -> bool:
+        """Implémentation interne de collidepoint"""
         px, py = point.x, point.y
-        
-        # Cas sans arrondi
         if self._border_radius <= 0:
             return self.left <= px <= self.right and self.top <= py <= self.bottom
         
         r = self._border_radius
         
-        # Zone rectangulaire centrale (sans les coins)
         if self.left + r <= px <= self.right - r:
             return self.top <= py <= self.bottom
         if self.top + r <= py <= self.bottom - r:
             return self.left <= px <= self.right
         
-        # Vérification des coins arrondis
         corners = [
             (self.left + r, self.top + r),
             (self.right - r, self.top + r),
@@ -469,7 +471,6 @@ class RectObject:
             dy = py - cy
             dist_sq = dx**2 + dy**2
             
-            # Vérifier si dans le bon quadrant
             in_quadrant = False
             if cx < self.centerx:
                 if cy < self.centery:
@@ -487,59 +488,63 @@ class RectObject:
         
         return False
 
-    def collideline(self, line) -> bool:
+    def collideline(self, line: LineObject) -> bool:
         """Vérifie que la ligne croise le rect"""
         from ._line import LineObject
         if not isinstance(line, LineObject):
             _raise_error(self, 'collideline', 'Invalid line argument')
-        
-        intersections = self.line_intersection(line)
+        return self._collideline(line)
+    
+    def _collideline(self, line) -> bool:
+        """Implémentation interne de collideline"""        
+        intersections = self._line_intersection(line)
         return intersections is not None and len(intersections) > 0
 
-    def collidesegment(self, segment) -> bool:
+    def collidesegment(self, segment: SegmentObject) -> bool:
         """Vérifie qu'un segment croise le rect"""
         from ._segment import SegmentObject
         if not isinstance(segment, SegmentObject):
             _raise_error(self, 'collidesegment', 'Invalid segment argument')
-        
-        # Vérifier si une des extrémités est dans le rect
-        if self.collidepoint(segment.P1) or self.collidepoint(segment.P2):
+        return self._collidesegment(segment)
+    
+    def _collidesegment(self, segment: SegmentObject) -> bool:
+        """Implémentation interne de collidesegment"""        
+        if self._collidepoint(segment._start) or self._collidepoint(segment._end):
             return True
         
-        # Sinon vérifier l'intersection avec les bords
         from ._line import LineObject
-        line = LineObject(segment.P1, segment.get_vector())
-        intersections = self.line_intersection(line)
+        line = LineObject(segment._start, segment.get_vector())
+        intersections = self._line_intersection(line)
         
-        if intersections is None:
-            return False
-        
-        # Vérifier qu'au moins une intersection est sur le segment
+        if intersections is None: return False
         for inter in intersections:
             if inter in segment:
                 return True
-        
         return False
 
     def colliderect(self, rect: RectObject) -> bool:
-        """Vérifie la superposition de deux rects"""
+        """
+        Vérifie la superposition de deux rects
+
+        Args:
+            rect (RectObject) : rect à vérifier
+        """
         rect = _to_rect(rect)
-        
-        # Test rapide de séparation (AABB)
+        return self._colliderect(rect)
+    
+    def _colliderect(self, rect: RectObject) -> bool:
+        """Implémentation interne de colliderect"""       
         if self.right < rect.left or rect.right < self.left:
             return False
         if self.bottom < rect.top or rect.bottom < self.top:
             return False
         
-        # Si pas d'arrondi sur les deux rects, le test AABB suffit
-        if self._border_radius <= 0 and rect._border_radius <= 0:
+        if self._border_radius == 0 and rect._border_radius == 0:
             return True
         
-        # Cas complexe avec arrondis
-        r1 = self._border_radius if self._border_radius > 0 else 0
-        r2 = rect._border_radius if rect._border_radius > 0 else 0
-        
-        # Centres des coins arrondis
+        r1 = self._border_radius
+        r2 = rect._border_radius
+
         corners1 = [
             (self.left + r1, self.top + r1),
             (self.right - r1, self.top + r1),
@@ -554,29 +559,17 @@ class RectObject:
             (rect.right - r2, rect.bottom - r2),
         ] if r2 > 0 else []
         
-        # Test des zones rectangulaires centrales
         central1_left = self.left + r1
         central1_right = self.right - r1
         central1_top = self.top + r1
         central1_bottom = self.bottom - r1
         
-        central2_left = rect.left + r2
-        central2_right = rect.right - r2
-        central2_top = rect.top + r2
-        central2_bottom = rect.bottom - r2
-        
-        # Collision zone horizontale rect1 avec rect2
-        h1_collides = not (central1_right < rect.left or central1_left > rect.right or 
-                           self.top > rect.bottom or self.bottom < rect.top)
-        
-        # Collision zone verticale rect1 avec rect2
-        v1_collides = not (self.left > rect.right or self.right < rect.left or 
-                           central1_bottom < rect.top or central1_top > rect.bottom)
+        h1_collides = not (central1_right < rect.left or central1_left > rect.right or self.top > rect.bottom or self.bottom < rect.top)
+        v1_collides = not (self.left > rect.right or self.right < rect.left or central1_bottom < rect.top or central1_top > rect.bottom)
         
         if h1_collides or v1_collides:
             return True
         
-        # Test cercle-cercle pour les coins
         if r1 > 0 and r2 > 0:
             for cx1, cy1 in corners1:
                 for cx2, cy2 in corners2:
@@ -584,7 +577,6 @@ class RectObject:
                     if dist_sq <= (r1 + r2)**2:
                         return True
         
-        # Test cercle-point
         if r1 > 0:
             for cx, cy in corners1:
                 closest_x = max(rect.left, min(cx, rect.right))
@@ -604,33 +596,33 @@ class RectObject:
                     return True
         
         return False
+    
+    def collidecircle(self, circle: CircleObject) -> bool:
+        """
+        Vérifie la collision avec un cercle
 
-    def collidecircle(self, circle) -> bool:
-        """Vérifie la collision avec un cercle"""
+        Args:
+            circle (CircleObject) : cercle à vérifier
+        """
         from ._circle import CircleObject
-        
-        if isinstance(circle, CircleObject):
-            center = circle.center
-            radius = circle.radius
-        elif isinstance(circle, (tuple, list)) and len(circle) == 2:
-            center = _to_point(circle[0])
-            radius = float(circle[1])
-        else:
+        if not isinstance(circle, CircleObject):
             _raise_error(self, 'collidecircle', 'Invalid circle argument')
+        return self._collidecircle(circle)
+
+    def _collidecircle(self, circle: CircleObject) -> bool:
+        """Implémentation interne de collidecircle"""
+        center = circle._center
+        radius = circle._radius
+
+        closest = self._closest_point(center)
         
-        # Point le plus proche du cercle sur/dans le rect
-        closest = self.closest_point(center)
-        
-        # Si pas d'arrondi, test simple
         if self._border_radius <= 0:
             dist_sq = (center.x - closest.x)**2 + (center.y - closest.y)**2
             return dist_sq <= radius**2
         
-        # Avec arrondi
         r = self._border_radius
         cx, cy = center.x, center.y
         
-        # Zone rectangulaire centrale
         if self.left + r <= cx <= self.right - r:
             dist = abs(cy - closest.y)
             return dist <= radius
@@ -638,7 +630,6 @@ class RectObject:
             dist = abs(cx - closest.x)
             return dist <= radius
         
-        # Coins arrondis - test cercle-cercle
         corners = [
             (self.left + r, self.top + r),
             (self.right - r, self.top + r),
@@ -664,7 +655,6 @@ class RectObject:
                 dist = math.sqrt(dist_sq)
                 return dist <= radius + r
         
-        # Test standard
         dist_sq = (cx - closest.x)**2 + (cy - closest.y)**2
         return dist_sq <= radius**2
 
