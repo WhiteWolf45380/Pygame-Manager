@@ -10,7 +10,7 @@ class State:
         S'enregistre automatiquement dans StatesManager lors de l'instanciation
         Méthode update() à override pour la logique frame-to-frame
         Méthode draw(surface) à n'override qu'en connaissance des conséquences
-        Les menus liés (bound_menus) sont auto-ouverts/fermés avec le state
+        Les panels liés (bound_panels) sont auto-ouverts/fermés avec le state
     """
     def __init__(self, name: str, layer: int = 0):
         """
@@ -26,8 +26,8 @@ class State:
         self._name = name
         self._layer = layer
 
-        # menus automatiquement ouverts/fermés avec ce state
-        self._bound_menus = []
+        # panels automatiquement ouverts/fermés avec ce state
+        self._bound_panels = []
 
         # auto-registration
         context.states.register(self._name, self, layer=self._layer)
@@ -35,28 +35,28 @@ class State:
     # ======================================== CALLBACKS ========================================
     def on_enter(self):
         """Appelé quand le state devient actif"""
-        for menu_name in self._bound_menus:
-            if menu_name not in context.menus:
+        for panel_name in self._bound_panels:
+            if panel_name not in context.panels:
                 continue
-            context.menus.activate(menu_name)
+            context.panels.activate(panel_name)
 
     def on_exit(self):
-        """Appelé quand le state devient inactif — désactive les bound menus"""
-        for menu_name in self._bound_menus:
-            if menu_name not in context.menus:
+        """Appelé quand le state devient inactif — désactive les bound panels"""
+        for panel_name in self._bound_panels:
+            if panel_name not in context.panels:
                 continue
-            context.menus.deactivate(menu_name)
+            context.panels.deactivate(panel_name)
 
     # ======================================== BIND ========================================
-    def bind_menu(self, menu_name: str):
-        """Rattache un menu racine à ce state (auto ouvert/fermé)"""
-        if menu_name not in self._bound_menus:
-            self._bound_menus.append(menu_name)
+    def bind_panel(self, panel_name: str):
+        """Rattache un panel racine à ce state (auto ouvert/fermé)"""
+        if panel_name not in self._bound_panels:
+            self._bound_panels.append(panel_name)
 
-    def unbind_menu(self, menu_name: str):
-        """Détache un menu racine de ce state"""
-        if menu_name in self._bound_menus:
-            self._bound_menus.remove(menu_name)
+    def unbind_panel(self, panel_name: str):
+        """Détache un panel racine de ce state"""
+        if panel_name in self._bound_panels:
+            self._bound_panels.remove(panel_name)
 
     # ======================================== RENDER ========================================
     def update(self, *args, **kwargs):

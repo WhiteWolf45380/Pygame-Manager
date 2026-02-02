@@ -2,20 +2,20 @@
 from typing import Iterable
 from numbers import Real
 from ... import context
-from ._menu import Menu
+from ._panels import Panel
 
 # ======================================== MANAGER ========================================
-class MenusManager:
+class PanelsManager:
     """
-    Gestionnaire de menus avec système predecessor/successor.
+    Gestionnaire de panels avec système predecessor/successor.
     """
     def __init__(self):
         self._dict = {}
         self._zorder = []
-        self._active_menus = []
+        self._active_panels = []
         self._hovered = None
 
-        self.Menu = Menu
+        self.Panel = Panel
 
     def _raise_error(self, method: str, text: str):
         """
@@ -24,8 +24,8 @@ class MenusManager:
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     def __repr__(self):
-        active = ', '.join(name for name in self._active_menus) or 'None'
-        return f"<MenusManager: {len(self._dict)} menus | Active: [{active}]>"
+        active = ', '.join(name for name in self._active_panels) or 'None'
+        return f"<panelsManager: {len(self._dict)} panels | Active: [{active}]>"
 
     # ======================================== METHODES INTERNES ========================================
     def _update_zorder(self):
@@ -43,15 +43,15 @@ class MenusManager:
             if info["predecessor"] is None:
                 visit(name)
         
-        self._sort_active_menus()
+        self._sort_active_panels()
 
-    def _sort_active_menus(self):
-        """Tri des menus actifs selon le zorder"""
-        active = set(self._active_menus)
-        self._active_menus = list(filter(lambda name: name in active, self._zorder))
+    def _sort_active_panels(self):
+        """Tri des panels actifs selon le zorder"""
+        active = set(self._active_panels)
+        self._active_panels = list(filter(lambda name: name in active, self._zorder))
 
     def _get_subtree(self, name: str) -> list:
-        """Retourne tous les descendants d'un menu (lui-même inclus), en ordre BFS"""
+        """Retourne tous les descendants d'un panel (lui-même inclus), en ordre BFS"""
         result = []
         queue = [name]
         while queue:
@@ -62,83 +62,83 @@ class MenusManager:
         return result
 
     def _deactivate_subtree(self, name: str):
-        """Désactive un menu et tout son sous-arbre (on_exit en ordre inverse = feuilles d'abord)"""
+        """Désactive un panel et tout son sous-arbre (on_exit en ordre inverse = feuilles d'abord)"""
         subtree = self._get_subtree(name)
-        for menu_name in reversed(subtree):
-            if menu_name in self._active_menus:
-                obj = self._dict[menu_name]["object"]
+        for panel_name in reversed(subtree):
+            if panel_name in self._active_panels:
+                obj = self._dict[panel_name]["object"]
                 obj.on_exit()
-                self._active_menus.remove(menu_name)
+                self._active_panels.remove(panel_name)
     
     def _update_hovered(self):
-        """Renvoie le menu survolé par la souris"""
-        for name in reversed(self._active_menus):
+        """Renvoie le panel survolé par la souris"""
+        for name in reversed(self._active_panels):
             obj = self._dict[name]["object"]
             if not hasattr(obj, 'surface_rect'): continue
             if not getattr(obj, "hoverable", True): continue
-            if any(p not in self._active_menus for p in self._get_chain(name)): continue
+            if any(p not in self._active_panels for p in self._get_chain(name)): continue
             if 0 <= obj.mouse_x <= obj.surface_rect.width and 0 <= obj.mouse_y <= obj.surface_rect.height:
                 self._hovered = name
                 return
         self._hovered = None
 
     # ======================================== GETTERS ========================================
-    def get_menus(self) -> list:
-        """Renvoie l'ensemble des menus enregistrés"""
+    def get_panels(self) -> list:
+        """Renvoie l'ensemble des panels enregistrés"""
         return list(self._dict.keys())
 
-    def get_active_menus(self) -> list:
-        """Renvoie l'ensemble des menus actifs"""
-        return self._active_menus
+    def get_active_panels(self) -> list:
+        """Renvoie l'ensemble des panels actifs"""
+        return self._active_panels
 
-    def get_object(self, name: str) -> Menu | None:
-        """Renvoie l'objet d'un menu"""
+    def get_object(self, name: str) -> Panel | None:
+        """Renvoie l'objet d'un panel"""
         if name not in self._dict:
             return None
         return self._dict[name]["object"]
     
     def __getitem__(self, key):
-        """Renvoie l'objet d'un menu"""
+        """Renvoie l'objet d'un panel"""
         if key not in self._dict.keys():
-            self._raise_error('__getitem__', f'menu "{key}" does not exist')
+            self._raise_error('__getitem__', f'panel "{key}" does not exist')
         return self._dict[key]["object"]
 
     def get_predecessor(self, name: str) -> str | None:
-        """Renvoie le prédecesseur d'un menu"""
+        """Renvoie le prédecesseur d'un panel"""
         if name not in self._dict:
             return None
         return self._dict[name]["predecessor"]
 
     def get_successors(self, name: str) -> list:
-        """Renvoie les successeurs d'un menu"""
+        """Renvoie les successeurs d'un panel"""
         if name not in self._dict:
             return []
         return list(self._dict[name]["successors"])
     
     def get_hovered(self) -> str | None:
-        """Renvoie le menu survolé"""
+        """Renvoie le panel survolé"""
         return self._hovered
     
     @property
     def hovered(self) -> str | None:
-        """Renvoie le menu survolé"""
+        """Renvoie le panel survolé"""
         return self._hovered
 
     # ======================================== ENREGISTREMENT ========================================
-    def register(self, obj: Menu):
+    def register(self, obj: Panel):
         """
-        Enregistre un objet Menu
+        Enregistre un objet panel
 
         Args:
-            obj (Menu) : objet du menu à enregistrer
+            obj (panel) : objet du panel à enregistrer
         """
         name = obj._name
         if name in self._dict:
-            self._raise_error('register', f'menu "{name}" already exists')
+            self._raise_error('register', f'panel "{name}" already exists')
 
         predecessor = obj._predecessor
         if predecessor not in self._dict and predecessor is not None:
-            self._raise_error('register', f'predecessor menu "{predecessor}" does not exist')
+            self._raise_error('register', f'predecessor panel "{predecessor}" does not exist')
 
         self._dict[name] = {
             "predecessor": predecessor,
@@ -151,66 +151,66 @@ class MenusManager:
         self._update_zorder()
     
     # ======================================== PREDICATS ========================================
-    def __contains__(self, menu: str | Menu):
-        """Vérifie l'enregistrement d'un menu"""
-        if isinstance(menu, str):
-            return menu in self._dict
+    def __contains__(self, panel: str | Panel):
+        """Vérifie l'enregistrement d'un panel"""
+        if isinstance(panel, str):
+            return panel in self._dict
         
     def is_active(self, name: str) -> bool:
-        """Vérifie qu'un menu soit actif"""
-        return name in self._active_menus
+        """Vérifie qu'un panel soit actif"""
+        return name in self._active_panels
 
     # ======================================== ACTIVATION ========================================
     def activate(self, name: str):
         """
-        Active un menu
+        Active un panel
 
         Args:
-            name (str) : nom du menu
+            name (str) : nom du panel
         """
         if name not in self._dict:
-            self._raise_error('activate', f'menu "{name}" does not exist')
-        if name in self._active_menus:
+            self._raise_error('activate', f'panel "{name}" does not exist')
+        if name in self._active_panels:
             return
-        self._active_menus.append(name)
-        self._sort_active_menus()
+        self._active_panels.append(name)
+        self._sort_active_panels()
         self._dict[name]["object"].on_enter()
 
     def deactivate(self, name: str, pruning: bool = True):
         """
-        Désactive un menu
+        Désactive un panel
 
         Args:
-            name (str) : nom du menu à désactiver
-            pruning (bool, optional) : fermeture de tous les menus successeurs
+            name (str) : nom du panel à désactiver
+            pruning (bool, optional) : fermeture de tous les panels successeurs
         """
         if name not in self._dict:
             return
-        if name not in self._active_menus:
+        if name not in self._active_panels:
             return
         if not pruning:
             obj = self._dict[name]["object"]
             obj.on_exit()
-            self._active_menus.remove(name)
+            self._active_panels.remove(name)
             return
         self._deactivate_subtree(name)
-        self._sort_active_menus()
+        self._sort_active_panels()
 
     def deactivate_all(self):
-        """Désactive tous les menus actifs"""
-        for name in list(self._active_menus):
+        """Désactive tous les panels actifs"""
+        for name in list(self._active_panels):
             self._dict[name]["object"].on_exit()
-        self._active_menus = []
+        self._active_panels = []
 
     # ======================================== SWITCH ========================================
     def switch(self, to_close: str | Iterable[str], to_activate: str, pruning: bool = True):
         """
-        Ferme un ou plusieurs menu(s) et en active un autre
+        Ferme un ou plusieurs panel(s) et en active un autre
 
         Args:
-            to_close (str | Iterable[str]) : menu(s) à fermer
-            to_activate (str) : menu à activer
-            pruning (bool, optional) : femeture des menus successeurs
+            to_close (str | Iterable[str]) : panel(s) à fermer
+            to_activate (str) : panel à activer
+            pruning (bool, optional) : femeture des panels successeurs
         """
         if isinstance(to_close, str):
             to_close = [to_close]
@@ -218,9 +218,9 @@ class MenusManager:
             to_close = list(to_close)
 
         if any(tc not in self._dict for tc in to_close):
-            self._raise_error('switch', 'Invalid menus to close')
+            self._raise_error('switch', 'Invalid panels to close')
         if to_activate not in self._dict:
-            self._raise_error('switch', f'{to_activate} menu does not exist')
+            self._raise_error('switch', f'{to_activate} panel does not exist')
 
         for name in to_close:
             self.deactivate(name, pruning=pruning)
@@ -229,15 +229,15 @@ class MenusManager:
     # ======================================== Z-ORDER ========================================
     def reorder(self, name: str, direction: str, index: int = None):
         """
-        Réordonne un menu dans la liste des successeurs de son predecessor.
+        Réordonne un panel dans la liste des successeurs de son predecessor.
 
         Args:
-            name (str) : menu à réordoner
+            name (str) : panel à réordoner
             direction (str) : "forward", "backward", "front", "back", "index"
             index (int | None) : utilisé uniquement avec "index"
         """
         if name not in self._dict:
-            self._raise_error('reorder', f'menu "{name}" does not exist')
+            self._raise_error('reorder', f'panel "{name}" does not exist')
 
         predecessor = self._dict[name]["predecessor"]
         if predecessor is None:
@@ -275,8 +275,8 @@ class MenusManager:
     # ======================================== COORDONNÉES ========================================
     def _get_chain(self, name: str) -> list:
         """
-        Remonte la chaîne predecessor depuis un menu jusqu'à la racine.
-        Retourne la liste des noms du menu vers la racine (menu lui-même inclus).
+        Remonte la chaîne predecessor depuis un panel jusqu'à la racine.
+        Retourne la liste des noms du panel vers la racine (panel lui-même inclus).
         """
         chain = []
         current = name
@@ -288,19 +288,19 @@ class MenusManager:
                 break
         return chain
 
-    def absolute(self, point: tuple[Real, Real], menu_name: str) -> tuple[float, float]:
+    def absolute(self, point: tuple[Real, Real], panel_name: str) -> tuple[float, float]:
         """
-        Convertit un point relatif à un menu en coordonnées absolues
+        Convertit un point relatif à un panel en coordonnées absolues
 
         Args:
-            point (tuple[Real, Real]) : (x, y) relatif au menu
-            menu_name (str) : nom du menu de référence
+            point (tuple[Real, Real]) : (x, y) relatif au panel
+            panel_name (str) : nom du panel de référence
         """
-        if menu_name not in self._dict:
-            self._raise_error('absolute', f'menu "{menu_name}" does not exist')
+        if panel_name not in self._dict:
+            self._raise_error('absolute', f'panel "{panel_name}" does not exist')
 
         x, y = map(float, point)
-        chain = self._get_chain(menu_name)
+        chain = self._get_chain(panel_name)
 
         for name in chain:
             rect = None
@@ -311,19 +311,19 @@ class MenusManager:
 
         return (x, y)
 
-    def relative(self, point: tuple[Real, Real], menu_name: str) -> tuple[float, float]:
+    def relative(self, point: tuple[Real, Real], panel_name: str) -> tuple[float, float]:
         """
-        Convertit un point absol en coordonnées relatives à un menu
+        Convertit un point absol en coordonnées relatives à un panel
 
         Args:
             point (tuple[Real, Real]) : (x, y) en coordonnées absolues
-            menu_name (str) : nom du menu de référence
+            panel_name (str) : nom du panel de référence
         """
-        if menu_name not in self._dict:
-            self._raise_error('relative', f'menu "{menu_name}" does not exist')
+        if panel_name not in self._dict:
+            self._raise_error('relative', f'panel "{panel_name}" does not exist')
 
         x, y = map(float, point)
-        chain = self._get_chain(menu_name)
+        chain = self._get_chain(panel_name)
 
         for name in chain:
             rect = None
@@ -337,21 +337,21 @@ class MenusManager:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """
-        Exécute update de tous les menus actifs
+        Exécute update de tous les panels actifs
         """
         self._update_hovered()
-        for name in self._active_menus:
+        for name in self._active_panels:
             obj = self._dict[name]["object"]
             if hasattr(obj, 'update'):
                 obj.update()
 
     def draw(self):
         """
-        Exécute draw de tous les menus actifs et affichés 
+        Exécute draw de tous les panels actifs et affichés 
         """
-        for name in self._active_menus:
+        for name in self._active_panels:
             predecessor = self._dict[name]["predecessor"]
-            if predecessor is not None and predecessor not in self._active_menus:
+            if predecessor is not None and predecessor not in self._active_panels:
                 continue
 
             obj = self._dict[name]["object"]
@@ -361,4 +361,4 @@ class MenusManager:
                 obj.draw(predecessor_surface)
 
 # ======================================== INSTANCE ========================================
-menus_manager = MenusManager()
+panels_manager = PanelsManager()

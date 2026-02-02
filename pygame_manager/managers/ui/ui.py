@@ -66,10 +66,10 @@ class UiManager:
 
     def _update_hover(self):
         """Actualise le survol"""
-        hovered_menu = context.menus.hovered
+        hovered_panel = context.panels.hovered
         self._hovered_object = None
         for obj in reversed(self._objects):
-            if obj.menu == hovered_menu and obj.collidemouse():
+            if obj.panel == hovered_panel and obj.collidemouse():
                 self._hovered_object = obj
                 return
 

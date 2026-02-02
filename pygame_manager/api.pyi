@@ -5,7 +5,7 @@ from .managers.data import DataManager
 from .managers.geometry import GeometryManager
 from .managers.inputs import InputsManager
 from .managers.languages import LanguagesManager
-from .managers.menus import MenusManager
+from .managers.panels import PanelsManager
 from .managers.screen import ScreenManager
 from .managers.settings import SettingsManager
 from .managers.states import StatesManager
@@ -23,7 +23,7 @@ data: DataManager
 geometry: GeometryManager
 inputs: InputsManager
 languages: LanguagesManager
-menus: MenusManager
+panels: PanelsManager
 screen: ScreenManager
 settings: SettingsManager
 states: StatesManager

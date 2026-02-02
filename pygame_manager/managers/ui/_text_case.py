@@ -44,7 +44,7 @@ class TextCaseObject:
             padding: int = 5,
 
             callback: callable = lambda text: None,
-            menu: object = None
+            panel: object = None
         ):
         """
         Args:
@@ -80,7 +80,7 @@ class TextCaseObject:
             padding (int, optional) : marge interne du texte
 
             callback (callable, optional) : appelé à chaque modification du texte, reçoit le texte actuel
-            menu (object, optional) : menu maître
+            panel (object, optional) : panel maître
         """
         # vérifications
         if not isinstance(x, Real): _raise_error(self, '__init__', 'Invalid x argument')
@@ -108,7 +108,7 @@ class TextCaseObject:
         if not isinstance(cursor_blink_rate, Real) or cursor_blink_rate <= 0: _raise_error(self, '__init__', 'Invalid cursor_blink_rate argument')
         if not isinstance(padding, int) or padding < 0: _raise_error(self, '__init__', 'Invalid padding argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
-        if menu is not None and not isinstance(menu, str): _raise_error(self, '__init__', 'Invalid menu argument')
+        if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
 
         # auto-registration
         context.ui._append(self)
@@ -171,8 +171,8 @@ class TextCaseObject:
         # callback
         self._callback = callback
 
-        # menu maître
-        self._menu = menu if menu in context.menus else None
+        # panel maître
+        self._panel = panel if panel in context.panels else None
 
         # paramètres dynamiques
         self._visible = True
@@ -185,9 +185,9 @@ class TextCaseObject:
         return self._zorder
 
     @property
-    def menu(self) -> object:
-        """Renvoie le menu maître"""
-        return self._menu
+    def panel(self) -> object:
+        """Renvoie le panel maître"""
+        return self._panel
 
     @property
     def visible(self) -> bool:
@@ -259,7 +259,7 @@ class TextCaseObject:
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur la zone"""
-        mouse_pos = self._menu.mouse_pos if self._menu is not None else context.screen.get_mouse_pos()
+        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.screen.get_mouse_pos()
         return self._rect.collidepoint(mouse_pos)
 
     # ======================================== INTERACTION ========================================
@@ -385,7 +385,7 @@ class TextCaseObject:
             return
 
         surface = context.screen.surface
-        if self._menu is not None and hasattr(self._menu, 'surface'):
-            surface = self._menu.surface
+        if self._panel is not None and hasattr(self._panel, 'surface'):
+            surface = self._panel.surface
 
         surface.blit(self._surface, self._surface_rect)

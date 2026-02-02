@@ -35,7 +35,7 @@ class CircleButtonObject:
             hover_scale_duration: float = 0.0,
 
             callback: callable = lambda: None,
-            menu: object = None
+            panel: object = None
         ):
         """
         Args:
@@ -63,7 +63,7 @@ class CircleButtonObject:
             hover_scale_duration (float, optional) : durée de redimensionnement (en secondes)
 
             callback (callable, optional) : action en cas de pression du bouton
-            menu (object, optional) : menu maître pour affichage automatique sur la surface
+            panel (object, optional) : panel maître pour affichage automatique sur la surface
         """
         # vérifications
         if not isinstance(x, Real): _raise_error(self, '__init__', 'Invalid x argument')
@@ -85,7 +85,7 @@ class CircleButtonObject:
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
-        if menu is not None and not isinstance(menu, str): _raise_error(self, '__init__', 'Invalid menu argument')
+        if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
 
         # auto-registration
         context.ui._append(self)
@@ -164,8 +164,8 @@ class CircleButtonObject:
         # action de clique
         self._callback = callback
 
-        # menu maître
-        self._menu = menu if menu in context.menus else None
+        # panel maître
+        self._panel = panel if panel in context.panels else None
         self._zorder = 0
 
         # préchargement
@@ -184,9 +184,9 @@ class CircleButtonObject:
         return self._zorder
 
     @property
-    def menu(self) -> object:
-        """Renvoie le menu maître"""
-        return self._menu
+    def panel(self) -> object:
+        """Renvoie le panel maître"""
+        return self._panel
 
     @property
     def visible(self) -> bool:
@@ -237,7 +237,7 @@ class CircleButtonObject:
     
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le bouton (distance au centre <= rayon)"""
-        mouse_pos = self._menu.mouse_pos if self._menu is not None else context.screen.get_mouse_pos()
+        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.screen.get_mouse_pos()
         dx = mouse_pos[0] - self._center[0]
         dy = mouse_pos[1] - self._center[1]
         return dx * dx + dy * dy <= self._radius * self._radius
@@ -282,7 +282,7 @@ class CircleButtonObject:
             return
     
         surface = context.screen.surface
-        if self._menu is not None and hasattr(self._menu, 'surface'):
-            surface = self._menu.surface
+        if self._panel is not None and hasattr(self._panel, 'surface'):
+            surface = self._panel.surface
         
         surface.blit(self._surface, self._surface_rect)

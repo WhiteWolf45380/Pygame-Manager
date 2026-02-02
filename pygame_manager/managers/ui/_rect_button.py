@@ -39,7 +39,7 @@ class RectButtonObject:
 
             callback: callable = lambda: None,
 
-            menu: object = None,
+            panel: object = None,
             zorder: int = 0,
         ):
         """
@@ -69,7 +69,7 @@ class RectButtonObject:
             hover_scale_duration (float, optional) : durée de redimensionnement (en secondes)
 
             callback (callable, optional) : action en cas de pression du bouton
-            menu (object, optional) : menu maître pour affichage automatique sur la surface
+            panel (object, optional) : panel maître pour affichage automatique sur la surface
         """
         # vérifications
         if not isinstance(x, Real): _raise_error(self, '__init__', 'Invalid x argument')
@@ -93,7 +93,7 @@ class RectButtonObject:
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
-        if menu is not None and not isinstance(menu, str): _raise_error(self, '__init__', 'Invalid menu argument')
+        if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
         if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
@@ -173,8 +173,8 @@ class RectButtonObject:
         # action de clique
         self._callback = callback
 
-        # menu maître
-        self._menu = menu if menu in context.menus else None
+        # panel maître
+        self._panel = panel if panel in context.panels else None
         self._zorder = zorder
 
         # préchargement
@@ -193,9 +193,9 @@ class RectButtonObject:
         return self._zorder
 
     @property
-    def menu(self) -> object:
-        """Renvoie le menu maître"""
-        return self._menu
+    def panel(self) -> object:
+        """Renvoie le panel maître"""
+        return self._panel
 
     @property
     def visible(self) -> bool:
@@ -246,8 +246,8 @@ class RectButtonObject:
     
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le bouton"""
-        if self._menu is not None:
-            mouse_pos = self._menu.mouse_pos
+        if self._panel is not None:
+            mouse_pos = self._panel.mouse_pos
         else:
             mouse_pos = context.screen.get_mouse_pos()
         return self._rect.collidepoint(mouse_pos)
@@ -291,7 +291,7 @@ class RectButtonObject:
             return
     
         surface = context.screen.surface
-        if self._menu is not None and hasattr(self.menu, 'surface'):
-            surface = self._menu.surface
+        if self._panel is not None and hasattr(self.panel, 'surface'):
+            surface = self._panel.surface
         
         surface.blit(self._surface, self._surface_rect)
