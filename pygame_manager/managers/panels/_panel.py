@@ -1,6 +1,5 @@
 # ======================================== IMPORTS ========================================
-import pygame
-from ... import context
+from _core import *
 
 # ======================================== SUPERCLASS ========================================
 class Panel:
@@ -11,28 +10,44 @@ class Panel:
         Auto-registration en tant que panel
         gestion automatique de la surface
         z-ordre manipulable
+        affichage automatique sur le panel prédecesseur
 
-    Ne pas override _name, _predecessor
-    N'override surface, surface_rect, draw(surface) qu'en connaissance des conséquences
+    Override update() et draw() pour l'actualisation et l'affichage
     """
-    def __init__(self, name: str, predecessor: str = None, rect: pygame.Rect=(0, 0, 1920, 1080), centered: bool = False, hoverable: bool = True):
+    def __init__(
+            self, 
+            name: str, 
+            predecessor: str = None, 
+            rect: pygame.Rect=(0, 0, 1920, 1080), 
+            centered: bool = False, 
+            border_width: int = 0,
+            border_color: pygame.Color = (0, 0, 0, 255),
+            border_around: bool = False,
+            hoverable: bool = True
+            ):
         """
         Args:
             name (str) : nom du panel (doit être unique)
             predecessor (str, optional) : nom du panel prédecesseur
             rect (RectObject, optional) : dimensions du panel (accepte aussi les tuples (x, y, width, height))
             centered (bool, optional) : coordonnées à partir du centre de la surface maître
+            border_width (int, optional) : épaisseur de la bordure du panel
+            border_around (bool, optional) : affichage de la borddure à l'extérieur du panel
             hoverable (bool, optional) : peut être survolé
         """
         rect = context.geometry._to_rect(rect, raised=False)
 
         # vérifications
-        if not isinstance(name, str): self._raise_error('__init__', 'Invalid name argument')
-        if name in context.panels: self._raise_error('__init__', f'panel "{name}" already exists')
-        if not isinstance(predecessor, str): self._raise_error('__init__', 'Invalid predecessor argument')
-        if predecessor not in context.panels: self._raise_error('__init__', f'panel "{predecessor}" does not exist')
-        if rect is None: self._raise_error('__init__', 'Invalid rect argument')
-        if not isinstance(hoverable, bool): self._raise_error('__init__', 'Invalid hoverable argument')
+        if not isinstance(name, str): _raise_error(self, '__init__', 'Invalid name argument')
+        if name in context.panels: _raise_error(self, '__init__', f'panel "{name}" already exists')
+        if not isinstance(predecessor, str): _raise_error(self, '__init__', 'Invalid predecessor argument')
+        if predecessor not in context.panels: _raise_error(self, '__init__', f'panel "{predecessor}" does not exist')
+        if rect is None: _raise_error(self, '__init__', 'Invalid rect argument')
+        if not isinstance(centered, bool): _raise_error(self, '__init__', 'Invalid centered argument')
+        if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
+        border_color = _to_color(border_color)
+        if not isinstance(border_around, bool): _raise_error(self, '__init__', 'Invalid border_around argument')
+        if not isinstance(hoverable, bool): _raise_error(self, '__init__', 'Invalid hoverable argument')
 
         # properties
         self._name = name
@@ -40,16 +55,26 @@ class Panel:
 
         # surface
         if centered: rect.center = context.menus["predecessor"].surface_rect.center if predecessor is not None else context.screen.center
-        self.surface_rect = rect.rect
-        self.surface_width = rect.width
-        self.surface_height = rect.height
-        self.surface = pygame.Surface((self.surface_width, self.surface_height))
+        self._surface_rect = rect.rect
+        self._surface_width = rect.width
+        self._surface_height = rect.height
+        self._surface = pygame.Surface((self._surface_width, self._surface_height))
+
+        # bordure
+        self._border_width = border_width
+        self._border_color = border_color
+        self._border_around = border_around
+
+        self._border = None
+        if self._border_width != 0:
+            x = self._surface_rect.left - (self._border_width if self._border_around else 0)
+            y = self._surface_rect.top - (self._border_width if self._border_around else 0)
+            width = self._surface_rect.width + (self._border_width if self._border_around else 0)
+            height = self._surface_rect + (self._border_width if self._border_around else 0)
+            self._border = pygame.Rect(x, y, width, height)
 
         # auto-registration
         context.panels.register(self)
-
-    def _raise_error(self, method: str, text: str):
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     # ======================================== CALLBACKS ========================================
     def on_enter(self):
@@ -66,10 +91,17 @@ class Panel:
         pass
 
     def draw(self, surface: pygame.Surface):
+        """Appelé à chaque frame lorsque le panel est actif (à override)"""
+        pass
+
+    def _draw(self, surface: pygame.Surface):
         """Dessin sur la surface du prédecesseur"""
         if not isinstance(surface, pygame.Surface):
             return
-        surface.blit(self.surface, self.surface_rect)
+        surface.blit(self._surface, self._surface_rect)
+
+        if self._border is not None:
+            pygame.draw.rect(surface, self._border_color, self._border, self._border_width)
 
     # ======================================== ACTIVATION ========================================
     def activate(self):

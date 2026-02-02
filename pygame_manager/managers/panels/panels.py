@@ -1,7 +1,5 @@
 # ======================================== IMPORTS ========================================
-from typing import Iterable
-from numbers import Real
-from ... import context
+from _core import *
 from ._panel import Panel
 
 # ======================================== MANAGER ========================================
@@ -100,7 +98,7 @@ class PanelsManager:
     def __getitem__(self, key):
         """Renvoie l'objet d'un panel"""
         if key not in self._dict.keys():
-            self._raise_error('__getitem__', f'panel "{key}" does not exist')
+            _raise_error(self, '__getitem__', f'panel "{key}" does not exist')
         return self._dict[key]["object"]
 
     def get_predecessor(self, name: str) -> str | None:
@@ -134,11 +132,11 @@ class PanelsManager:
         """
         name = obj._name
         if name in self._dict:
-            self._raise_error('register', f'panel "{name}" already exists')
+            _raise_error(self, 'register', f'panel "{name}" already exists')
 
         predecessor = obj._predecessor
         if predecessor not in self._dict and predecessor is not None:
-            self._raise_error('register', f'predecessor panel "{predecessor}" does not exist')
+            _raise_error(self, 'register', f'predecessor panel "{predecessor}" does not exist')
 
         self._dict[name] = {
             "predecessor": predecessor,
@@ -169,7 +167,7 @@ class PanelsManager:
             name (str) : nom du panel
         """
         if name not in self._dict:
-            self._raise_error('activate', f'panel "{name}" does not exist')
+            _raise_error(self, 'activate', f'panel "{name}" does not exist')
         if name in self._active_panels:
             return
         self._active_panels.append(name)
@@ -218,9 +216,9 @@ class PanelsManager:
             to_close = list(to_close)
 
         if any(tc not in self._dict for tc in to_close):
-            self._raise_error('switch', 'Invalid panels to close')
+            _raise_error(self, 'switch', 'Invalid panels to close')
         if to_activate not in self._dict:
-            self._raise_error('switch', f'{to_activate} panel does not exist')
+            _raise_error(self, 'switch', f'{to_activate} panel does not exist')
 
         for name in to_close:
             self.deactivate(name, pruning=pruning)
@@ -237,7 +235,7 @@ class PanelsManager:
             index (int | None) : utilisé uniquement avec "index"
         """
         if name not in self._dict:
-            self._raise_error('reorder', f'panel "{name}" does not exist')
+            _raise_error(self, 'reorder', f'panel "{name}" does not exist')
 
         predecessor = self._dict[name]["predecessor"]
         if predecessor is None:
@@ -266,7 +264,7 @@ class PanelsManager:
 
         elif direction == "index":
             if index is None:
-                self._raise_error('reorder', '"index" requires an index')
+                _raise_error(self, 'reorder', '"index" requires an index')
             successors.remove(name)
             successors.insert(index, name)
 
@@ -297,7 +295,7 @@ class PanelsManager:
             panel_name (str) : nom du panel de référence
         """
         if panel_name not in self._dict:
-            self._raise_error('absolute', f'panel "{panel_name}" does not exist')
+            _raise_error(self, 'absolute', f'panel "{panel_name}" does not exist')
 
         x, y = map(float, point)
         chain = self._get_chain(panel_name)
@@ -320,7 +318,7 @@ class PanelsManager:
             panel_name (str) : nom du panel de référence
         """
         if panel_name not in self._dict:
-            self._raise_error('relative', f'panel "{panel_name}" does not exist')
+            _raise_error(self, 'relative', f'panel "{panel_name}" does not exist')
 
         x, y = map(float, point)
         chain = self._get_chain(panel_name)
@@ -355,10 +353,12 @@ class PanelsManager:
                 continue
 
             obj = self._dict[name]["object"]
-            if hasattr(obj, 'draw'):
+            if hasattr(obj, '_draw'):
+                obj.draw(obj._surface)
+            if hasattr(obj, '_draw'):
                 if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
                 else: predecessor_surface = context.screen.surface
-                obj.draw(predecessor_surface)
+                obj._draw(predecessor_surface)
 
 # ======================================== INSTANCE ========================================
 panels_manager = PanelsManager()
