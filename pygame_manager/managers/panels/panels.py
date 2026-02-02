@@ -2,7 +2,7 @@
 from typing import Iterable
 from numbers import Real
 from ... import context
-from ._panels import Panel
+from ._panel import Panel
 
 # ======================================== MANAGER ========================================
 class PanelsManager:

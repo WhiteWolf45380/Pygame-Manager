@@ -15,12 +15,13 @@ class Panel:
     Ne pas override _name, _predecessor
     N'override surface, surface_rect, draw(surface) qu'en connaissance des conséquences
     """
-    def __init__(self, name: str, predecessor: str = None, rect: pygame.Rect=(0, 0, 1920, 1080), hoverable: bool = True):
+    def __init__(self, name: str, predecessor: str = None, rect: pygame.Rect=(0, 0, 1920, 1080), centered: bool = False, hoverable: bool = True):
         """
         Args:
             name (str) : nom du panel (doit être unique)
             predecessor (str, optional) : nom du panel prédecesseur
             rect (RectObject, optional) : dimensions du panel (accepte aussi les tuples (x, y, width, height))
+            centered (bool, optional) : coordonnées à partir du centre de la surface maître
             hoverable (bool, optional) : peut être survolé
         """
         rect = context.geometry._to_rect(rect, raised=False)
@@ -38,6 +39,7 @@ class Panel:
         self._predecessor = predecessor
 
         # surface
+        if centered: rect.center = context.menus["predecessor"].surface_rect.center if predecessor is not None else context.screen.center
         self.surface_rect = rect.rect
         self.surface_width = rect.width
         self.surface_height = rect.height
