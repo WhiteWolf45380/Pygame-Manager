@@ -50,9 +50,9 @@ class GeometryManager:
         if isinstance(rect, RectObject):
             return rect.copy() if copy else rect
         elif isinstance(rect, pygame.Rect):
-            return RectObject(rect.x, rect.y, rect.width, rect.height)
+            return RectObject((rect.x, rect.y), rect.width, rect.height)
         elif isinstance(rect, Sequence) and len(rect) == 4 and all(isinstance(c, Real) for c in rect):
-            return RectObject(*rect)
+            return RectObject(tuple(rect[:2]), *rect[2:])
         return fallback if fallback is not None else _raise_error(RectObject, method, message) if raised else None
     
     # ======================================== GENERATIONS PARTICULIERES ========================================
