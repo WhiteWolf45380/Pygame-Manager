@@ -28,7 +28,7 @@ class SegmentObject:
     
     def __hash__(self) -> int:
         """Renvoie du segment hashé"""
-        return hash(frozenset([self._start.to_tuple(), self._end.to_tuple()]))
+        return hash(frozenset([hash(self._start), hash(self._end)]))
     
     # ======================================== GETTERS ========================================
     @property
@@ -329,7 +329,7 @@ class SegmentObject:
     
     def _equalize(self, *objs: Reshapable):
         """Implémentation interne de equalize"""
-        if self not in objs: objs = (self, *objs)
+        objs = {self, *objs}
         dim = max(objs, key=lambda o: o.dim).dim
         for obj in objs:
             obj.reshape(dim)

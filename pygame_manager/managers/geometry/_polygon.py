@@ -39,7 +39,7 @@ class PolygonObject:
 
     def __hash__(self) -> int:
         """Renvoie le polygone hashé"""
-        return hash(tuple(v.to_tuple() for v in self._vertices))
+        return hash(tuple(hash(v) for v in self._vertices))
 
     # ======================================== GETTERS ========================================
     def __getitem__(self, i: int | slice) -> context.geometry.Point | list[context.geometry.Point]:

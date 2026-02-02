@@ -27,6 +27,7 @@ class PointObject:
     
     def __hash__(self) -> int:
        """Renvoie le point hashé"""
+       self.reshape(0)
        return hash(self.to_tuple())
 
     # ======================================== GETTERS ========================================
@@ -230,7 +231,7 @@ class PointObject:
     
     def _equalize(self, *objs: Reshapable):
         """Implémentation interne de equalize"""
-        if self not in objs: objs = (self, *objs)
+        objs = {self, *objs}
         dim = max(objs, key=lambda o: o.dim).dim
         for obj in objs:
             obj.reshape(dim)

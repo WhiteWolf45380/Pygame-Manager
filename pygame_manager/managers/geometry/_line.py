@@ -29,7 +29,7 @@ class LineObject:
     
     def __hash__(self) -> int:
         """Renvoie la droite hashée"""
-        return hash((self.unique_point.to_tuple(), self.unique_vector.to_tuple()))
+        return hash((hash(self.unique_point), hash(self.unique_vector)))
     
     # ======================================== GETTERS ========================================
     @property
@@ -307,7 +307,7 @@ class LineObject:
     
     def _equalize(self, *objs: Reshapable):
         """Implémentation interne de equalize"""
-        if self not in objs: objs = (self, *objs)
+        objs = {self, *objs}
         dim = max(objs, key=lambda o: o.dim).dim
         for obj in objs:
             obj.reshape(dim)

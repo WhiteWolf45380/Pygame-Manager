@@ -40,8 +40,8 @@ class Panel:
         # vérifications
         if not isinstance(name, str): _raise_error(self, '__init__', 'Invalid name argument')
         if name in context.panels: _raise_error(self, '__init__', f'panel "{name}" already exists')
-        if not isinstance(predecessor, str): _raise_error(self, '__init__', 'Invalid predecessor argument')
-        if predecessor not in context.panels: _raise_error(self, '__init__', f'panel "{predecessor}" does not exist')
+        if predecessor is not None and not isinstance(predecessor, str): _raise_error(self, '__init__', 'Invalid predecessor argument')
+        if predecessor is not None and predecessor not in context.panels: _raise_error(self, '__init__', f'panel "{predecessor}" does not exist')
         if rect is None: _raise_error(self, '__init__', 'Invalid rect argument')
         if not isinstance(centered, bool): _raise_error(self, '__init__', 'Invalid centered argument')
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
@@ -70,7 +70,7 @@ class Panel:
             x = self._surface_rect.left - (self._border_width if self._border_around else 0)
             y = self._surface_rect.top - (self._border_width if self._border_around else 0)
             width = self._surface_rect.width + (self._border_width if self._border_around else 0)
-            height = self._surface_rect + (self._border_width if self._border_around else 0)
+            height = self._surface_rect.height + (self._border_width if self._border_around else 0)
             self._border = pygame.Rect(x, y, width, height)
 
         # auto-registration

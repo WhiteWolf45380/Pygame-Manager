@@ -8,6 +8,7 @@ from .managers.languages import LanguagesManager
 from .managers.panels import PanelsManager
 from .managers.screen import ScreenManager
 from .managers.settings import SettingsManager
+from .managers.sprites import SpritesManager
 from .managers.states import StatesManager
 from .managers.time import TimeManager
 from .managers.ui import UiManager
@@ -26,6 +27,7 @@ languages: LanguagesManager
 panels: PanelsManager
 screen: ScreenManager
 settings: SettingsManager
+sprites: SpritesManager
 states: StatesManager
 time: TimeManager
 ui: UiManager
