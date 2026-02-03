@@ -7,7 +7,7 @@ class CircleObject:
     """
     Object géométrique 2D : Cercle
     """
-    __slots__ = ["_center", "_radius", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around"]
+    __slots__ = ["_center", "_radius"]
     PRECISION = 9
     def __init__(self, center: context.geometry.Point, radius: Real):
         """
@@ -22,16 +22,6 @@ class CircleObject:
         # rayon
         if not isinstance(radius, Real) or radius <= 0:  _raise_error(self, '__init__', 'Invalid radius argument')
         self._radius = float(radius)
-
-        # remplissage
-        self._filling = True
-        self._color = (255, 255, 255)
-       
-        # bordure
-        self._border = False
-        self._border_color = (0, 0, 0)
-        self._border_width = 1
-        self._border_around = False
     
     def __repr__(self) -> str:
         """Représentation du cercle"""
@@ -81,36 +71,6 @@ class CircleObject:
     def area(self) -> float:
         """Renvoie l'aire"""
         return math.pi * self._radius**2
-
-    @property
-    def filling(self) -> bool:
-        """Vérifie le remplissage"""
-        return self._filling
-
-    @property
-    def color(self) -> pygame.Color:
-        """Renvoie la couleur"""
-        return self._color
-    
-    @property
-    def border(self) -> bool:
-        """Vérifie la bordure"""
-        return self._border
-    
-    @property
-    def border_color(self) -> pygame.Color:
-        """Renvoie la couleur de la bordure"""
-        return self._border_color
-    
-    @property
-    def border_width(self) -> int:
-        """Renvoie l'épaisseur de la bordure"""
-        return self._border_width
-    
-    @property
-    def border_around(self) -> bool:
-        """Vérifie que la bordure soit autour du cercle"""
-        return self._border_around
     
     # ======================================== SETTERS ========================================
     @center.setter
@@ -156,44 +116,6 @@ class CircleObject:
         if not isinstance(area, Real) or area <= 0:
             _raise_error(self, 'set_area', 'Invalid area argument')
         self._radius = round(math.sqrt(float(area) / math.pi), self.PRECISION)
-
-    @filling.setter
-    def filling(self, value: bool):
-        """Active ou non le remplissage"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_filling', 'Invalid value argument')
-        self._filling = value
-    
-    @color.setter
-    def color(self, color: pygame.Color):
-        """Fixe la couleur de remplissage"""
-        self._color = _to_color(color)
-
-    @border.setter
-    def border(self, value: bool):
-        """Active ou non la bordure"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_border', 'Invalid value argument')
-        self._border = value
-
-    @border_color.setter
-    def border_color(self, color: pygame.Color):
-        """Fixe la couleur de la bordure"""
-        self._border_color = _to_color(color)
-
-    @border_width.setter
-    def border_width(self, width: int):
-        """Fixe l'épaisseur de la bordure"""
-        if not isinstance(width, int) or width <= 0:
-            _raise_error(self, 'set_border_width', 'Invalid width argument')
-        self._border_width = width
-    
-    @border_around.setter
-    def border_around(self, value: bool):
-        """Active ou non la bordure extérieure"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_border_around', 'Invalid value argument')
-        self._border_around = value
 
     # ======================================== PREDICATS ========================================
     def collidepoint(self, point: context.geometry.Point) -> bool:
@@ -481,7 +403,7 @@ class CircleObject:
             ]
             
             for cx, cy in corners:
-                corner_points = self._circle_intersection((context.geometry.Point(cx, cy), r))
+                corner_points = self._circle_intersection(CircleObject(context.geometry.Point(cx, cy), r))
                 if corner_points:
                     points.extend(corner_points)
         
@@ -620,43 +542,3 @@ class CircleObject:
         if normal.is_null():
             return context.geometry.Vector(0, -1)
         return normal.normalized
-
-    # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, filling: bool = None, color: pygame.Color = None, border: bool = None, border_color: pygame.Color = None, border_width: int = None):
-        """
-        Dessine le cercle sur une surface donnée
-
-        Args:
-            surface (pygame.Surface): surface de dessin
-            filling (bool, optional): remplissage
-            color (pygame.Color, optional): couleur de remplissage
-            border (bool, optional): bordure
-            border_color (pygame.Color, optional): couleur de la bordure
-            border_width (int, optional): épaisseur de la bordure
-        """
-        if not isinstance(surface, pygame.Surface):
-            _raise_error(self, 'draw', 'Invalid surface argument')
-        
-        # paramètres d'affichage
-        filling = self._filling if filling is None else filling
-        color = self._color if color is None else _to_color(color)
-        border = self._border if border is None else border
-        border_color = self._border_color if border_color is None else _to_color(border_color)
-        border_width = self._border_width if border_width is None else border_width
-        border_around = self._border_around
-        
-        center_pos = (int(self.centerx), int(self.centery))
-        radius = int(self._radius)
-        
-        # remplissage
-        if filling:
-            pygame.draw.circle(surface, color, center_pos, radius)
-        
-        # bordure
-        if border:
-            if border_around:
-                # bordure externe
-                pygame.draw.circle(surface, border_color, center_pos, radius + border_width, border_width)
-            else:
-                # bordure interne
-                pygame.draw.circle(surface, border_color, center_pos, radius, border_width)

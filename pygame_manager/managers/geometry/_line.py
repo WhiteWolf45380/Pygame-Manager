@@ -7,7 +7,7 @@ class LineObject:
     """
     Object géométrique nD : Droite
     """
-    __slots__ = ["_origin", "_vector", "_color", "_width", "_dashed", "_dash", "_gap"]
+    __slots__ = ["_origin", "_vector"]
     def __init__(self, point: context.geometry.Point, vector: context.geometry.Vector):        
         # représentation paramétrique
         self._origin = context.geometry._to_point(point, copy=True)
@@ -15,13 +15,6 @@ class LineObject:
         if vector.is_null():
             _raise_error(self, "__init__", "direction vector cannot be null vector")
         self._origin.equalize(self._vector)
-
-        # paramètres d'affichage
-        self._color = (0, 0, 0)
-        self._width = 1
-        self._dashed = False
-        self._dash = 10
-        self._gap = 6
     
     def __repr__(self) -> str:
         """Représentation de la droite"""
@@ -82,31 +75,6 @@ class LineObject:
         a, b = -v, u
         c = -(a * x0 + b * y0)
         return {"a": a, "b": b, "c": c}
-    
-    @property
-    def color(self) -> pygame.Color:
-        """Renvoie la couleur d'affichage"""
-        return self._color
-    
-    @property
-    def width(self) -> int:
-        """Renvoie la largeur d'affichage"""
-        return self._width
-    
-    @property
-    def dashed(self) -> bool:
-        """Vérifie si l'affichage de la droite est segmenté"""
-        return self._dashed
-    
-    @property
-    def dash(self) -> int:
-        """Renvoie la longueur des segments"""
-        return self._dash
-    
-    @property
-    def gap(self) -> int:
-        """Renvoie la longueur des espaces inter-segments"""
-        return self._gap
 
     # ======================================== SETTERS ========================================
     def set_origin(self, point: context.geometry.Point):
@@ -120,32 +88,6 @@ class LineObject:
         if self._vector.is_null(): 
             _raise_error(self, "set_vector", "direction vector cannot be null vector")
         self._vector.equalize(self._origin)
-
-    @color.setter
-    def color(self, color: pygame.Color):
-        """Fixe la couleur d'affichage"""
-        self._color = _to_color(color)
-
-    @width.setter
-    def width(self, width: int):
-        """Fixe la largeur d'affichage"""
-        if not isinstance(width, int) or width <= 0:
-            _raise_error(self, 'set_width', 'Invalid width argument')
-        self._width = width
-
-    @dashed.setter
-    def dashed(self, value: bool):
-        """Active ou non l'affichage segmenté"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_dashed', 'Invalid value argument')
-        self._dashed = value
-
-    @dash.setter
-    def dash(self, length: int):
-        """Fixe la longueur des segments"""
-        if not isinstance(length, int) or length <= 0:
-            _raise_error(self, 'set_dash', 'Invalid length argument')
-        self._dash = length
     
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, line: context.geometry.Line) -> bool:
@@ -434,86 +376,3 @@ class LineObject:
     def _translate(self, vector: context.geometry.Vector) -> context.geometry.Line:
         """Implémentation interne de translate"""
         self._origin += vector
-
-    # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, x_min: float=None, x_max: float=None, y_min: float=None, y_max: float=None, color: pygame.Color=None, width: int=None, dashed: bool=None, dash: int=None, gap: int=None):
-        """Dessine la droite"""
-        if not isinstance(surface, pygame.Surface): 
-            _raise_error(self, 'draw', 'Invalid surface argument')
-
-        # paramètres d'affichage
-        x_min = 0 if x_min is None else x_min
-        x_max = surface.get_width() if x_max is None else x_max
-        y_min = 0 if y_min is None else y_min
-        y_max = surface.get_height() if y_max is None else y_max
-        color = self._color if color is None else _to_color(color)
-        width = self._width if width is None else width
-        dashed = self._dashed if dashed is None else dashed
-        dash = self._dash if dash is None else dash
-        gap = self._gap if gap is None else gap
-
-        # Lignes des bordures
-        borders = {
-            "left": context.geometry.Line((x_min, y_min), (0, 1)),
-            "top": context.geometry.Line((x_min, y_min), (1, 0)),
-            "right": context.geometry.Line((x_max, y_max), (0, 1)),
-            "bottom": context.geometry.Line((x_min, y_max), (1, 0))
-        }
-
-        points = []
-        for border in borders.values():
-            p = self.intersection(border)
-            if p is None:
-                continue
-            x, y = p.x, p.y
-            if x_min <= x <= x_max and y_min <= y <= y_max:
-                points.append((x, y))
-
-        points = list(dict.fromkeys(points))
-        if len(points) < 2:
-            return
-
-        start_pos, end_pos = points[0], points[1]
-
-        if dashed:
-            self._draw_dashed(surface, color, start_pos, end_pos, width, dash, gap)
-        elif width == 1:
-            pygame.draw.aaline(surface, color, start_pos, end_pos)
-        else:
-            pygame.draw.line(surface, color, start_pos, end_pos, width)
-
-    def _draw_dashed(self, surface: pygame.Surface, color: tuple[int], start: tuple[float, float], end: tuple[float, float], width: int, dash: int, gap: int):
-        """Dessine une droite en pointillés"""
-        x1, y1 = start
-        x2, y2 = end
-
-        dx = x2 - x1
-        dy = y2 - y1
-        length = math.hypot(dx, dy)
-
-        if length == 0:
-            return
-
-        ux = dx / length
-        uy = dy / length
-
-        pos = 0
-        draw = True
-
-        while pos < length:
-            seg_len = dash if draw else gap
-            seg_len = min(seg_len, length - pos)
-
-            if draw:
-                sx = x1 + ux * pos
-                sy = y1 + uy * pos
-                ex = x1 + ux * (pos + seg_len)
-                ey = y1 + uy * (pos + seg_len)
-
-                if width == 1:
-                    pygame.draw.aaline(surface, color, (sx, sy), (ex, ey))
-                else:
-                    pygame.draw.line(surface, color, (sx, sy), (ex, ey), width)
-
-            pos += seg_len
-            draw = not draw

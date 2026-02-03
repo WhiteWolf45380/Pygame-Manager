@@ -7,7 +7,7 @@ class SegmentObject:
     """
     Object géométrique nD : Segment
     """
-    __slots__ = ["_start", "_end", "_color", "_width", "_dashed", "_dash", "_gap"]
+    __slots__ = ["_start", "_end"]
     def __init__(self, start: context.geometry.Point, end: context.geometry.Point):
         # point de départ
         self._start = context.geometry._to_point(start, copy=True)
@@ -15,13 +15,6 @@ class SegmentObject:
         # point d'arrivée
         self._end = context.geometry._to_point(end, copy=True)
 
-        # paramètres d'affichage
-        self._color = (0, 0, 0)
-        self._width = 1
-        self._dashed = False
-        self._dash = 10
-        self._gap = 6
-    
     def __repr__(self) -> str:
         """Représentation du segment"""
         return f"Segment(P1{self._start.to_tuple()}, P2{self._end.to_tuple()})"
@@ -78,80 +71,29 @@ class SegmentObject:
     def length(self) -> float:
         """Renvoie la longueur du segment"""
         return (self._end - self._start).norm
-    
-    @property
-    def color(self) -> pygame.Color:
-        """Renvoie la couleur d'affichage"""
-        return self._color
-    
-    @property
-    def width(self) -> int:
-        """Renvoie la largeur d'affichage"""
-        return self._width
-    
-    @property
-    def dashed(self) -> bool:
-        """Vérifie si l'affichage du segment est segmenté"""
-        return self._dashed
-    
-    @property
-    def dash(self) -> int:
-        """Renvoie la longueur des segments"""
-        return self._dash
-    
-    @property
-    def gap(self) -> int:
-        """Renvoie la longueur des espaces inter-segments"""
-        return self._gap
 
     # ======================================== SETTERS ========================================
     def set_start(self, point: context.geometry.Point):
         """Fixe la première extremité du segment"""
         self._start = context.geometry._to_point(point, copy=True)
-        self._start(self._end)
+        self._start._equalize(self._end)
 
     @P1.setter
     def P1(self, point: context.geometry.Point):
         """Fixe la première extremité du segment"""
         self._start = context.geometry._to_point(point, copy=True)
-        self._start(self._end)
+        self._start._equalize(self._end)
     
     def set_end(self, point: context.geometry.Point):
         """Fixe la seconde extremité du segment"""
         self._end = context.geometry._to_point(point, copy=True)
-        self._end(self._start)
+        self._end._equalize(self._start)
     
     @P2.setter
     def P2(self, point: context.geometry.Point):
         """Fixe la seconde extremité du segment"""
         self._end = context.geometry._to_point(point, copy=True)
-        self._end(self._start)
-
-    @color.setter
-    def color(self, color: pygame.Color):
-        """Fixe la couleur d'affichage"""
-        self._color = _to_color(color)
-
-    @width.setter
-    def width(self, width: int):
-        """Fixe la largeur d'affichage"""
-        if not isinstance(width, int) or width <= 0:
-            _raise_error(self, 'set_width', 'Invalid width argument')
-        self._width = width
-
-    @dashed.setter
-    def dashed(self, value: bool):
-        """Active ou non l'affichage segmenté"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_dashed', 'Invalid value argument')
-        self._dashed = value
-
-    @dash.setter
-    def dash(self, length: int):
-        """Fixe la longueur des segments"""
-        if not isinstance(length, int) or length <= 0:
-            _raise_error(self, 'set_dash', 'Invalid length argument')
-        self._dash = length
+        self._end._equalize(self._start)
     
     # ======================================== COMPARATEURS ========================================
     def __eq__(self, segment: context.geometry.Segment) -> bool:
@@ -443,61 +385,3 @@ class SegmentObject:
         """Implémentation interne de translate"""
         self._start = self._start + vector
         self._end = self._end + vector
-
-    # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, color: pygame.Color=None, width: int=None, dashed: bool=None, dash: int=None, gap: int=None):
-        """Dessine le segment"""
-        if not isinstance(surface, pygame.Surface): 
-            _raise_error(self, 'draw', 'Invalid surface argument')
-        
-        color = self._color if color is None else _to_color(color)
-        width = self._width if width is None else width
-        dashed = self._dashed if dashed is None else dashed
-        dash = self._dash if dash is None else dash
-        gap = self._gap if gap is None else gap
-
-        start_pos = tuple(map(int, self.P1[:2]))
-        end_pos = tuple(map(int, self.P2[:2]))
-
-        if dashed:
-            self._draw_dashed(surface, color, start_pos, end_pos, width, dash, gap)
-        elif width == 1:
-            pygame.draw.aaline(surface, color, start_pos, end_pos)
-        else:
-            pygame.draw.line(surface, color, start_pos, end_pos, width)
-
-    def _draw_dashed(self, surface: pygame.Surface, color: tuple[int], start: tuple[float, float], end: tuple[float, float], width: int, dash: int, gap: int):
-        """Dessine un segment en pointillés"""
-        x1, y1 = start
-        x2, y2 = end
-
-        dx = x2 - x1
-        dy = y2 - y1
-        length = math.hypot(dx, dy)
-
-        if length == 0:
-            return
-
-        ux = dx / length
-        uy = dy / length
-
-        pos = 0
-        draw = True
-
-        while pos < length:
-            seg_len = dash if draw else gap
-            seg_len = min(seg_len, length - pos)
-
-            if draw:
-                sx = x1 + ux * pos
-                sy = y1 + uy * pos
-                ex = x1 + ux * (pos + seg_len)
-                ey = y1 + uy * (pos + seg_len)
-
-                if width == 1:
-                    pygame.draw.aaline(surface, color, (sx, sy), (ex, ey))
-                else:
-                    pygame.draw.line(surface, color, (sx, sy), (ex, ey), width)
-
-            pos += seg_len
-            draw = not draw

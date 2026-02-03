@@ -7,10 +7,8 @@ class RectObject:
     """
     Object géométrique 2D : Rectangle
     """
-    __slots__ = ["_O", "_w", "_h", "_filling", "_color", "_border", "_border_color", "_border_width", "_border_around", "_border_radius",
-                "_border_topleft_radius", "_border_topright_radius", "_border_bottomleft_radius", "_border_bottomright_radius"]
-    
-    def __init__(self, point: context.geometry.Point, width: Real, height: Real):
+    __slots__ = ["_O", "_w", "_h", "_border_radius"]
+    def __init__(self, point: context.geometry.Point, width: Real, height: Real, border_radius: int = 0):
         # point haut gauche
         self._O = context.geometry._to_point(point)       
         self._O.reshape(2)
@@ -25,22 +23,8 @@ class RectObject:
             _raise_error(self, '__init__', 'Invalid height argument')
         self._h = context.geometry.Vector(0, height)
 
-        # remplissage
-        self._filling = True
-        self._color = (255, 255, 255)
-
-        # bordure
-        self._border = False
-        self._border_color = (0, 0, 0)
-        self._border_width = 1
-        self._border_around = False
-
-        # forme
-        self._border_radius = -1
-        self._border_topleft_radius = -1
-        self._border_topright_radius = -1
-        self._border_bottomleft_radius = -1
-        self._border_bottomright_radius = -1
+        # arrondissement des coins
+        self._border_radius = border_radius
 
     def __repr__(self) -> str:
         """Représentation du rect"""
@@ -166,66 +150,10 @@ class RectObject:
         """Renvoie l'aire"""
         return self.width * self.height
     
-    # paramètres d'affichage
-    @property
-    def filling(self) -> bool:
-        """Vérifie le remplissage"""
-        return self._filling
-
-    @property
-    def color(self) -> pygame.Color:
-        """Renvoie la couleur"""
-        return self._color
-    
-    @property
-    def border(self) -> bool:
-        """Vérifie la bordure"""
-        return self._border
-    
-    @property
-    def border_color(self) -> pygame.Color:
-        """Renvoie la couleur de la bordure"""
-        return self._border_color
-    
-    @property
-    def border_width(self) -> int:
-        """Renvoie l'épaisseur de la bordure"""
-        return self._border_width
-    
-    @property
-    def border_around(self) -> bool:
-        """Vérifie que la bordure soit autour du rect"""
-        return self._border_around
-    
-    @property
-    def border_radius_max(self) -> int:
-        """Renvoie le rayon maximum d'arrondissement des coins"""
-        return int(min(self.width // 2, self.height // 2))
-    
     @property
     def border_radius(self) -> int:
-        """Renvoie l'arrondi des coins"""
+        """Renvoie le rayon d'arrondissement des coins"""
         return self._border_radius
-    
-    @property
-    def border_topleft_radius(self) -> int:
-        """Renvoie l'arrondi du coin haut gauche"""
-        return self._border_topleft_radius
-    
-    @property
-    def border_topright_radius(self) -> int:
-        """Renvoie l'arrondi du coin haut droit"""
-        return self._border_topright_radius
-    
-    @property
-    def border_bottomleft_radius(self) -> int:
-        """Renvoie l'arrondi du coin bas gauche"""
-        return self._border_bottomleft_radius
-    
-    @property
-    def border_bottomright_radius(self) -> int:
-        """Renvoie l'arrondi du coin bas droit"""
-        return self._border_bottomright_radius
 
     # ======================================== SETTERS ========================================
     # position
@@ -324,78 +252,12 @@ class RectObject:
             _raise_error(self, 'set_height', 'Invalid height argument')
         self._h.set_norm(height)
 
-    @filling.setter
-    def filling(self, value: bool):
-        """Active ou non le remplissage"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_filling', 'Invalid value argument')
-        self._filling = value
-
-    @color.setter
-    def color(self, color: pygame.Color):
-        """Fixe la couleur"""
-        self._color = _to_color(color)
-
-    @border.setter
-    def border(self, value: bool):
-        """Active ou non la bordure"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_border', 'Invalid value argument')
-        self._border = value
-    
-    @border_color.setter
-    def border_color(self, color: pygame.Color):
-        """Fixe la couleur de la bordure"""
-        self._border_color = _to_color(color)
-
-    @border_width.setter
-    def border_width(self, width: int):
-        """Fixe l'épaisseur de la bordure"""
-        if not isinstance(width, int) or width <= 0:
-            _raise_error(self, 'set_border_width', 'Invalid width argument')
-        self._border_width = width
-
-    @border_around.setter
-    def border_around(self, value: bool):
-        """Active ou non la bordure à l'extérieur du rect"""
-        if not isinstance(value, bool):
-            _raise_error(self, 'set_border_around', 'Invalid value argument')
-        self._border_around = value
-
     @border_radius.setter
     def border_radius(self, radius: int):
-        """Fixe l'arrondi des coins"""
+        """Fixe le rayon d'arrondissement des coins"""
         if not isinstance(radius, int):
             _raise_error(self, 'set_border_radius', 'Invalid radius argument')
-        self._border_radius = min(radius, self.border_radius_max)
-
-    @border_topleft_radius.setter
-    def border_topleft_radius(self, radius: int):
-        """Fixe l'arrondi du coin haut gauche"""
-        if not isinstance(radius, int):
-            _raise_error(self, 'set_border_topleft_radius', 'Invalid radius argument')
-        self._border_topleft_radius = min(radius, self.border_radius_max)
-    
-    @border_topright_radius.setter
-    def border_topright_radius(self, radius: int):
-        """Fixe l'arrondi du coin haut droit"""
-        if not isinstance(radius, int):
-            _raise_error(self, 'set_border_topright_radius', 'Invalid radius argument')
-        self._border_topright_radius = min(radius, self.border_radius_max)
-
-    @border_bottomleft_radius.setter
-    def border_bottomleft_radius(self, radius: int):
-        """Fixe l'arrondi du coin bas gauche"""
-        if not isinstance(radius, int):
-            _raise_error(self, 'set_border_bottomleft_radius', 'Invalid radius argument')
-        self._border_bottomleft_radius = min(radius, self.border_radius_max)
-
-    @border_bottomright_radius.setter
-    def border_bottomright_radius(self, radius: int):
-        """Fixe l'arrondi du coin bas droit"""
-        if not isinstance(radius, int):
-            _raise_error(self, 'set_border_bottomright_radius', 'Invalid radius argument')
-        self._border_bottomright_radius = min(radius, self.border_radius_max)
+        self._border_radius = radius
 
     # ======================================== OPERATIONS ========================================
     def __add__(self, vector: context.geometry.Vector) -> context.geometry.Rect:
@@ -663,6 +525,10 @@ class RectObject:
         """
         if not isinstance(ratio, Real) or ratio <= 0:
             _raise_error(self, 'scale', 'Invalid ratio argument')
+        self._scale(ratio)
+
+    def _scale(self, ratio: Real):
+        """Implémentation interne de scale """
         self.width = self.width * ratio
         self.height = self.height * ratio
     
@@ -674,12 +540,25 @@ class RectObject:
             vector (context.geometry.Vector) : vecteur de translation
         """
         vector = context.geometry._to_vector(vector)
+        self._translate(vector)
+
+    def _translate(self, vector: context.geometry.Vector):
+        """Implémentation interne de translate"""
         self.x += vector.x
         self.y += vector.y
     
     def closest_point(self, point: context.geometry.Point):
-        """Renvoie le point du rect le plus proche d'un point donné"""
+        """
+        Renvoie le point du rect le plus proche d'un point donné
+
+        Args:
+            point (PointObject) : point à vérifier
+        """
         point = context.geometry._to_point(point)
+        return self._closest_point(point)
+    
+    def _closest_point(self, point: context.geometry.Point):
+        """Implémentation interne de closest_point"""
         px, py = point.x, point.y
         
         # Sans arrondi, simple clamping
@@ -731,10 +610,18 @@ class RectObject:
         return context.geometry.Point(x, y)
     
     def line_intersection(self, line):
-        """Renvoie l'ensemble des points d'intersection entre la droite et le rect"""
+        """
+        Renvoie l'ensemble des points d'intersection entre la droite et le rect
+
+        Args:
+            line (LineObject) : droite à vérifier
+        """
         if not isinstance(line, context.geometry.Line): 
             _raise_error(self, 'line_intersection', 'Invalid line argument')
-        
+        return self._line_intersection(line)
+    
+    def _line_intersection(self, line):
+        """Implémentation interne de line_intersection"""        
         # Propriétés du rect
         top, right, bottom, left = self.top, self.right, self.bottom, self.left
         r = self._border_radius if self._border_radius > 0 else 0
@@ -834,46 +721,3 @@ class RectObject:
 
         unique_points.sort(key=t_of)
         return tuple(unique_points)
-
-    # ======================================== AFFICHAGE ========================================
-    def draw(self, surface: pygame.Surface, filling: bool=None, color: pygame.Color=None, 
-             border: bool=None, border_width: int=None, border_color: pygame.Color=None):
-        """
-        Dessine le rect sur une surface donnée
-
-        Args:
-            surface (pygame.Surface) : surface de dessin
-            filling (bool, optional) : remplissage
-            color (pygame.Color, optional) : couleur de remplissage
-            border (bool, optional) : bordure
-            border_width (int, optional) : épaisseur de la bordure
-            border_color (pygame.Color, optional) : couleur de la bordure
-        """
-        if not isinstance(surface, pygame.Surface): 
-            _raise_error(self, 'draw', 'Invalid surface argument')
-        
-        # paramètres d'affichage
-        rect = self.rect
-        filling = self._filling if filling is None else filling
-        color = self._color if color is None else _to_color(color)
-        border = self._border if border is None else border
-        border_width = self._border_width if border_width is None else border_width
-        border_color = self._border_color if border_color is None else _to_color(border_color)
-        border_around = self._border_around
-        border_radius = self._border_radius
-        border_topleft_radius = self._border_topleft_radius
-        border_topright_radius = self._border_topright_radius
-        border_bottomleft_radius = self._border_bottomleft_radius
-        border_bottomright_radius = self._border_bottomright_radius
-
-        # remplissage
-        if filling:
-            pygame.draw.rect(surface, color, rect, 0, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)
-        
-        # bordure
-        if border:
-            if border_around:
-                rect_around = pygame.Rect(rect.left - border_width, rect.top - border_width, rect.width + 2 * border_width, rect.height + 2 * border_width)
-                pygame.draw.rect(surface, border_color, rect_around, border_width, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)
-            else:
-                pygame.draw.rect(surface, border_color, rect, border_width, border_radius, border_topleft_radius, border_topright_radius, border_bottomleft_radius, border_bottomright_radius)

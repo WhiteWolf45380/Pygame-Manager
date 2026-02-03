@@ -1,5 +1,5 @@
 # ======================================== IMPORTS ========================================
-from .sprites import SpritesManager
+from .entities import EntitiesManager
 
 # ======================================== EXPORTS ========================================
-__all__ = ["SpritesManager"]
+__all__ = ["EntitiesManager"]

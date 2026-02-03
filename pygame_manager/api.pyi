@@ -2,13 +2,13 @@ from typing import List
 
 from .managers.audio import AudioManager
 from .managers.data import DataManager
+from .managers.entities import EntitiesManager
 from .managers.geometry import GeometryManager
 from .managers.inputs import InputsManager
 from .managers.languages import LanguagesManager
 from .managers.panels import PanelsManager
 from .managers.screen import ScreenManager
 from .managers.settings import SettingsManager
-from .managers.sprites import SpritesManager
 from .managers.states import StatesManager
 from .managers.time import TimeManager
 from .managers.ui import UiManager
@@ -21,13 +21,13 @@ def stop() -> None: ...
 # === Managers ===
 audio: AudioManager
 data: DataManager
+entities: EntitiesManager
 geometry: GeometryManager
 inputs: InputsManager
 languages: LanguagesManager
 panels: PanelsManager
 screen: ScreenManager
 settings: SettingsManager
-sprites: SpritesManager
 states: StatesManager
 time: TimeManager
 ui: UiManager

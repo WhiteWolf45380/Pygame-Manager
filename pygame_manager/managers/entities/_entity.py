@@ -1,10 +1,10 @@
 # ======================================== IMPORTS ========================================
 from _core import *
 
-# ======================================== OBJET ========================================
-class Sprite:
+# ======================================== ENTITE ========================================
+class Entity:
     """
-    Objet de base pour les sprites
+    Objet de base pour les entités
 
     Fonctionnalités:
         auto-registration
@@ -24,7 +24,8 @@ class Sprite:
         self._visible = True
 
         # auto-registration
-        context.sprites.register(self)
+        context.entities.register(self)
+        self.on_register()
 
     # ======================================== GETTERS ========================================
 
@@ -32,50 +33,70 @@ class Sprite:
 
     # ======================================== PREDICATS ========================================
     def is_active(self) -> bool:
-        """Vérifie que le sprite ne soit pas gelé"""
+        """Vérifie que l'entité ne soit pas gelé"""
         return self._active
     
     def is_visible(self) -> bool:
-        """Vérifie que le sprite soit visible"""
+        """Vérifie que l'entité soit visible"""
         return self._visible
 
     # ======================================== Z-ORDER ========================================
     def move_forward(self):
-        """Déplace le panel vers l'avant dans le Z-order"""
-        context.sprites.reorder(self._panel, self, "forward")
+        """Déplace l'entité vers l'avant dans le Z-order"""
+        context.entities.reorder(self._panel, self, "forward")
 
     def move_backward(self):
-        """Déplace le panel vers l'arrière dans le Z-order"""
-        context.sprites.reorder(self._panel, self, "backward")
+        """Déplace l'entité vers l'arrière dans le Z-order"""
+        context.entities.reorder(self._panel, self, "backward")
 
     def bring_to_front(self):
-        """Place le panel au premier plan dans le Z-order"""
-        context.sprites.reorder(self._panel, self, "front")
+        """Place l'entité au premier plan dans le Z-order"""
+        context.entities.reorder(self._panel, self, "front")
 
     def send_to_back(self):
-        """Place le panel au dernier plan dans le Z-order"""
-        context.sprites.reorder(self._panel, self, "back")
+        """Place l'entité au dernier plan dans le Z-order"""
+        context.entities.reorder(self._panel, self, "back")
 
     def set_index(self, n: int):
-        """Place le panel à l'indice n dans le Z-order"""
-        context.sprites.reorder(self._panel, self, "index", n)
+        """Place l'entité à l'indice n dans le Z-order"""
+        context.entities.reorder(self._panel, self, "index", n)
 
     # ======================================== METHODES DYNAMIQUES ========================================
     def freeze(self):
-        """Rend le sprite inactif"""
+        """Rend l'entité active"""
         self._active = False
 
     def unfreeze(self):
-        """Rend le sprite actif"""
+        """Rend l'entité inactive"""
         self._active = True
 
     def show(self):
-        """Rend le sprite visible"""
+        """Rend l'entité visible"""
         self._visible = True
     
     def hide(self):
-        """Rend le sprite invisible"""
+        """Rend l'entité invisible"""
         self._visible = False
+
+    # ======================================== LIFECYCLE HOOKS ========================================
+    def on_register(self):
+        """Appelé automatiquement lors de l'enregistrement de l'entité"""
+        pass
+
+    def on_discard(self):
+        """Appelé automatiquement lors de la suppression de l'entité"""
+        pass
+
+    # ======================================== FIN DE VIE ========================================
+    def kill(self):
+        """
+        Détruit proprement l'entité :
+            - appel du hook on_discard
+            - suppression du gestionnaire
+            - empêche toute réutilisation
+        """
+        context.entities.discard(self)
+        self.on_discard()
 
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):
@@ -84,6 +105,8 @@ class Sprite:
 
     def _update(self):
         """Proxy vers update"""
+        if self._panel is not None and not context.panels.is_active(self._panel):
+            return
         if not self._active:
             return
         self.update()

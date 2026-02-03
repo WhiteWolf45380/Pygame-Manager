@@ -9,4 +9,5 @@ __all__ = [
 
     "Sequence",
     "_raise_error",
+    "_to_color",
 ]
