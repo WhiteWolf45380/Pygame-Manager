@@ -1,5 +1,5 @@
 # ======================================== IMPORTS ========================================
-from _core import *
+from ._core import *
 from collections import defaultdict
 from ._entity import Entity
 from ._sprite_entity import SpriteEntity

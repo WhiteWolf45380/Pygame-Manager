@@ -1,5 +1,5 @@
 # ======================================== IMPORTS ========================================
-from _core import *
+from ._core import *
 from ._entity import Entity
 from math import sqrt
 
