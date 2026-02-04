@@ -369,7 +369,7 @@ class PolygonEntity(Entity):
         """
         return self._polygon.collidepoint(point)
     
-    def collidesegment(self, segment: context.geometry.Segment) -> bool:
+    def collidesegment(self, segment) -> bool:
         """
         Vérifie la collision avec un segment
         
@@ -381,7 +381,7 @@ class PolygonEntity(Entity):
         """
         return self._polygon.collidesegment(segment)
     
-    def collideline(self, line: context.geometry.Line) -> bool:
+    def collideline(self, line) -> bool:
         """
         Vérifie la collision avec une droite
         
@@ -393,7 +393,7 @@ class PolygonEntity(Entity):
         """
         return self._polygon.collideline(line)
     
-    def collidecircle(self, circle: context.geometry.Circle) -> bool:
+    def collidecircle(self, circle) -> bool:
         """
         Vérifie la collision avec un cercle
         
@@ -405,7 +405,7 @@ class PolygonEntity(Entity):
         """
         return self._polygon.collidecircle(circle)
     
-    def colliderect(self, rect: context.geometry.Rect) -> bool:
+    def colliderect(self, rect) -> bool:
         """
         Vérifie la collision avec un rectangle
         
@@ -417,7 +417,7 @@ class PolygonEntity(Entity):
         """
         return self._polygon.colliderect(rect)
     
-    def collidepolygon(self, polygon: context.geometry.Polygon) -> bool:
+    def collidepolygon(self, polygon) -> bool:
         """
         Vérifie la collision avec un polygone
         

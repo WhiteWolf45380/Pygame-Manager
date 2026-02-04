@@ -327,7 +327,7 @@ class LineEntity(Entity):
         """
         return self._line.collidepoint(point)
     
-    def collidesegment(self, segment: context.geometry.Segment) -> bool:
+    def collidesegment(self, segment) -> bool:
         """
         Vérifie la collision avec un segment
         
@@ -339,7 +339,7 @@ class LineEntity(Entity):
         """
         return self._line.collidesegment(segment)
     
-    def collideline(self, line: context.geometry.Line) -> bool:
+    def collideline(self, line) -> bool:
         """
         Vérifie la collision avec une droite
         
@@ -351,7 +351,7 @@ class LineEntity(Entity):
         """
         return self._line.collideline(line)
     
-    def collidecircle(self, circle: context.geometry.Circle) -> bool:
+    def collidecircle(self, circle) -> bool:
         """
         Vérifie la collision avec un cercle
         
@@ -363,7 +363,7 @@ class LineEntity(Entity):
         """
         return self._line.collidecircle(circle)
     
-    def colliderect(self, rect: context.geometry.Rect) -> bool:
+    def colliderect(self, rect) -> bool:
         """
         Vérifie la collision avec un rectangle
         
@@ -375,7 +375,7 @@ class LineEntity(Entity):
         """
         return self._line.colliderect(rect)
     
-    def collidepolygon(self, polygon: context.geometry.Polygon) -> bool:
+    def collidepolygon(self, polygon) -> bool:
         """
         Vérifie la collision avec un polygone
         

@@ -403,7 +403,7 @@ class SpriteEntity(Entity):
         """
         return self._rect.collidepoint(point)
     
-    def collidesegment(self, segment: context.geometry.Segment) -> bool:
+    def collidesegment(self, segment) -> bool:
         """
         Vérifie la collision avec un segment
         
@@ -415,7 +415,7 @@ class SpriteEntity(Entity):
         """
         return segment.colliderect(self._rect)
     
-    def collideline(self, line: context.geometry.Line) -> bool:
+    def collideline(self, line) -> bool:
         """
         Vérifie la collision avec une droite
         
@@ -427,7 +427,7 @@ class SpriteEntity(Entity):
         """
         return line.colliderect(self._rect)
     
-    def collidecircle(self, circle: context.geometry.Circle) -> bool:
+    def collidecircle(self, circle) -> bool:
         """
         Vérifie la collision avec un cercle
         
@@ -439,7 +439,7 @@ class SpriteEntity(Entity):
         """
         return circle.colliderect(self._rect)
     
-    def colliderect(self, rect: context.geometry.Rect) -> bool:
+    def colliderect(self, rect) -> bool:
         """
         Vérifie la collision avec un rectangle
         
@@ -451,7 +451,7 @@ class SpriteEntity(Entity):
         """
         return rect.colliderect(self._rect)
     
-    def collidepolygon(self, polygon: context.geometry.Polygon) -> bool:
+    def collidepolygon(self, polygon) -> bool:
         """
         Vérifie la collision avec un polygone
         

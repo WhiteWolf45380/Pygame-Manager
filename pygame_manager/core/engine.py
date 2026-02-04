@@ -9,13 +9,9 @@ class Engine:
         if not pygame.get_init():
             pygame.init()
 
-        # instanciation de geometry en premier
-        self.geometry = managers.geometry_manager
-        context.geometry = self.geometry
-
         # exposition auto des managers
         for manager_name in managers.__all__:
-            if manager_name.endswith("_manager") and manager_name != "geometry_manager":
+            if manager_name.endswith("_manager"):
                 manager_instance = getattr(managers, manager_name)
                 attr = manager_name[:-8].lower()
                 setattr(self, attr, manager_instance)

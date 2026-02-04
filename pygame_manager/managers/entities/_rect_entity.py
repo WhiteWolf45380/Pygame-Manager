@@ -324,7 +324,7 @@ class RectEntity(Entity):
         """Vérifie la collision avec un point"""
         return self._rect.collidepoint(point)
     
-    def collidesegment(self, segment: context.geometry.Segment) -> bool:
+    def collidesegment(self, segment) -> bool:
         """Vérifie la collision avec un segment"""
         return self._rect.collidesegment(segment)
     
@@ -332,15 +332,15 @@ class RectEntity(Entity):
         """Vérifie la collision avec une droite"""
         return self._rect.collideline(line)
     
-    def collidecircle(self, circle: context.geometry.Circle) -> bool:
+    def collidecircle(self, circle) -> bool:
         """Vérifie la collision avec un cercle"""
         return self._rect.collidecircle(circle)
     
-    def colliderect(self, rect: context.geometry.Rect) -> bool:
+    def colliderect(self, rect) -> bool:
         """Vérifie la collision avec un rectangle"""
         return self._rect.colliderect(rect)
     
-    def collidepolygon(self, polygon: context.geometry.Polygon) -> bool:
+    def collidepolygon(self, polygon) -> bool:
         """Vérifie la collision avec un polygone"""
         return polygon._colliderect(self._rect)
     

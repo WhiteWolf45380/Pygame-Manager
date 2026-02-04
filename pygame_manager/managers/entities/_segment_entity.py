@@ -391,7 +391,7 @@ class SegmentEntity(Entity):
         """
         return self._segment.collidepoint(point)
     
-    def collidesegment(self, segment: context.geometry.Segment) -> bool:
+    def collidesegment(self, segment) -> bool:
         """
         Vérifie la collision avec un segment
         
@@ -403,7 +403,7 @@ class SegmentEntity(Entity):
         """
         return self._segment.collidesegment(segment)
     
-    def collideline(self, line: context.geometry.Line) -> bool:
+    def collideline(self, line) -> bool:
         """
         Vérifie la collision avec une droite
         
@@ -414,6 +414,42 @@ class SegmentEntity(Entity):
             bool: True si collision
         """
         return line.collidesegment(self._segment)
+
+    def collidecircle(self, circle) -> bool:
+        """
+        Vérifie la collision avec un cercle
+        
+        Args:
+            circle (context.geometry.Circle): Cercle à tester
+            
+        Returns:
+            bool: True si collision
+        """
+        return self._segment.collidecircle(circle)
+    
+    def colliderect(self, rect) -> bool:
+        """
+        Vérifie la collision avec un rectangle
+        
+        Args:
+            rect (context.geometry.Rect): Rectangle à tester
+            
+        Returns:
+            bool: True si collision
+        """
+        return self._segment.colliderect(rect)
+    
+    def collidepolygon(self, polygon) -> bool:
+        """
+        Vérifie la collision avec un polygone
+        
+        Args:
+            polygon (context.geometry.Polygon): Polygone à tester
+            
+        Returns:
+            bool: True si collision
+        """
+        return polygon._collidesegment(self._segment)
     
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):
