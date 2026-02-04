@@ -328,7 +328,7 @@ class RectEntity(Entity):
         """Vérifie la collision avec un segment"""
         return self._rect.collidesegment(segment)
     
-    def collideline(self, line: context.geometry.Line) -> bool:
+    def collideline(self, line) -> bool:
         """Vérifie la collision avec une droite"""
         return self._rect.collideline(line)
     
