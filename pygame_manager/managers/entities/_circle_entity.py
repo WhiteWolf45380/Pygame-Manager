@@ -157,6 +157,66 @@ class CircleEntity(Entity):
         """
         self._circle.centery = value
     
+    @property
+    def top(self):
+        """Renvoie la coordonnée y du haut"""
+        return self._circle.centery - self._circle.radius
+    
+    @top.setter
+    def top(self, value: float):
+        """
+        Fixe la coordonnée y du haut
+
+        Args:
+            value (float): Nouvelle coordonnée y
+        """
+        self._circle.centery = value + self._circle.radius
+    
+    @property
+    def right(self):
+        """Renvoie la coordonnée x de la droite"""
+        return self._circle.centerx + self._circle.radius
+    
+    @right.setter
+    def right(self, value: float):
+        """
+        Fixe la coordonnée x de la droite
+
+        Args:
+            value (float): Nouvelle coordonnée x
+        """
+        self._circle.centerx = value - self._circle.radius
+    
+    @property
+    def bottom(self):
+        """Renvoie la coordonnée y du bas"""
+        return self._circle.centery + self._circle.radius
+
+    @bottom.setter
+    def bottom(self, value: float):
+        """
+        Fixe la coordonnée y du bas
+
+        Args:
+            value (float): Nouvelle coordonnée y
+        """
+        self._circle.centery = value - self._circle.radius
+    
+    @property
+    def left(self):
+        """Renvoie la coordonnée x de la gauche"""
+        return self._circle.centerx - self._circle.radius
+    
+    @left.setter
+    def left(self, value: float):
+        """
+        Fixe la coordonnée x de la gauche
+
+        Args:
+            value (float): Nouvelle coordonnée x
+        """
+        self._circle.centerx = value + self._circle.radius
+
     # ======================================== PARAMETRES D'AFFICHAGE ========================================
     @property
     def filling(self) -> bool:
