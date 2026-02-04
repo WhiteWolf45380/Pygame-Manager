@@ -55,6 +55,7 @@ class Engine:
             self.time.tick()
 
             with self.screen:
+                self.mouse._update()
                 if self.screen.opened:
                     self.__running = self.inputs.check_all()
                 update()
