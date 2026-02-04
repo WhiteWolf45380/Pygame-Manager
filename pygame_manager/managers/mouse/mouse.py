@@ -35,8 +35,8 @@ class MouseManager:
             self._out = True
         else:
             self._out = False
-        self._x = (mouse_x - context.screen._screen_resized_x_offset) / self.scale                                            # conversion de la coordonée x
-        self._y = (mouse_y - context.screen._screen_resized_y_offset) / self.scale                                            # conversion de la coordonée y
+        self._x = (mouse_x - context.screen._screen_resized_x_offset) / context.screen.scale                                            # conversion de la coordonée x
+        self._y = (mouse_y - context.screen._screen_resized_y_offset) / context.screen.scale                                            # conversion de la coordonée y
 
     # ======================================== AFFICHAGE ========================================
     def _draw(self):
@@ -44,11 +44,11 @@ class MouseManager:
         Affiche le curseur curstomisé
         """
         if self._icon and not self._out and self._visible:
-            if self.scale != self._last_scale:
-                s = 0.8 + 0.4 / (1 + math.exp(-4 * (self.scale - 1)))                                                                    # scale sigmoïdal doux
+            if context.screen.scale != self._last_scale:
+                s = 0.8 + 0.4 / (1 + math.exp(-4 * (context.screen.scale - 1)))                                                                    # scale sigmoïdal doux
                 w, h = self._icon.get_size()
                 self._icon_scaled = pygame.transform.smoothscale(self._icon, (int(w * s), int(h * s)))
-                self._last_scale = self.scale
+                self._last_scale = context.screen.scale
             mx, my = pygame.mouse.get_pos()
             if self._icon_centered:
                 context.screen._window.blit(self._icon_scaled, (mx - self._icon_scaled.get_width()//2, my - self._icon_scaled.get_height()//2))
