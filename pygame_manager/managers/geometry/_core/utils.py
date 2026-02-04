@@ -3,7 +3,7 @@ from .imports import *
 from typing import Protocol, TYPE_CHECKING
 
 # ======================================== FAMILLES DE TYPES ========================================
-Sequence = (tuple, list, np.ndarray)
+Sequence = (tuple, list, dict, set, np.ndarray)
 
 class Reshapable(Protocol):
     @property

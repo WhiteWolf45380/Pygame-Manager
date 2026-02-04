@@ -18,23 +18,48 @@ class SpriteEntity(Entity):
         _alpha (int): Opacité (0-255)
     """
     
-    def __init__(self, zorder: int = -1, panel: str | None = None):
+    def __init__(
+            self,
+            image: pygame.Surface | None = None,
+            x: Real = 0,
+            y: Real = 0,
+            zorder: int = -1,
+            panel: str | None = None,
+            ):
         """
         Initialise le sprite
         
         Args:
+            image (pygame.Surface) : image du sprite
+            x (Real) : coordonnée x du sprite
+            y (Real) : coordonnée y du sprite
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
         """
+        # Vérifications
+        if image is not None and not isinstance(image, pygame.Surface): _raise_error(self, '__init__', 'Invalid image argument')
+        if not isinstance(x, Real): _raise_error(self, '__init__', 'Invalid x argument')
+        if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
+
+        # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel)
 
+        # Image
         self._image: pygame.Surface | None = None
         self._original_image: pygame.Surface | None = None
+
+        # Position
         self._rect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
+        self._x: float = float(x)
+        self._y: float = float(y)
+
+        # Paramètres d'affichage
         self._angle: float = 0.0
-        self._x: float = 0
-        self._y: float = 0
         self._alpha: int = 255
+
+        # Chargement
+        if image is not None:
+            self.image = image
 
     # ======================================== IMAGE ========================================
     @property

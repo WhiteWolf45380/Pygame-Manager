@@ -10,20 +10,29 @@ class Entity:
         auto-registration
         auto-update
     """
-    def __init__(self, zorder: Optional[int] = None, panel: Optional[str] = None):
-        # vérifications
+    def __init__(
+            self,
+            zorder: Optional[int] = None,
+            panel: Optional[str] = None
+            ):
+        """
+        Args:
+            zorder (int, optional) : priorité d'affichage (0 = derrière)
+            panel (str, optional) : panel d'affichage
+        """
+        # Vérifications
         if zorder is not None and not isinstance(zorder, int): _raise_error(self, '__init__', "Invalid zorder argument")
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
 
-        # affichage
+        # Affichage
         self._zorder = zorder
         self._panel = panel
 
-        # paramètres
+        # Paramètres
         self._active = True
         self._visible = True
 
-        # auto-registration
+        # Auto-registration
         context.entities.register(self)
         self.on_register()
 

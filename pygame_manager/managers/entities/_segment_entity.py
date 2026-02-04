@@ -17,7 +17,13 @@ class SegmentEntity(Entity):
         _gap (int): Longueur des espaces entre segments
     """
     
-    def __init__(self, start: tuple[float, float], end: tuple[float, float], zorder: int = -1, panel: str | None = None):
+    def __init__(
+            self,
+            start: tuple[float, float],
+            end: tuple[float, float],
+            zorder: int = -1,
+            panel: str | None = None
+            ):
         """
         Initialise le segment
         
@@ -27,11 +33,20 @@ class SegmentEntity(Entity):
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
         """
+        # Vérifications
+        start = context.geometry._to_point(start, copy=False)
+        end = context.geometry._to_point(end, copy=False)
+
+        # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel)
         
+        # Object géométrique
         self._segment = context.geometry.Segment(start, end)
+
+        # Paramètres d'affichage
         self._color = (0, 0, 0)
         self._width = 1
+        
         self._dashed = False
         self._dash = 10
         self._gap = 6

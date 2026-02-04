@@ -10,29 +10,42 @@ class LineEntity(Entity):
     
     Attributes:
         _line (context.geometry.Line): Objet géométrique droite
-        _color (tuple[int, int, int]): Couleur de la droite RGB
+        _color (pygame.Color): Couleur de la droite RGB
         _width (int): Épaisseur de la droite
         _dashed (bool): Active l'affichage en pointillés
         _dash (int): Longueur des segments en pointillés
         _gap (int): Longueur des espaces entre segments
     """
-    
-    def __init__(self, point: tuple[float, float], vector: tuple[float, float],
-                 zorder: int = -1, panel: str | None = None):
+    def __init__(
+            self,
+            point: tuple[Real, Real],
+            vector: tuple[float, float],
+            zorder: int = -1,
+            panel: str | None = None
+            ):
         """
         Initialise la droite
         
         Args:
-            point (tuple[float, float]): Point d'origine (x, y)
-            vector (tuple[float, float]): Vecteur directeur (vx, vy)
-            zorder (int): Ordre d'affichage (défaut: -1)
-            panel (str | None): Nom du panel (défaut: None)
+            point (tuple[float, float]) : Point d'origine (x, y)
+            vector (tuple[float, float]) : Vecteur directeur (vx, vy)
+            zorder (int) : Ordre d'affichage (défaut: -1)
+            panel (str | None) : Nom du panel (défaut: None)
         """
+        # Vérifications
+        point = context.geometry._to_point(point, copy=False)
+        vector = context.geometry._to_vector(vector, copy=False)
+
+        # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel)
         
+        # Objet géométrique
         self._line = context.geometry.Line(point, vector)
+
+        # Paramètres d'affichage
         self._color = (0, 0, 0)
         self._width = 1
+
         self._dashed = False
         self._dash = 10
         self._gap = 6

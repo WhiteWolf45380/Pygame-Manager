@@ -17,8 +17,12 @@ class PolygonEntity(Entity):
         _border_width (int): Épaisseur de la bordure
         _border_around (bool): Bordure autour (True) ou intérieure (False)
     """
-    
-    def __init__(self, *points: tuple[float, float], zorder: int = -1, panel: str | None = None):
+    def __init__(
+            self,
+            *points: tuple[Real, Real],
+            zorder: int = -1,
+            panel: str | None = None
+            ):
         """
         Initialise le polygone
         
@@ -27,11 +31,19 @@ class PolygonEntity(Entity):
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
         """
+        # Vérifications
+        points = list(map(context.geometry._to_point, points))
+
+        # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel)
         
+        # Objet géométrique
         self._polygon = context.geometry.Polygon(*points)
+
+        # Paramètres d'affichage
         self._filling = True
         self._color = (255, 255, 255)
+        
         self._border = False
         self._border_color = (0, 0, 0)
         self._border_width = 1

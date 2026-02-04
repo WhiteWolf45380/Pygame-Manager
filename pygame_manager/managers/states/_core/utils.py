@@ -2,7 +2,7 @@
 from .imports import *
 
 # ======================================== FAMILLES DE TYPES ========================================
-Sequence = (tuple, list)
+Sequence = (tuple, list, dict, set)
 
 # ======================================== FONCTIONS UTILES ========================================
 def _raise_error(obj: object, method: str, text: str):

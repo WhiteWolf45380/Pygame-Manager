@@ -16,13 +16,22 @@ class RectEntity(Entity):
         _border_color (tuple[int, int, int]): Couleur de la bordure RGB
         _border_width (int): Épaisseur de la bordure
         _border_around (bool): Bordure autour (True) ou intérieure (False)
+        _border_radius (int) : Rayon d'arrodi des coins par défaut
         _border_topleft_radius (int): Rayon d'arrondi coin haut gauche
         _border_topright_radius (int): Rayon d'arrondi coin haut droit
         _border_bottomleft_radius (int): Rayon d'arrondi coin bas gauche
         _border_bottomright_radius (int): Rayon d'arrondi coin bas droit
-    """
-    
-    def __init__(self, x: float, y: float, width: float, height: float, zorder: int = -1, panel: str | None = None):
+    """   
+    def __init__(
+            self,
+            x: Real,
+            y: Real,
+            width: Real,
+            height: Real,
+            border_radius: int = 0,
+            zorder: int = -1,
+            panel: str | None = None
+            ):
         """
         Initialise le rectangle
         
@@ -34,15 +43,27 @@ class RectEntity(Entity):
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
         """
+        # Vérifications
+        point = context.geometry._to_point((x, y))
+        if not isinstance(width, Real) or width <= 0: _raise_error(self, '__init__', 'Invalid width argument')
+        if not isinstance(height, Real) or height <= 0: _raise_error(self, '__init__', 'Invalid height argument')
+        if not isinstance(border_radius, int) or border_radius < 0: _raise_error(self, '__init__', 'Invalid border_radius argument')
+
+        # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel)
         
-        self._rect = context.geometry.Rect(x, y, width, height)
+        # Objet géométrique
+        self._rect = context.geometry.Rect(point, width, height, border_radius=border_radius)
+
+        # Paramètres d'affichage
         self._filling = True
         self._color = (255, 255, 255)
+    
         self._border = False
         self._border_color = (0, 0, 0)
         self._border_width = 1
         self._border_around = False
+
         self._border_topleft_radius = -1
         self._border_topright_radius = -1
         self._border_bottomleft_radius = -1
@@ -277,6 +298,46 @@ class RectEntity(Entity):
     def border_radius(self, radius: int):
         """Fixe le rayon d'arrondi des coins"""
         self._rect.border_radius = radius
+
+    @property
+    def border_topleft_radius(self) -> int:
+        """Renvoie le rayon d'arrondi du coin haut gauche"""
+        return self.border_topleft_radius
+    
+    @border_topleft_radius.setter
+    def border_topleft_radius(self, radius: int):
+        """Fixe le rayon d'arrondi du coin haut gauche"""
+        self.border_topleft_radius = radius
+
+    @property
+    def border_topright_radius(self) -> int:
+        """Renvoie le rayon d'arrondi du coin haut droit"""
+        return self.border_topright_radius
+    
+    @border_topright_radius.setter
+    def border_topright_radius(self, radius: int):
+        """Fixe le rayon d'arrondi du coin haut droit"""
+        self.border_topright_radius = radius
+
+    @property
+    def border_bottomright_radius(self) -> int:
+        """Renvoie le rayon d'arrondi du coin bas droit"""
+        return self.border_bottomright_radius
+    
+    @border_bottomright_radius.setter
+    def border_bottomright_radius(self, radius: int):
+        """Fixe le rayon d'arrondi du coin bas droit"""
+        self.border_bottomright_radius = radius
+
+    @property
+    def border_bottomleft_radius(self) -> int:
+        """Renvoie le rayon d'arrondi du coin bas gauche"""
+        return self.border_bottomleft_radius
+    
+    @border_bottomleft_radius.setter
+    def border_bottomleft_radius(self, radius: int):
+        """Fixe le rayon d'arrondi du coin bas gauche"""
+        self.border_bottomleft_radius = radius
     
     # ======================================== MOUVEMENTS ========================================
     def move_up(self, dy: float = 1):

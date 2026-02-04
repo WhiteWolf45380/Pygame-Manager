@@ -17,23 +17,35 @@ class CircleEntity(Entity):
         _border_width (int): Épaisseur de la bordure
         _border_around (bool): Bordure autour (True) ou intérieure (False)
     """
-    
-    def __init__(self, centerx: float, centery: float, radius: float, zorder: int = -1, panel: str | None = None):
+    def __init__(
+            self,
+            center: tuple[float, float],
+            radius: Real, zorder: int = -1,
+            panel: str | None = None
+            ):
         """
         Initialise le cercle
         
         Args:
-            centerx (float): Coordonnée x du centre
-            centery (float): Coordonnée y du centre
+            center (tuple[float, float]): Coordonnées du centre du cercle
             radius (float): Rayon du cercle
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
         """
+        # Vérifications
+        center = context.geometry._to_point(center, copy=False)
+        if not isinstance(radius, Real): _raise_error(self, '__init__', 'Invalid radius argument')
+
+        # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel)
         
-        self._circle = context.geometry.Circle(centerx, centery, radius)
+        # Objet géométrique
+        self._circle = context.geometry.Circle(center, radius)
+
+        # Paramètres d'affichage
         self._filling = True
         self._color = (255, 255, 255)
+        
         self._border = False
         self._border_color = (0, 0, 0)
         self._border_width = 1
