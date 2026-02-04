@@ -48,15 +48,19 @@ class State:
             context.panels.deactivate(panel_name)
 
     # ======================================== BIND ========================================
-    def bind_panel(self, panel_name: str):
+    def bind_panel(self, panel: str | object):
         """Rattache un panel racine à ce state (auto ouvert/fermé)"""
-        if panel_name not in self._bound_panels:
-            self._bound_panels.append(panel_name)
+        if isinstance(panel, context.panels.Panel):
+            panel = panel._name
+        if panel not in self._bound_panels:
+            self._bound_panels.append(panel)
 
-    def unbind_panel(self, panel_name: str):
+    def unbind_panel(self, panel: str | object):
         """Détache un panel racine de ce state"""
-        if panel_name in self._bound_panels:
-            self._bound_panels.remove(panel_name)
+        if isinstance(panel, context.panels.Panel):
+            panel = panel._name
+        if panel in self._bound_panels:
+            self._bound_panels.remove(panel)
 
     # ======================================== RENDER ========================================
     def update(self, *args, **kwargs):
