@@ -1,4 +1,4 @@
-__version__ = "1.0.02"
+__version__ = "1.0.05"
 
 """
 Mise à jour :

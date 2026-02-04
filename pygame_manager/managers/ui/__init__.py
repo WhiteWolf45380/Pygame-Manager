@@ -1,2 +1,2 @@
-from .ui import UiManager, ui_manager
-__all__ = ['UiManager', "ui_manager"]
+from .ui import UiManager, ui_manager, RectButtonObject, CircleButtonObject, RectSelectorObject, CircleSelectorObject, TextCaseObject
+__all__ = ['UiManager', "ui_manager", "RectButtonObject", "CircleButtonObject", "RectSelectorObject", "CircleSelectorObject", "TextCaseObject"]
