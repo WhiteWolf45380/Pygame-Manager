@@ -167,3 +167,6 @@ class EntitiesManager:
                 else:
                     panel_surface = context.screen.surface
                 getattr(entity, '_draw', lambda _: None)(panel_surface)
+
+# ======================================== INSTANCIATION ========================================
+entities_manager = EntitiesManager()
