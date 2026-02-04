@@ -17,7 +17,6 @@ class Engine:
                 setattr(self, attr, manager_instance)
                 setattr(context, attr, manager_instance)
         context.engine = self
-        print(self.__all__)
     
         self.__initialized = False
         self.__running = False

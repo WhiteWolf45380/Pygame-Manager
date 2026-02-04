@@ -111,12 +111,21 @@ class Entity:
             return
         self.update()
 
+    # ======================================== DESSIN ========================================
+    def draw_behind(self, surface: pygame.Surface):
+        """Appelé à chaque frame avant draw (à override)"""
+
     def draw(self, surface: pygame.Surface):
         """Appelé à chaque frame (à override)"""
         pass
+
+    def draw_front(self, surface: pygame.Surface):
+        """Appelé à chaque frame après draw (à override)"""
 
     def _draw(self, surface: pygame.Surface):
         """Proxy vers draw"""
         if not self._visible:
             return
+        self.draw_behind(surface)
         self.draw(surface)
+        self.draw_front(surface)
