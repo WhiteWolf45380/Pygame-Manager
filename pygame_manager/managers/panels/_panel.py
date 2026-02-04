@@ -73,6 +73,9 @@ class Panel:
             height = self._surface_rect.height + (self._border_width if self._border_around else 0)
             self._border = pygame.Rect(x, y, width, height)
 
+        # survol
+        self._hoverable = hoverable
+
         # auto-registration
         context.panels.register(self)
 
@@ -151,8 +154,22 @@ class Panel:
     def set_index(self, n: int):
         """Place le panel à l'indice n dans le Z-order"""
         context.panels.reorder(self._name, "index", n)
+    
+    # ======================================== SURVOL ========================================
+    @property
+    def hoverable(self) -> bool:
+        """Vérifie que le panel soit survolable"""
+        return self._hoverable
+    
+    @hoverable.setter
+    def hoverable(self, value: bool):
+        """Fixe le survol du panel"""
+        if not isinstance(value, bool):
+            _raise_error(self, 'set_hoverable', 'Invalid value argument')
+        self._hoverable = value
 
-    # ======================================== COORDONNEES ========================================
+    # ======================================== GETTERS ========================================
+    # Conversions
     def get_absolute(self, point: tuple) -> tuple:
         """Converts a point relative to this panel into absolute (screen) coordinates"""
         return context.panels.absolute(point, self._name)
@@ -161,6 +178,7 @@ class Panel:
         """Converts an absolute point (screen) into coordinates relative to this panel"""
         return context.panels.relative(point, self._name)
     
+    # Souris
     @property
     def mouse_pos(self) -> tuple[float, float]:
         """Renvoie la position relative de la souris"""
@@ -175,3 +193,50 @@ class Panel:
     def mouse_y(self) -> float:
         """Renvoie la coordonnée y relative de la souris"""
         return self.mouse_pos[1]
+    
+    # Surface
+    @property
+    def surface(self) -> pygame.Surface:
+        """Surface du panel"""
+        return self._surface
+    
+    @property
+    def rect(self) -> pygame.Rect:
+        """Rectangle du panel"""
+        return self._surface_rect
+
+    @property
+    def x(self) -> int:
+        """Position x du panel"""
+        return self._surface_rect.x
+
+    @property
+    def y(self) -> int:
+        """Position y du panel"""
+        return self._surface_rect.y
+
+    @property
+    def width(self) -> int:
+        """Largeur du panel"""
+        return self._surface_rect.width
+
+    @property
+    def height(self) -> int:
+        """Hauteur du panel"""
+        return self._surface_rect.height
+
+    # Positions (in)
+    @property
+    def center(self) -> tuple[float, float]:
+        """Centre du panel"""
+        return (self._surface_rect.width / 2, self._surface_rect.height / 2)
+
+    @property
+    def centerx(self) -> float:
+        """Centre x du panel"""
+        return self._surface_rect.width / 2
+
+    @property
+    def centery(self) -> float:
+        """Centre y du panel"""
+        return self._surface_rect.height / 2
