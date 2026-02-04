@@ -59,9 +59,11 @@ class Engine:
                     self.__running = self.inputs.check_all()
                 update()
                 self.states.update()
-                self.menus.update()
+                self.panels.update()
+                self.entities.update()
+                self.entities.draw()
                 self.ui.update()
-                self.menus.draw()
+                self.panels.draw()
 
             if not self.__running:
                 break
