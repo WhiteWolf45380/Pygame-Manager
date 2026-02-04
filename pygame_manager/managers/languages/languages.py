@@ -15,16 +15,16 @@ class LanguagesManager:
     """
 
     def __init__(self, default_lang: str = "en", fallback_lang: str="en"):
-        self.__lang = default_lang
-        self.__fallback_lang = fallback_lang        # langue de secours
-        self.__translations = {}
+        self._lang = default_lang
+        self._fallback_lang = fallback_lang        # langue de secours
+        self._translations = {}
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
 
     # ======================================== LANGUES ========================================
     def load_language(self, lang: str, path: str):
@@ -37,7 +37,7 @@ class LanguagesManager:
         """
         try:
             with open(path, "r", encoding="utf-8") as f:
-                self.__translations[lang] = json.load(f)
+                self._translations[lang] = json.load(f)
         except Exception:
             self._raise_error("load_language", f"Cannot load language file {path}")
     
@@ -70,24 +70,24 @@ class LanguagesManager:
             lang (str) : code de langue
             fallback (bool) : utiliser la langue de secours si non trouvée
         """
-        if lang not in self.__translations:
-            if fallback and self.__fallback_lang in self.__translations:
-                print(f"Warning: Language '{lang}' not found, using fallback '{self.__fallback_lang}'")
-                self.__lang = self.__fallback_lang
+        if lang not in self._translations:
+            if fallback and self._fallback_lang in self._translations:
+                print(f"Warning: Language '{lang}' not found, using fallback '{self._fallback_lang}'")
+                self._lang = self._fallback_lang
             else:
                 self._raise_error("set_language", f"Language '{lang}' not loaded")
         else:
-            self.__lang = lang
+            self._lang = lang
 
     def get_language(self) -> str:
         """
         Renvoie la langue actuelle
         """
-        return self.__lang
+        return self._lang
     
     def get_available_languages(self) -> list[str]:
         """Envoie la liste des langues chargées"""
-        return list(self.__translations.keys())
+        return list(self._translations.keys())
 
     # ======================================== TRADUCTION ========================================
     def __call__(self, key: str, lang: Optional[str] = None, **kwargs) -> str:
@@ -99,14 +99,14 @@ class LanguagesManager:
             lang (str) : langue spécifique (None = langue actuelle)
             kwargs : variables de formatage
         """
-        target_lang = lang or self.__lang
+        target_lang = lang or self._lang
         
         # recherche dans la langue cible
-        text = self.__translations.get(target_lang, {}).get(key)
+        text = self._translations.get(target_lang, {}).get(key)
         
         # fallback sur la langue de secours
-        if text is None and target_lang != self.__fallback_lang:
-            text = self.__translations.get(self.__fallback_lang, {}).get(key)
+        if text is None and target_lang != self._fallback_lang:
+            text = self._translations.get(self._fallback_lang, {}).get(key)
         
         # clé manquante
         if text is None:

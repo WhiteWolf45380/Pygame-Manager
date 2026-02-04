@@ -1,4 +1,4 @@
-# ======================================== OBJET ========================================
+# ======================================== IMPORTS ========================================
 from ._core import *
 from ._vector import VectorObject
 from ._point import PointObject

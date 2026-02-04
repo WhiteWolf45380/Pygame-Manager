@@ -11,9 +11,9 @@ class InputsManager:
         ajouter des listeners à certaines entrées
     """
     def __init__(self):
-        self.__listeners = {}       # ensemble des listeners
-        self.__step = []            # touches qui viennent d'être pressées
-        self.__pressed = {}         # touches pressées
+        self._listeners = {}       # ensemble des listeners
+        self._step = []            # touches qui viennent d'être pressées
+        self._pressed = {}         # touches pressées
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -24,7 +24,7 @@ class InputsManager:
             method (str) : méthode dans laquelle l'erreur survient
             text (str) : message d'erreur
         """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
 
     # ======================================== METHODES INTERACTIVES ========================================
     @staticmethod
@@ -101,14 +101,14 @@ class InputsManager:
             "kwargs": kwargs,
         }
 
-        if event_id not in self.__listeners:
-            self.__listeners[event_id] = [listener]
+        if event_id not in self._listeners:
+            self._listeners[event_id] = [listener]
             return
-        for i, l in enumerate(self.__listeners[event_id]):
+        for i, l in enumerate(self._listeners[event_id]):
             if priority > l["priority"]:
-                self.__listeners[event_id].insert(i, listener)
+                self._listeners[event_id].insert(i, listener)
                 return
-        self.__listeners[event_id].append(listener)
+        self._listeners[event_id].append(listener)
 
     def remove_listener(self, event_id: int, callback: callable):
         """
@@ -118,8 +118,8 @@ class InputsManager:
             event_id (int) : entrée utilisateur
             callback (callable) : fonction associée
         """
-        if event_id in self.__listeners:
-            self.__listeners[event_id] = [l for l in self.__listeners[event_id] if l["callback"] != callback]
+        if event_id in self._listeners:
+            self._listeners[event_id] = [l for l in self._listeners[event_id] if l["callback"] != callback]
 
     def check_event(self, event):
         """
@@ -133,13 +133,13 @@ class InputsManager:
 
         # maintient / relâchement
         if up:
-            self.__pressed[event_id] = False
+            self._pressed[event_id] = False
         else:
-            self.__step.append(event_id)
+            self._step.append(event_id)
         
         # listeners
         to_remove = []
-        for listener in self.__listeners.get(event_id, []):            
+        for listener in self._listeners.get(event_id, []):            
             if listener["condition"] and not listener["condition"]() or up != listener["up"]:
                 continue
 
@@ -150,14 +150,14 @@ class InputsManager:
 
         # suppression du listener
         for listener in to_remove:
-            self.__listeners[event_id].remove(listener)
+            self._listeners[event_id].remove(listener)
     
     def check_pressed(self):
         """
         Vérifie les listeners de maintient
         """
-        for event_id, listeners in self.__listeners.items():
-            if self.__pressed.get(event_id, False):
+        for event_id, listeners in self._listeners.items():
+            if self._pressed.get(event_id, False):
                 for listener in listeners:
                     if listener["repeat"]:
                         if listener["condition"] and not listener["condition"]():
@@ -165,9 +165,9 @@ class InputsManager:
                         listener["callback"](*listener["args"], **listener["kwargs"])
         
         # ajout des nouvelles touches pressées
-        for event_id in self.__step:
-            self.__pressed[event_id] = True
-        self.__step = []
+        for event_id in self._step:
+            self._pressed[event_id] = True
+        self._step = []
     
     def check_all(self):
         """

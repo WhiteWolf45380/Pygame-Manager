@@ -6,6 +6,8 @@ from .managers.entities import EntitiesManager
 from .managers.geometry import GeometryManager
 from .managers.inputs import InputsManager
 from .managers.languages import LanguagesManager
+from .managers.mouse import MouseManager
+from .managers.network import NetworkManager
 from .managers.panels import PanelsManager
 from .managers.screen import ScreenManager
 from .managers.settings import SettingsManager
@@ -25,6 +27,8 @@ entities: EntitiesManager
 geometry: GeometryManager
 inputs: InputsManager
 languages: LanguagesManager
+mouse: MouseManager
+network: NetworkManager
 panels: PanelsManager
 screen: ScreenManager
 settings: SettingsManager

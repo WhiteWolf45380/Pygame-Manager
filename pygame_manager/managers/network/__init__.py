@@ -1,5 +1,5 @@
 # ======================================== IMPORTS ========================================
-from .mouse import MouseManager, mouse_manager
+from .network import NetworkManager, network_manager
 
 # ======================================== EXPORTS ========================================
-__all__ = ["MouseManager", "mouse_manager"]
+__all__ = ["NetworkManager", "network_manager"]

@@ -16,25 +16,25 @@ class TimeManager:
     """
     def __init__(self, max_fps: int=60):
         # clock pygame
-        self.__clock = pygame.time.Clock()
+        self._clock = pygame.time.Clock()
 
         # paramètres
-        self.__dt = 0.0  # temps écoulé depuis la dernière boucle (en secondes)
-        self.__current_fps = 0.0 # nombre actuel de fps (en frames)
-        self.__max_fps = max_fps # nombre maximal de fps
-        self.__fps_buffer = [] # buffer de fps pour une moyenne lissée
-        self.__time_scale = 1.0 # vitesse d'éxécution du jeu
-        self.__frame_count = 0 # nombre de frames écoulées
+        self._dt = 0.0  # temps écoulé depuis la dernière boucle (en secondes)
+        self._current_fps = 0.0 # nombre actuel de fps (en frames)
+        self._max_fps = max_fps # nombre maximal de fps
+        self._fps_buffer = [] # buffer de fps pour une moyenne lissée
+        self._time_scale = 1.0 # vitesse d'éxécution du jeu
+        self._frame_count = 0 # nombre de frames écoulées
 
         # stocke les débuts d’animations
-        self.__start_times = {}
+        self._start_times = {}
     
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str='', text: str=''):
         """
         Raise une erreur
         """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
     
     # ======================================== GETTERS ========================================
     def get_ticks(self):
@@ -48,63 +48,63 @@ class TimeManager:
         """
         Renvoie le nombre de frames écoulées depuis le début du programme
         """
-        return self.__frame_count
+        return self._frame_count
 
     def get_dt(self):
         """
         Renvoie le delta time (temps écoulé depuis la dernière frame) en secondes
         """
-        return self.__dt
+        return self._dt
     
     @property
     def dt(self):
         """
         Renvoie le delta time (temps écoulé depuis la dernière frame) en secondes
         """
-        return self.__dt
+        return self._dt
     
     def get_fps(self):
         """
         Renvoie le nombre actuel de frames par seconde
         """
-        return self.__current_fps
+        return self._current_fps
     
     @property
     def fps(self):
         """
         Renvoie le nombre actuel de frames par seconde
         """
-        return self.__current_fps
+        return self._current_fps
     
     def get_smoothfps(self):
         """
         Renvoie le nombre lissé de frames par seconde
         """
-        if len(self.__fps_buffer) == 0:
-            return self.__current_fps
-        return round(sum(self.__fps_buffer) / len(self.__fps_buffer))
+        if len(self._fps_buffer) == 0:
+            return self._current_fps
+        return round(sum(self._fps_buffer) / len(self._fps_buffer))
     
     @property
     def smoothfps(self):
         """
         Renvoie le nombre lissé de frames par seconde
         """
-        if len(self.__fps_buffer) == 0:
-            return self.__current_fps
-        return round(sum(self.__fps_buffer) / len(self.__fps_buffer))
+        if len(self._fps_buffer) == 0:
+            return self._current_fps
+        return round(sum(self._fps_buffer) / len(self._fps_buffer))
     
     def get_fps_limit(self):
         """
         Renvoie la limite de frames par seconde
         """
-        return self.__max_fps
+        return self._max_fps
     
     @property
     def fps_limits(self):
         """
         Renvoie la limite de frames par seconde
         """
-        return self.__max_fps
+        return self._max_fps
     
     # ======================================== SETTERS ========================================
     def set_fps_limit(self, n: int):
@@ -116,7 +116,7 @@ class TimeManager:
         """
         if not isinstance(n, int):
             self._raise_error("set_fps_limit", "fps limit must be an integer")
-        self.__max_fps = n
+        self._max_fps = n
 
     def set_time_scale(self, t: float):
         """
@@ -129,7 +129,7 @@ class TimeManager:
             self._raise_error("set_time_scale", "Time coefficient must be a float")
         if t < 0:
             self._raise_error("set_time_scale", "Time coefficient must be >= 0")
-        self.__time_scale = t
+        self._time_scale = t
     
     # ======================================== METHODES DYNAMIQUES ========================================
     def tick(self) -> float:
@@ -137,22 +137,22 @@ class TimeManager:
         À appeler à chaque frame, en premier
         """
         # frame actuelle
-        self.__frame_count += 1
+        self._frame_count += 1
 
         # temps brut écoulé depuis la dernière frame
-        raw_dt = (self.__clock.tick(self.__max_fps)) / 1000.0
+        raw_dt = (self._clock.tick(self._max_fps)) / 1000.0
 
         # clamp pour éviter les pics de dt trop grands ou nuls
-        self.__dt = max(0.001, min(raw_dt, 0.07)) * self.__time_scale # entre 15 et 1000 fps
+        self._dt = max(0.001, min(raw_dt, 0.07)) * self._time_scale # entre 15 et 1000 fps
 
         # calcul des fps
-        if self.__dt > 0:
-            self.__current_fps = round(1.0 / self.__dt)
-            self.__fps_buffer.append(self.__current_fps)
-            if len(self.__fps_buffer) > 30:
-                self.__fps_buffer.pop(0)
+        if self._dt > 0:
+            self._current_fps = round(1.0 / self._dt)
+            self._fps_buffer.append(self._current_fps)
+            if len(self._fps_buffer) > 30:
+                self._fps_buffer.pop(0)
 
-        return self.__dt
+        return self._dt
 
     def scale_value(self, value_per_second: float) -> float:
         """
@@ -161,7 +161,7 @@ class TimeManager:
         Args:
             value_per_second : nombre par seconde voulu
         """
-        return value_per_second * self.__dt
+        return value_per_second * self._dt
     
     def pause(self):
         """
@@ -192,17 +192,17 @@ class TimeManager:
             return 0, False
         
         # démarrage d'une nouvelle animation
-        if anim_id not in self.__start_times or start:
-            self.__start_times[anim_id] = {"time": 0.0}
+        if anim_id not in self._start_times or start:
+            self._start_times[anim_id] = {"time": 0.0}
 
         # récupération des données de l'animation
-        anim_data = self.__start_times[anim_id]
+        anim_data = self._start_times[anim_id]
 
         # calcul de la durée d'une frame
         frame_duration = anim_duration / frame_count
 
         if forced_frame is None:
-            anim_data["time"] += self.__dt # incrémentation temporelle
+            anim_data["time"] += self._dt # incrémentation temporelle
         else:
             if not isinstance(forced_frame, int) or forced_frame >= frame_count:
                 self._raise_error("get_frame", "Forced_frame must be an integer between 0 et frames_count - 1")
@@ -229,7 +229,7 @@ class TimeManager:
         """
         Oublie complètement une animation
         """
-        self.__start_times.pop(anim_id, None)
+        self._start_times.pop(anim_id, None)
 
 
 # ======================================== INSTANCE ========================================

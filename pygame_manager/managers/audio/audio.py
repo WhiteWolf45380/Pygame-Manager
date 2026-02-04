@@ -23,35 +23,35 @@ class AudioManager:
         pygame.mixer.set_num_channels(0)
 
         # groupes (=catégories) de sons
-        self.__groups = {}
+        self._groups = {}
         self.create_group("default", channels=5, volume=1.0) # groupe par défaut
 
         # sons
-        self.__sounds = {}
+        self._sounds = {}
 
         # musiques
-        self.__musics = {}
-        self.__music_volume = 1.0
-        self.__current_music = None
+        self._musics = {}
+        self._music_volume = 1.0
+        self._current_music = None
 
         # paramètres globaux
-        self.__master_volume = 1.0
+        self._master_volume = 1.0
     
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str='', text: str=''):
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
     
     def __str__(self):
         """
         renvoie une description textuelle du gestionnaire audio
         """
         txt = ""
-        for group in self.__groups:
-            txt += f"\n{group} ({self.__groups[group]['channels']} channels):"
-            for sound in [s for s in self.__sounds if self.__sounds[s].get("group") == group]:
+        for group in self._groups:
+            txt += f"\n{group} ({self._groups[group]['channels']} channels):"
+            for sound in [s for s in self._sounds if self._sounds[s].get("group") == group]:
                 txt += f"   - {sound}"
         return txt
     
@@ -61,8 +61,8 @@ class AudioManager:
         Affiche l'ensemble des groupes
         """
         txt = ""
-        for group in self.__groups:
-            txt += f"- {group} : {self.__groups[group]['channels']} channels"
+        for group in self._groups:
+            txt += f"- {group} : {self._groups[group]['channels']} channels"
         print(txt)
 
     def create_group(self, name: str, channels: int=3, volume: float=1.0):
@@ -74,13 +74,13 @@ class AudioManager:
             channels (int) : Nombre de canaux alloués
             volume (float) entre 0 et 1 : volume de tous les sons du groupe
         """
-        if name in self.__groups:
+        if name in self._groups:
             self._raise_error("create_group", f"Group {name} already exists")
         if not isinstance(channels, int) or channels < 0:
             self._raise_error("create_group", "Channels number must be an integer")
         if not isinstance(volume, (int, float)):
             self._raise_error("create_group", "Group's volume must be a float")
-        self.__groups[name] = {"channels": channels, "volume": volume}
+        self._groups[name] = {"channels": channels, "volume": volume}
         self._update_partition()
     
     def set_group_channels(self, name: str, channels: int):
@@ -91,11 +91,11 @@ class AudioManager:
             name (str) : Nom du groupe
             channels (int) : Nombre de canaux alloués
         """
-        if name not in self.__groups:
+        if name not in self._groups:
             self._raise_error("update_group_channels", f"Group {name} does not exist. If you want to create it, try : create_group(name: str)")
         if not isinstance(channels, int) or channels < 0:
             self._raise_error("update_group_channels", "Channels number must be an integer")
-        self.__groups[name]["channels"] = channels
+        self._groups[name]["channels"] = channels
         self._update_partition()
 
     def set_group_volume(self, name: str, volume: float):
@@ -106,11 +106,11 @@ class AudioManager:
             name (str) : Nom du groupe
             volume (float) entre 0 et 1 : volume de tous les sons du groupe
         """
-        if name not in self.__groups:
+        if name not in self._groups:
             self._raise_error("update_group_volume", f"Group {name} does not exist. If you want to create it, try : create_group(name: str)")
         if not isinstance(volume, (int, float)):
             self._raise_error("update_group_volume", "Group's volume must be a float")
-        self.__groups[name]["volume"] = volume
+        self._groups[name]["volume"] = volume
     
     def delete_group(self, name: str):
         """
@@ -119,11 +119,11 @@ class AudioManager:
         Args:
             name (str) : Nom du groupe
         """
-        if name not in self.__groups:
+        if name not in self._groups:
             self._raise_error("delete_group", f"Group {name} does not exist")
         if name == "default":
             self._raise_error("delete_group", "Group default cannot be deleted")
-        self.__groups.pop(name)
+        self._groups.pop(name)
         self._update_partition()
     
     def _update_partition(self):
@@ -131,7 +131,7 @@ class AudioManager:
         Distribue les salons aux groupes
         """
         i = 0
-        for group in self.__groups.values():
+        for group in self._groups.values():
             group["first"] = i
             i = i + group["channels"]
             group["last"] = i - 1
@@ -143,11 +143,11 @@ class AudioManager:
         Affiche l'ensemble des sons
         """
         txt = ""
-        for sound in self.__sounds:
+        for sound in self._sounds:
             txt += f"{sound} :"
-            txt += f"    - volume : {self.__sounds[sound]['volume']}"
-            txt += f"    - délai : {self.__sounds[sound]['cooldown']}"
-            txt += f"    - groupe : {self.__sounds[sound]['group']}\n"
+            txt += f"    - volume : {self._sounds[sound]['volume']}"
+            txt += f"    - délai : {self._sounds[sound]['cooldown']}"
+            txt += f"    - groupe : {self._sounds[sound]['group']}\n"
         print(txt)
         
     def add_sound(self, name: str, path: str, volume: float= 1.0, cooldown: float=0.0, group: str='default'):
@@ -161,7 +161,7 @@ class AudioManager:
             cooldown (float) : délai minimal entre les utilisations du son (en secondes)
             group (str) : le groupe auquel appartient le son
         """
-        if name in self.__sounds:
+        if name in self._sounds:
             self._raise_error("create_group", f"Group {name} already exists. If you want to remove it, try : remove_sound(name: str)")
         if not isinstance(name, str):
             self._raise_error("create_group", f"Sound's name must be a string")
@@ -171,9 +171,9 @@ class AudioManager:
             self._raise_error("create_group", f"Sound's volume must be a float")
         if not isinstance(cooldown, (int, float)):
             self._raise_error("create_group", f"Sound's cooldown must be a float")
-        if not group in self.__groups:
+        if not group in self._groups:
             self._raise_error(f"create_group", f"Group {group} does not exist. If you want to create it, try : create_group(name: str, channels: int)")
-        self.__sounds[name] = {
+        self._sounds[name] = {
             'audios': [pygame.mixer.Sound(path)],
             'volume': volume,
             'cooldown_duration': cooldown * 1000, # stockage en secondes
@@ -189,11 +189,11 @@ class AudioManager:
             name (str) : Nom du son
             path (str) : chemin d'accès au son
         """
-        if not name in self.__sounds:
+        if not name in self._sounds:
             self._raise_error("update_sound_add", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
         if not isinstance(path, str):
             self._raise_error("update_sound_add", "Sound's path must be a string")
-        self.__sounds[name]["audios"].append(pygame.mixer.Sound(path))
+        self._sounds[name]["audios"].append(pygame.mixer.Sound(path))
     
     def set_sound_volume(self, name: str, volume: float):
         """
@@ -203,11 +203,11 @@ class AudioManager:
             name (str) : Nom du son
             volume (float) entre 0 et 1 : volume de tous les sons du groupe
         """
-        if not name in self.__sounds:
+        if not name in self._sounds:
             self._raise_error("update_sound_volume", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
         if not isinstance(volume, (int, float)):
             self._raise_error("update_sound_volume", "Sound's volume must be an integer")
-        self.__sounds[name]["volume"] = volume
+        self._sounds[name]["volume"] = volume
 
     def set_sound_cooldown(self, name: str, cooldown: float):
         """
@@ -217,11 +217,11 @@ class AudioManager:
             name (str) : Nom du son
             cooldown (float) : délai minimal entre les utilisations du son (en secondes)
         """
-        if not name in self.__sounds:
+        if not name in self._sounds:
             self._raise_error("update_sound_cooldown", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
         if not isinstance(cooldown, (int, float)):
             self._raise_error("update_sound_cooldown", "Sound's cooldown must be an integer")
-        self.__sounds[name]["cooldown_duration"] = cooldown
+        self._sounds[name]["cooldown_duration"] = cooldown
 
     def set_sound_group(self, name: str, group: str):
         """
@@ -231,11 +231,11 @@ class AudioManager:
             name (str) : Nom du son
             group (str) : le groupe auquel appartient le son
         """
-        if not name in self.__sounds:
+        if not name in self._sounds:
             self._raise_error("update_sound_group", f"Sound {name} does not exist. If you want to create it, try : add_sound(name: str, path: str)")
-        if not group in self.__groups:
+        if not group in self._groups:
             self._raise_error("update_sound_group", f"Group {group} does not exist. If you want to create it, try : create_group(name: str, channels: int)")
-        self.__sounds[name]["group"] = group
+        self._sounds[name]["group"] = group
 
     def remove_sound(self, name: str):
         """
@@ -244,9 +244,9 @@ class AudioManager:
         Args:
             name (str) : Nom du son
         """
-        if not name in self.__sounds:
+        if not name in self._sounds:
             self._raise_error("remove_sound", f"Sound {name} doest not exist")
-        self.__sounds.pop(name)
+        self._sounds.pop(name)
     
     # ======================================== MUSIQUES ========================================
     def show_musics(self):
@@ -254,9 +254,9 @@ class AudioManager:
         Affiche l'ensemble des musiques
         """
         txt = ""
-        for music in self.__musics:
+        for music in self._musics:
             txt += f"{music} :"
-            txt += f"   - volume : {self.__musics[music]['volume']}"
+            txt += f"   - volume : {self._musics[music]['volume']}"
         print(txt)
 
     def add_music(self, name: str, path: str, volume: float= 1.0):
@@ -268,7 +268,7 @@ class AudioManager:
             path (str) : chemin d'accès à la musique
             volume (float) : volume de la musique
         """
-        if name in self.__musics:
+        if name in self._musics:
             self._raise_error("add_music", f"Music {name} already exists. If you want to remove it, try : remove_music(name: str)")
         if not isinstance(name, str):
             self._raise_error("add_music", "Music's name must be a string")
@@ -276,7 +276,7 @@ class AudioManager:
             self._raise_error("add_music", "Music's path must be a string")
         if not isinstance(volume, (int, float)):
             self._raise_error("add_music", "Music's volume must be a float")
-        self.__musics[name] = {
+        self._musics[name] = {
             "path": path,
             "volume": volume,
         }
@@ -289,11 +289,11 @@ class AudioManager:
             name (str) : Nom unique de la musique
             path (str) : chemin d'accès à la musique
         """
-        if not name in self.__musics:
+        if not name in self._musics:
             self._raise_error("remove_music", f"Music {name} does not exist")
         if not isinstance(path, str):
             self._raise_error("add_music", "Music's path must be a string")
-        self.__musics[name]["path"] = path
+        self._musics[name]["path"] = path
     
     def set_music_volume(self, name: str, volume: float):
         """
@@ -303,11 +303,11 @@ class AudioManager:
             name (str) : Nom unique de la musique
             volume (float) : volume de la musique
         """
-        if not name in self.__musics:
+        if not name in self._musics:
             self._raise_error("remove_music", f"Music {name} does not exist")
         if not isinstance(volume, (int, float)):
             self._raise_error("add_music", "Music's volume must be a float")
-        self.__musics[name]["volume"] = volume
+        self._musics[name]["volume"] = volume
     
     def remove_music(self, name: str):
         """
@@ -316,18 +316,18 @@ class AudioManager:
         Args:
             name (str) : Nom unique de la musique
         """
-        if not name in self.__musics:
+        if not name in self._musics:
             self._raise_error("remove_music", f"Music {name} does not exist")
-        if name == self.__current_music:
+        if name == self._current_music:
             self.stop_music()
-        self.__musics.pop(name)
+        self._musics.pop(name)
 
     # ======================================== MANIPULATION ========================================
     def _get_free_channel(self, group):
         """
         renvoie un salon libre pour le groupe demandé si possible
         """
-        first, last = self.__groups[group]["first"], self.__groups[group]["last"]
+        first, last = self._groups[group]["first"], self._groups[group]["last"]
         for i in range(first, last + 1):
             channel = pygame.mixer.Channel(i)
             if not channel.get_busy():
@@ -341,17 +341,17 @@ class AudioManager:
         Args:
             sound (str) : nom du son
         """
-        if not sound in self.__sounds:
+        if not sound in self._sounds:
             self._raise_error("play_sound", f"No Sound named {sound}")
-        if pygame.time.get_ticks() - self.__sounds[sound]["cooldown"] < self.__sounds[sound]["cooldown_duration"]:
+        if pygame.time.get_ticks() - self._sounds[sound]["cooldown"] < self._sounds[sound]["cooldown_duration"]:
             return
-        group = self.__sounds[sound]["group"]
+        group = self._sounds[sound]["group"]
         channel = self._get_free_channel(group)
         if channel:
-            audio = random.choice(self.__sounds[sound]["audios"])
-            audio.set_volume(self.__master_volume * self.__groups[group]["volume"] * self.__sounds[sound]["volume"])
+            audio = random.choice(self._sounds[sound]["audios"])
+            audio.set_volume(self._master_volume * self._groups[group]["volume"] * self._sounds[sound]["volume"])
             channel.play(audio)
-            self.__sounds[sound]["cooldown"] = pygame.time.get_ticks()
+            self._sounds[sound]["cooldown"] = pygame.time.get_ticks()
         else:
             print(f"[AudioManager].play_sound : No free channel for {group} sound {sound}")
 
@@ -370,11 +370,11 @@ class AudioManager:
             loop (bool) : répétition de la musique
             fade_ms (float) : fondu en ouverture en millisecondes
         """
-        if not name in self.__musics:
+        if not name in self._musics:
             self._raise_error("play_music", f"Music {name} doest not exist. If you want to create it, try : create_music(name: str, path: str)")
-        pygame.mixer.music.load(self.__musics[name]["path"])
+        pygame.mixer.music.load(self._musics[name]["path"])
         pygame.mixer.music.play(-1 if loop else 0, fade_ms=fade_ms)
-        self.__current_music = name
+        self._current_music = name
         self._update_volumes()
 
     def stop_music(self, fade_ms: float=0):
@@ -398,7 +398,7 @@ class AudioManager:
         """
         if not isinstance(volume, (int, float)):
             self._raise_error("set_master_volume", "Master volume must be a float")
-        self.__master_volume = volume
+        self._master_volume = volume
         self._update_volumes()
 
     def update_music_volume(self, volume: float):
@@ -410,16 +410,16 @@ class AudioManager:
         """
         if not isinstance(volume, (int, float)):
             self._raise_error("set_music_volume", "Music's volume must be a float")
-        self.__music_volume = volume
+        self._music_volume = volume
         self._update_volumes()
     
     def _update_volumes(self):
         """
         Met à jour le volume de la musique
         """
-        if self.__current_music is None:
+        if self._current_music is None:
             return
-        pygame.mixer.music.set_volume(self.__master_volume * self.__music_volume * self.__musics[self.__current_music]["volume"])
+        pygame.mixer.music.set_volume(self._master_volume * self._music_volume * self._musics[self._current_music]["volume"])
 
 
 # ======================================== INSTANCE ========================================

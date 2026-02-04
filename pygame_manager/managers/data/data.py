@@ -19,22 +19,22 @@ class DataManager:
     def __init__(self, base_path: str="data"):
         if not isinstance(base_path, str):
             self._raise_error('__init__', 'base_path must be a string')
-        self.__base_path = Path(base_path)
-        self.__sql = SQLHandler()
-        self.__io = InputOutputHandler()
+        self._base_path = Path(base_path)
+        self._sql = SQLHandler()
+        self._io = InputOutputHandler()
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
     
     def _resolve_path(self, path: str) -> Path:
         """Résout un chemin relatif au base_path"""
         if os.path.isabs(path):
             return Path(path)
-        return self.__base_path / path
+        return self._base_path / path
     
     # ======================================== GETTERS ========================================
     @property
@@ -42,14 +42,14 @@ class DataManager:
         """
         Accès au gestionnaire SQL
         """
-        return self.__sql
+        return self._sql
     
     @property
     def io(self):
         """
         Accès au gestionnaire des entrées/sorties utilisateur
         """
-        return self.__io
+        return self._io
 
     # ======================================== FICHIERS ========================================
     def load(self, path: str) -> dict:
@@ -167,7 +167,7 @@ class DataManager:
         """Liste les fichiers correspondant au pattern"""
         if not isinstance(pattern, str):
             self._raise_error('list_files', 'path must be a string')
-        return [str(p.relative_to(self.__base_path)) for p in self.__base_path.glob(pattern)]
+        return [str(p.relative_to(self._base_path)) for p in self._base_path.glob(pattern)]
     
     @staticmethod
     def get_path(relative_path, folder=False):

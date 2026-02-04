@@ -11,8 +11,8 @@ class SQLHandler:
         envoie de requêtes SQL
     """
     def __init__(self):
-        self.__path = None
-        self.__conn = None
+        self._path = None
+        self._conn = None
     
     def __enter__(self):
         return self
@@ -25,20 +25,20 @@ class SQLHandler:
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
 
     def connect(self, path: str):
         """
         Initialise la connexion avec la base de données
         """
-        if self.__conn is not None:
+        if self._conn is not None:
             self._raise_error('connect', 'Already connected.\nPls end the connection first with sql.close()')
 
-        self.__path = Path(path)
-        self.__path.parent.mkdir(parents=True, exist_ok=True)
+        self._path = Path(path)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
         
-        self.__conn = sqlite3.connect(self.__path)
-        self.__conn.row_factory = sqlite3.Row
+        self._conn = sqlite3.connect(self._path)
+        self._conn.row_factory = sqlite3.Row
 
     def execute(self, sql, params=()):
         """
@@ -48,9 +48,9 @@ class SQLHandler:
             sql (str): Requête SQL à exécuter
             params (tuple): Paramètres associés à la requête
         """
-        if self.__conn is None:
+        if self._conn is None:
             self._raise_error('excecute', 'Not connected to DataBase.\nTry to start a connection with sql.connect(path)')
-        cursor = self.__conn.cursor()
+        cursor = self._conn.cursor()
         cursor.execute(sql, params)
         return cursor
     
@@ -62,7 +62,7 @@ class SQLHandler:
             sql (str): Requête SQL SELECT
             params (tuple): Paramètres associés à la requête
         """
-        if self.__conn is None:
+        if self._conn is None:
             self._raise_error('fetchall', 'Not connected to DataBase.\nTry to start a connection with sql.connect(path)')
         cursor = self.execute(sql, params)
         return cursor.fetchall()
@@ -75,7 +75,7 @@ class SQLHandler:
             sql (str): Requête SQL SELECT
             params (tuple): Paramètres associés à la requête
         """
-        if self.__conn is None:
+        if self._conn is None:
             self._raise_error('fetchone', 'Not connected to DataBase.\nTry to start a connection with sql.connect(path)')
         cursor = self.execute(sql, params)
         return cursor.fetchone()
@@ -84,8 +84,8 @@ class SQLHandler:
         """
         Sauvegarde les modifications transitionnelles
         """
-        if self.__conn:
-            self.__conn.commit()
+        if self._conn:
+            self._conn.commit()
 
     def close(self, save: bool=True):
         """
@@ -93,9 +93,9 @@ class SQLHandler:
         """
         if save:
             self.commit()
-        if self.__conn:
-            self.__conn.close()
-            self.__conn = None
+        if self._conn:
+            self._conn.close()
+            self._conn = None
 
 """
 Exemple d'utilisation
