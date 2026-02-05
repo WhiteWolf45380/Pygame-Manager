@@ -329,7 +329,6 @@ class CircleEntity(Entity):
         self._border_around = value
     
     # ======================================== MOUVEMENTS ========================================
-# ======================================== MOUVEMENTS ========================================
     def move_up(self, dy: float = 1, min: float = None):
         """
         Déplace le cercle vers le haut

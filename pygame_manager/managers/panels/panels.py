@@ -343,6 +343,22 @@ class PanelsManager:
             if hasattr(obj, 'update'):
                 obj.update()
 
+    def draw_back(self):
+        """
+        Exécute draw de tous les panels actifs et affichés 
+        """
+        for name in self._active_panels:
+            predecessor = self._dict[name]["predecessor"]
+            if predecessor is not None and predecessor not in self._active_panels:
+                continue
+
+            if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
+            else: predecessor_surface = context.screen.surface
+
+            obj = self._dict[name]["object"]
+            if hasattr(obj, 'draw_back'):
+                obj.draw_before(predecessor_surface)
+
     def draw(self):
         """
         Exécute draw de tous les panels actifs et affichés 
@@ -352,13 +368,12 @@ class PanelsManager:
             if predecessor is not None and predecessor not in self._active_panels:
                 continue
 
+            if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
+            else: predecessor_surface = context.screen.surface
+
             obj = self._dict[name]["object"]
-            if hasattr(obj, '_draw'):
-                obj.draw(obj._surface)
-            if hasattr(obj, '_draw'):
-                if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
-                else: predecessor_surface = context.screen.surface
-                obj._draw(predecessor_surface)
+            if hasattr(obj, 'draw'):
+                obj.draw(predecessor_surface)
 
 # ======================================== INSTANCE ========================================
 panels_manager = PanelsManager()

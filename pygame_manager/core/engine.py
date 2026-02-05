@@ -18,8 +18,8 @@ class Engine:
                 setattr(context, attr, manager_instance)
         context.engine = self
     
-        self.__initialized = False
-        self.__running = False
+        self._initialized = False
+        self._running = False
 
     def init(self):
         """
@@ -28,7 +28,7 @@ class Engine:
         Args:
             loader (callable) : fonction d'initialisation supplémentaire (mettre des yield entre les étapes)
         """
-        if self.__initialized: # déjà initialisé
+        if self._initialized: # déjà initialisé
             return self
 
         # création de la fenêtre
@@ -38,44 +38,48 @@ class Engine:
         self.inputs.add_listener(pygame.K_F11, self.screen.toggle_fullscreen)
 
         # confirmation
-        self.__initialized = True
+        self._initialized = True
         return self
 
     def run(self, update):
-        """
-        Lance la boucle d'éxécution
-        """
-        if not self.__initialized:
+        """Lance la boucle d'éxécution"""
+        # Vérifications
+        if not self._initialized:
             self._raise_error("run", "Engine not initialized. Call init() first.")
         if not callable(update):
             self._raise_error("run", "update must be callable")
 
-        self.__running = True
-        while self.__running:
+        # Boucle principale
+        self._running = True
+        while self._running:
             self.time.tick()
 
+            # Permet l'affichage à l'écran
             with self.screen:
+                # Entrées utilisateur
                 self.mouse._update()
-                if self.screen.opened:
-                    self.__running = self.inputs.check_all()
+                if not self.inputs.check_all():
+                    break
+
+                # Actualisation
                 update()
                 self.states.update()
                 self.panels.update()
                 self.entities.update()
-                self.entities.draw()
                 self.ui.update()
+
+                # Affichage
+                self.panels.draw_back()
+                self.entities.draw()
+                self.ui.draw()
                 self.panels.draw()
 
-            if not self.__running:
-                break
-
+        # Fin d'éxécution
         self.stop()
 
     def stop(self):
-        """
-        Mets fin à la boucle d'éxécution
-        """
-        if self.__running:
-            self.__running = False
+        """Mets fin à la boucle d'éxécution"""
+        if self._running:
+            self._running = False
             self.screen.close()
             pygame.quit()

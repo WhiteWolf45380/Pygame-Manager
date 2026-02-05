@@ -93,19 +93,21 @@ class Panel:
         """Appelé à chaque frame lorsque le panel est actif (à override)"""
         pass
 
-    def draw(self, surface: pygame.Surface):
-        """Appelé à chaque frame lorsque le panel est actif (à override)"""
+    # ======================================== AFFICHAGE ========================================
+    def draw_back(surface: pygame.Surface):
+        """Appelé à chaque frame avant l'affichage du panel (à override)"""
         pass
 
-    def _draw(self, surface: pygame.Surface):
-        """Dessin sur la surface du prédecesseur"""
+    def draw(self, surface: pygame.Surface):
+        """Affichage du panel sur la surface du prédecesseur"""
         if not isinstance(surface, pygame.Surface):
             return
+        self.draw(surface)
         surface.blit(self._surface, self._surface_rect)
 
         if self._border is not None:
             pygame.draw.rect(surface, self._border_color, self._border, self._border_width)
-
+        
     # ======================================== ACTIVATION ========================================
     def activate(self):
         """Active le panel"""
