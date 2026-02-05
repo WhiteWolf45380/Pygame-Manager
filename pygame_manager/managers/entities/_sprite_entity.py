@@ -335,85 +335,121 @@ class SpriteEntity(Entity):
             self._image.set_alpha(self._alpha)
 
     # ======================================== MOUVEMENTS ========================================
-    def move_up(self, dy: float = 1):
+    def move_up(self, dy: float = 1, min: float = None):
         """
         Déplace le sprite vers le haut
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale y
         """
         self._y -= dy
+        if min is not None and self._y < min:
+            self._y = min
 
-    def move_down(self, dy: float = 1):
+    def move_down(self, dy: float = 1, max: float = None):
         """
         Déplace le sprite vers le bas
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale y
         """
         self._y += dy
+        if max is not None and self._y > max:
+            self._y = max
 
-    def move_left(self, dx: float = 1):
+    def move_left(self, dx: float = 1, min: float = None):
         """
         Déplace le sprite vers la gauche
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale x
         """
         self._x -= dx
+        if min is not None and self._x < min:
+            self._x = min
 
-    def move_right(self, dx: float = 1):
+    def move_right(self, dx: float = 1, max: float = None):
         """
         Déplace le sprite vers la droite
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale x
         """
         self._x += dx
+        if max is not None and self._x > max:
+            self._x = max
 
-    def move_up_left(self, n: float = 1):
+    def move_up_left(self, n: float = 1, xmin: float = None, ymin: float = None):
         """
         Déplace le sprite en diagonale haut-gauche
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmin (float): Position minimale x
+            ymin (float): Position minimale y
         """
         d = n / sqrt(2)
         self._x -= d
         self._y -= d
+        if xmin is not None and self._x < xmin:
+            self._x = xmin
+        if ymin is not None and self._y < ymin:
+            self._y = ymin
 
-    def move_up_right(self, n: float = 1):
+    def move_up_right(self, n: float = 1, xmax: float = None, ymin: float = None):
         """
         Déplace le sprite en diagonale haut-droite
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmax (float): Position maximale x
+            ymin (float): Position minimale y
         """
         d = n / sqrt(2)
         self._x += d
         self._y -= d
+        if xmax is not None and self._x > xmax:
+            self._x = xmax
+        if ymin is not None and self._y < ymin:
+            self._y = ymin
 
-    def move_down_left(self, n: float = 1):
+    def move_down_left(self, n: float = 1, xmin: float = None, ymax: float = None):
         """
         Déplace le sprite en diagonale bas-gauche
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmin (float): Position minimale x
+            ymax (float): Position maximale y
         """
         d = n / sqrt(2)
         self._x -= d
         self._y += d
+        if xmin is not None and self._x < xmin:
+            self._x = xmin
+        if ymax is not None and self._y > ymax:
+            self._y = ymax
 
-    def move_down_right(self, n: float = 1):
+    def move_down_right(self, n: float = 1, xmax: float = None, ymax: float = None):
         """
         Déplace le sprite en diagonale bas-droite
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmax (float): Position maximale x
+            ymax (float): Position maximale y
         """
         d = n / sqrt(2)
         self._x += d
         self._y += d
+        if xmax is not None and self._x > xmax:
+            self._x = xmax
+        if ymax is not None and self._y > ymax:
+            self._y = ymax
 
     # ======================================== COLLISIONS ========================================
     def collidepoint(self, point: tuple[float, float]) -> bool:

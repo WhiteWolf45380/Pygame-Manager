@@ -357,41 +357,65 @@ class SegmentEntity(Entity):
         self._segment.translate(dx, dy)
     
     # ======================================== MOUVEMENTS ========================================
-    def move_up(self, dy: float = 1):
+    def move_up(self, dy: float = 1, min: float = None):
         """
         Déplace le segment vers le haut
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale y
         """
         self._segment.translate(0, -dy)
+        if min is not None:
+            y1, y2 = self._segment.start[1], self._segment.end[1]
+            center_y = (y1 + y2) / 2
+            if center_y < min:
+                self._segment.translate(0, min - center_y)
     
-    def move_down(self, dy: float = 1):
+    def move_down(self, dy: float = 1, max: float = None):
         """
         Déplace le segment vers le bas
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale y
         """
         self._segment.translate(0, dy)
+        if max is not None:
+            y1, y2 = self._segment.start[1], self._segment.end[1]
+            center_y = (y1 + y2) / 2
+            if center_y > max:
+                self._segment.translate(0, max - center_y)
     
-    def move_left(self, dx: float = 1):
+    def move_left(self, dx: float = 1, min: float = None):
         """
         Déplace le segment vers la gauche
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale x
         """
         self._segment.translate(-dx, 0)
+        if min is not None:
+            x1, x2 = self._segment.start[0], self._segment.end[0]
+            center_x = (x1 + x2) / 2
+            if center_x < min:
+                self._segment.translate(min - center_x, 0)
     
-    def move_right(self, dx: float = 1):
+    def move_right(self, dx: float = 1, max: float = None):
         """
         Déplace le segment vers la droite
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale x
         """
         self._segment.translate(dx, 0)
+        if max is not None:
+            x1, x2 = self._segment.start[0], self._segment.end[0]
+            center_x = (x1 + x2) / 2
+            if center_x > max:
+                self._segment.translate(max - center_x, 0)
     
     # ======================================== COLLISIONS ========================================
     def collidepoint(self, point: tuple[float, float]) -> bool:

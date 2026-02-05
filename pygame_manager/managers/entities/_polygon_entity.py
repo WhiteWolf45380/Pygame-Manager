@@ -271,82 +271,119 @@ class PolygonEntity(Entity):
         self._border_around = value
     
     # ======================================== MOUVEMENTS ========================================
-    def move_up(self, dy: float = 1):
+    def move_up(self, dy: float = 1, min: float = None):
         """
         Déplace le polygone vers le haut
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale y
         """
         self._polygon.translate(0, -dy)
+        if min is not None and self._polygon.center[1] < min:
+            self._polygon.translate(0, min - self._polygon.center[1])
     
-    def move_down(self, dy: float = 1):
+    def move_down(self, dy: float = 1, max: float = None):
         """
         Déplace le polygone vers le bas
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale y
         """
         self._polygon.translate(0, dy)
+        if max is not None and self._polygon.center[1] > max:
+            self._polygon.translate(0, max - self._polygon.center[1])
     
-    def move_left(self, dx: float = 1):
+    def move_left(self, dx: float = 1, min: float = None):
         """
         Déplace le polygone vers la gauche
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale x
         """
         self._polygon.translate(-dx, 0)
+        if min is not None and self._polygon.center[0] < min:
+            self._polygon.translate(min - self._polygon.center[0], 0)
     
-    def move_right(self, dx: float = 1):
+    def move_right(self, dx: float = 1, max: float = None):
         """
         Déplace le polygone vers la droite
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale x
         """
         self._polygon.translate(dx, 0)
+        if max is not None and self._polygon.center[0] > max:
+            self._polygon.translate(max - self._polygon.center[0], 0)
     
-    def move_up_left(self, n: float = 1):
+    def move_up_left(self, n: float = 1, xmin: float = None, ymin: float = None):
         """
         Déplace le polygone en diagonale haut-gauche
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmin (float): Position minimale x
+            ymin (float): Position minimale y
         """
         d = n / sqrt(2)
         self._polygon.translate(-d, -d)
+        if xmin is not None and self._polygon.center[0] < xmin:
+            self._polygon.translate(xmin - self._polygon.center[0], 0)
+        if ymin is not None and self._polygon.center[1] < ymin:
+            self._polygon.translate(0, ymin - self._polygon.center[1])
     
-    def move_up_right(self, n: float = 1):
+    def move_up_right(self, n: float = 1, xmax: float = None, ymin: float = None):
         """
         Déplace le polygone en diagonale haut-droite
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmax (float): Position maximale x
+            ymin (float): Position minimale y
         """
         d = n / sqrt(2)
         self._polygon.translate(d, -d)
+        if xmax is not None and self._polygon.center[0] > xmax:
+            self._polygon.translate(xmax - self._polygon.center[0], 0)
+        if ymin is not None and self._polygon.center[1] < ymin:
+            self._polygon.translate(0, ymin - self._polygon.center[1])
     
-    def move_down_left(self, n: float = 1):
+    def move_down_left(self, n: float = 1, xmin: float = None, ymax: float = None):
         """
         Déplace le polygone en diagonale bas-gauche
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmin (float): Position minimale x
+            ymax (float): Position maximale y
         """
         d = n / sqrt(2)
         self._polygon.translate(-d, d)
+        if xmin is not None and self._polygon.center[0] < xmin:
+            self._polygon.translate(xmin - self._polygon.center[0], 0)
+        if ymax is not None and self._polygon.center[1] > ymax:
+            self._polygon.translate(0, ymax - self._polygon.center[1])
     
-    def move_down_right(self, n: float = 1):
+    def move_down_right(self, n: float = 1, xmax: float = None, ymax: float = None):
         """
         Déplace le polygone en diagonale bas-droite
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmax (float): Position maximale x
+            ymax (float): Position maximale y
         """
         d = n / sqrt(2)
         self._polygon.translate(d, d)
+        if xmax is not None and self._polygon.center[0] > xmax:
+            self._polygon.translate(xmax - self._polygon.center[0], 0)
+        if ymax is not None and self._polygon.center[1] > ymax:
+            self._polygon.translate(0, ymax - self._polygon.center[1])
     
+    # ======================================== ALTERATION ========================================
     def rotate(self, angle: float, center: tuple[float, float] = None, degrees: bool = False):
         """
         Tourne le polygone

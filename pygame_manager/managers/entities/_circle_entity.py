@@ -329,85 +329,122 @@ class CircleEntity(Entity):
         self._border_around = value
     
     # ======================================== MOUVEMENTS ========================================
-    def move_up(self, dy: float = 1):
+# ======================================== MOUVEMENTS ========================================
+    def move_up(self, dy: float = 1, min: float = None):
         """
         Déplace le cercle vers le haut
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale y
         """
         self._circle.centery -= dy
+        if min is not None and self._circle.centery < min:
+            self._circle.centery = min
     
-    def move_down(self, dy: float = 1):
+    def move_down(self, dy: float = 1, max: float = None):
         """
         Déplace le cercle vers le bas
         
         Args:
             dy (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale y
         """
         self._circle.centery += dy
+        if max is not None and self._circle.centery > max:
+            self._circle.centery = max
     
-    def move_left(self, dx: float = 1):
+    def move_left(self, dx: float = 1, min: float = None):
         """
         Déplace le cercle vers la gauche
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            min (float): Position minimale x
         """
         self._circle.centerx -= dx
+        if min is not None and self._circle.centerx < min:
+            self._circle.centerx = min
     
-    def move_right(self, dx: float = 1):
+    def move_right(self, dx: float = 1, max: float = None):
         """
         Déplace le cercle vers la droite
         
         Args:
             dx (float): Distance de déplacement (défaut: 1)
+            max (float): Position maximale x
         """
         self._circle.centerx += dx
+        if max is not None and self._circle.centerx > max:
+            self._circle.centerx = max
     
-    def move_up_left(self, n: float = 1):
+    def move_up_left(self, n: float = 1, xmin: float = None, ymin: float = None):
         """
         Déplace le cercle en diagonale haut-gauche
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmin (float): Position minimale x
+            ymin (float): Position minimale y
         """
         d = n / sqrt(2)
         self._circle.centerx -= d
         self._circle.centery -= d
+        if xmin is not None and self._circle.centerx < xmin:
+            self._circle.centerx = xmin
+        if ymin is not None and self._circle.centery < ymin:
+            self._circle.centery = ymin
     
-    def move_up_right(self, n: float = 1):
+    def move_up_right(self, n: float = 1, xmax: float = None, ymin: float = None):
         """
         Déplace le cercle en diagonale haut-droite
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmax (float): Position maximale x
+            ymin (float): Position minimale y
         """
         d = n / sqrt(2)
         self._circle.centerx += d
         self._circle.centery -= d
+        if xmax is not None and self._circle.centerx > xmax:
+            self._circle.centerx = xmax
+        if ymin is not None and self._circle.centery < ymin:
+            self._circle.centery = ymin
     
-    def move_down_left(self, n: float = 1):
+    def move_down_left(self, n: float = 1, xmin: float = None, ymax: float = None):
         """
         Déplace le cercle en diagonale bas-gauche
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmin (float): Position minimale x
+            ymax (float): Position maximale y
         """
         d = n / sqrt(2)
         self._circle.centerx -= d
         self._circle.centery += d
+        if xmin is not None and self._circle.centerx < xmin:
+            self._circle.centerx = xmin
+        if ymax is not None and self._circle.centery > ymax:
+            self._circle.centery = ymax
     
-    def move_down_right(self, n: float = 1):
+    def move_down_right(self, n: float = 1, xmax: float = None, ymax: float = None):
         """
         Déplace le cercle en diagonale bas-droite
         
         Args:
             n (float): Distance de déplacement (défaut: 1)
+            xmax (float): Position maximale x
+            ymax (float): Position maximale y
         """
         d = n / sqrt(2)
         self._circle.centerx += d
         self._circle.centery += d
+        if xmax is not None and self._circle.centerx > xmax:
+            self._circle.centerx = xmax
+        if ymax is not None and self._circle.centery > ymax:
+            self._circle.centery = ymax
     
     # ======================================== COLLISIONS ========================================
     def collidepoint(self, point: tuple[float, float]) -> bool:

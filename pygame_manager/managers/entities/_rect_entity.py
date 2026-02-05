@@ -340,45 +340,69 @@ class RectEntity(Entity):
         self.border_bottomleft_radius = radius
     
     # ======================================== MOUVEMENTS ========================================
-    def move_up(self, dy: float = 1):
+    def move_up(self, dy: float = 1, min: float = None):
         """Déplace le rectangle vers le haut"""
         self._rect.y -= dy
+        if min is not None and self._rect.y < min:
+            self._rect.y = min
     
-    def move_down(self, dy: float = 1):
+    def move_down(self, dy: float = 1, max: float = None):
         """Déplace le rectangle vers le bas"""
         self._rect.y += dy
+        if max is not None and self._rect.y > max:
+            self._rect.y = max
     
-    def move_left(self, dx: float = 1):
+    def move_left(self, dx: float = 1, min: float = None):
         """Déplace le rectangle vers la gauche"""
         self._rect.x -= dx
+        if min is not None and self._rect.x < min:
+            self._rect.x = min
     
-    def move_right(self, dx: float = 1):
+    def move_right(self, dx: float = 1, max: float = None):
         """Déplace le rectangle vers la droite"""
         self._rect.x += dx
+        if max is not None and self._rect.x > max:
+            self._rect.x = max
     
-    def move_up_left(self, n: float = 1):
+    def move_up_left(self, n: float = 1, xmin: float = None, ymin: float = None):
         """Déplace le rectangle en diagonale haut-gauche"""
         d = n / sqrt(2)
         self._rect.x -= d
         self._rect.y -= d
+        if xmin is not None and self._rect.x < xmin:
+            self._rect.x = xmin
+        if ymin is not None and self._rect.y < ymin:
+            self._rect.y = ymin
     
-    def move_up_right(self, n: float = 1):
+    def move_up_right(self, n: float = 1, xmax: float = None, ymin: float = None):
         """Déplace le rectangle en diagonale haut-droite"""
         d = n / sqrt(2)
         self._rect.x += d
         self._rect.y -= d
+        if xmax is not None and self._rect.x > xmax:
+            self._rect.x = xmax
+        if ymin is not None and self._rect.y < ymin:
+            self._rect.y = ymin
     
-    def move_down_left(self, n: float = 1):
+    def move_down_left(self, n: float = 1, xmin: float = None, ymax: float = None):
         """Déplace le rectangle en diagonale bas-gauche"""
         d = n / sqrt(2)
         self._rect.x -= d
         self._rect.y += d
+        if xmin is not None and self._rect.x < xmin:
+            self._rect.x = xmin
+        if ymax is not None and self._rect.y > ymax:
+            self._rect.y = ymax
     
-    def move_down_right(self, n: float = 1):
+    def move_down_right(self, n: float = 1, xmax: float = None, ymax: float = None):
         """Déplace le rectangle en diagonale bas-droite"""
         d = n / sqrt(2)
         self._rect.x += d
         self._rect.y += d
+        if xmax is not None and self._rect.x > xmax:
+            self._rect.x = xmax
+        if ymax is not None and self._rect.y > ymax:
+            self._rect.y = ymax
     
     # ======================================== COLLISIONS ========================================
     def collidepoint(self, point: tuple[float, float]) -> bool:
