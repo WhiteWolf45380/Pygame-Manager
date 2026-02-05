@@ -1,10 +1,11 @@
 # ======================================== IMPORTS ========================================
 from .imports import *
-from typing import Protocol, TYPE_CHECKING
+from typing import Protocol, runtime_checkable
 
 # ======================================== FAMILLES DE TYPES ========================================
 Sequence = (tuple, list, dict, set, np.ndarray)
 
+@runtime_checkable
 class Reshapable(Protocol):
     @property
     def dim(self) -> int:

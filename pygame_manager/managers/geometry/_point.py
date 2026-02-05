@@ -99,11 +99,11 @@ class PointObject:
 
     def __sub__(self, obj: context.geometry.Vector| context.geometry.Point) -> context.geometry.Point | context.geometry.Vector:
         """Renvoie l'image du point par l'opposé du vecteur ou le vecteur obj -> Self"""
-        vector = context.geometry._to_vector(obj)
+        vector = context.geometry._to_vector(obj, raised=False)
         if vector is not None: return self.translate(-vector)
 
         point = context.geometry._to_point(obj, raised=False)
-        if point is not None: self._vector_to(point)
+        if point is not None: return self._vector_to(point)
 
         return NotImplemented
 
