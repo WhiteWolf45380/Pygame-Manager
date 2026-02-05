@@ -357,7 +357,7 @@ class PanelsManager:
 
             obj = self._dict[name]["object"]
             if hasattr(obj, 'draw_back'):
-                obj.draw_back(predecessor_surface)
+                obj.draw_back(obj._surface)
 
     def draw(self):
         """
