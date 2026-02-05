@@ -558,7 +558,7 @@ class CircleObject:
         return self._purerect_collision_normal(rect, collision_point=collision_point)
 
     def _purerect_collision_normal(self, rect: context.geometry.Rect, collision_point: context.geometry.Point = None) -> context.geometry.Vector:
-        """Implémentation interne de purerect_collision_normal"""
+        """Renvoie la normale d’un rectangle pur (toujours ±x ou ±y)"""
         if collision_point is None:
             collision_point = rect._closest_point(self._center)
         else:
@@ -579,8 +579,5 @@ class CircleObject:
         if abs(px - rect.right) < eps:
             return context.geometry.Vector(1, 0)
 
-        # fallback : vecteur vers l’extérieur basé sur la différence centre → collision_point
-        normal = self._center - collision_point
-        if normal.is_null():
-            return context.geometry.Vector(0, -1)
-        return normal.normalized
+        # Par défaut : vecteur horizontal selon position par rapport au centre du rectangle
+        return context.geometry.Vector(1, 0) if px >= rect.centerx else context.geometry.Vector(-1, 0)
