@@ -52,6 +52,11 @@ class LineEntity(Entity):
     
     # ======================================== PROXY GEOMETRIQUE ========================================
     @property
+    def line(self) -> context.geometry.Line:
+        """Renvoie la droite"""
+        return self._line
+
+    @property
     def origin(self) -> tuple[float, float]:
         """Renvoie le point d'origine de la droite"""
         return self._line.origin

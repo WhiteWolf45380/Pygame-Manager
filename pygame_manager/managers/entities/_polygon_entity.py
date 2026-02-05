@@ -51,6 +51,11 @@ class PolygonEntity(Entity):
     
     # ======================================== PROXY GEOMETRIQUE ========================================
     @property
+    def polygon(self) -> context.geometry.Polygon:
+        """Renvoie le polygone"""
+        return self._polygon
+
+    @property
     def vertices(self) -> list[tuple[float, float]]:
         """Renvoie la liste des sommets du polygone"""
         return self._polygon.vertices

@@ -53,6 +53,11 @@ class CircleEntity(Entity):
     
     # ======================================== PROXY GEOMETRIQUE ========================================
     @property
+    def circle(self) -> context.geometry.Circle:
+        """Renvoie le cercle"""
+        return self._circle
+
+    @property
     def center(self) -> tuple[float, float]:
         """Renvoie les coordonnées du centre"""
         return self._circle.center
