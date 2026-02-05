@@ -502,7 +502,7 @@ class CircleObject:
             elif abs(px - rect.right) < epsilon:
                 return context.geometry.Vector(1, 0)
             else:
-                normal = collision_point - self._center
+                normal = self._center - collision_point
                 if normal.is_null():
                     return context.geometry.Vector(0, -1)
                 return normal.normalized
@@ -520,7 +520,7 @@ class CircleObject:
             if dist_to_corner < r + 1e-6:
                 normal = context.geometry.Vector(px - cx, py - cy)
                 if normal.is_null():
-                    normal = collision_point - self._center
+                    normal = self._center - collision_point
                 if not normal.is_null():
                     return normal.normalized
         
@@ -538,7 +538,7 @@ class CircleObject:
             elif abs(px - rect.right) < epsilon:
                 return context.geometry.Vector(1, 0)
         
-        normal = collision_point - self._center
+        normal = self._center - collision_point
         if normal.is_null():
             return context.geometry.Vector(0, -1)
         return normal.normalized
