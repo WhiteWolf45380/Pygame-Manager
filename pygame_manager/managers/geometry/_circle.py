@@ -542,3 +542,45 @@ class CircleObject:
         if normal.is_null():
             return context.geometry.Vector(0, -1)
         return normal.normalized
+    
+    def purerect_collision_normal(self, rect: context.geometry.Rect, collision_point: context.geometry.Point=None) -> context.geometry.Vector:
+        """
+        Renvoie le vecteur normal au point de collision avec un rectangle sans border_radius
+        
+        Args:
+            rect (context.geometry.Rect): rectangle avec lequel il y a collision
+            collision_point (context.geometry.Point, optional): point de collision spécifique
+            
+        Returns:
+            context.geometry.Vector: vecteur normal normalisé pointant vers l'extérieur du rectangle
+        """
+        rect = context.geometry._to_rect(rect)
+        return self._purerect_collision_normal(rect, collision_point=collision_point)
+
+    def _purerect_collision_normal(self, rect: context.geometry.Rect, collision_point: context.geometry.Point = None) -> context.geometry.Vector:
+        """Implémentation interne de purerect_collision_normal"""
+        if collision_point is None:
+            collision_point = rect._closest_point(self._center)
+        else:
+            collision_point = context.geometry._to_point(collision_point)
+
+        px, py = collision_point.x, collision_point.y
+        eps = 1e-6
+
+        # Haut / Bas
+        if abs(py - rect.top) < eps:
+            return context.geometry.Vector(0, -1)
+        if abs(py - rect.bottom) < eps:
+            return context.geometry.Vector(0, 1)
+
+        # Gauche / Droite
+        if abs(px - rect.left) < eps:
+            return context.geometry.Vector(-1, 0)
+        if abs(px - rect.right) < eps:
+            return context.geometry.Vector(1, 0)
+
+        # fallback : vecteur vers l’extérieur basé sur la différence centre → collision_point
+        normal = self._center - collision_point
+        if normal.is_null():
+            return context.geometry.Vector(0, -1)
+        return normal.normalized
