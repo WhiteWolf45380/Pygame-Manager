@@ -97,17 +97,15 @@ class PointObject:
         if vector is None: return NotImplemented
         return self._translate(vector)
 
-    def __sub__(self, vector: context.geometry.Vector) -> context.geometry.Point:
-        """Renvoie l'image du point par l'opposé du vecteur"""
-        vector = context.geometry._to_vector(vector, raised=False)
-        if vector is None: return NotImplemented
-        return self.translate(-vector)
-    
-    def __rsub__(self, point: context.geometry.Point) -> context.geometry.Vector:
-        """Renvoie le vecteur point -> Self"""
-        point = context.geometry._to_point(point, raised=False)
-        if point is None: return NotImplemented
-        return self._vector_to(point)
+    def __sub__(self, obj: context.geometry.Vector| context.geometry.Point) -> context.geometry.Point | context.geometry.Vector:
+        """Renvoie l'image du point par l'opposé du vecteur ou le vecteur obj -> Self"""
+        vector = context.geometry._to_vector(obj)
+        if vector is not None: return self.translate(-vector)
+
+        point = context.geometry._to_point(obj, raised=False)
+        if point is not None: self._vector_to(point)
+
+        return NotImplemented
 
     def __pos__(self) -> context.geometry.Point:
         """Copie"""
