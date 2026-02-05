@@ -61,6 +61,10 @@ class UiManager:
         for obj in self._objects:
             if hasattr(obj, 'update') and callable(obj.update):
                 obj.update()
+
+    def draw(self):
+        """Affichage pas frame"""
+        for obj in self._objects:
             if hasattr(obj, 'draw') and callable(obj.draw):
                 obj.draw()
 
