@@ -102,7 +102,6 @@ class Panel:
         """Affichage du panel sur la surface du prédecesseur"""
         if not isinstance(surface, pygame.Surface):
             return
-        self.draw(surface)
         surface.blit(self._surface, self._surface_rect)
 
         if self._border is not None:
