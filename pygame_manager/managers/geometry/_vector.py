@@ -339,6 +339,7 @@ class VectorObject:
     
     def _equalize(self, *objs: Reshapable):
         """Implémentation interne de equalize"""
+        if not any(obj.dim != objs[0].dim for obj in objs): return objs
         objs = {self, *objs}
         dim = max(objs, key=lambda o: o.dim).dim
         for obj in objs:
