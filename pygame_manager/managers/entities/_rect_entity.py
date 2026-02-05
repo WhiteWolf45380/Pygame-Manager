@@ -71,7 +71,7 @@ class RectEntity(Entity):
     
     # ======================================== PROXY GEOMETRIQUE ========================================
     @property
-    def rect(self) -> context.geometry.Rect:
+    def rect(self):
         """Renvoie le rectangle"""
         return self._rect
 

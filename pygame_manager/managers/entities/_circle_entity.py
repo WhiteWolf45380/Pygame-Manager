@@ -53,7 +53,7 @@ class CircleEntity(Entity):
     
     # ======================================== PROXY GEOMETRIQUE ========================================
     @property
-    def circle(self) -> context.geometry.Circle:
+    def circle(self):
         """Renvoie le cercle"""
         return self._circle
 

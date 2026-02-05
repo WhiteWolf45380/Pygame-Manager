@@ -52,7 +52,7 @@ class LineEntity(Entity):
     
     # ======================================== PROXY GEOMETRIQUE ========================================
     @property
-    def line(self) -> context.geometry.Line:
+    def line(self):
         """Renvoie la droite"""
         return self._line
 

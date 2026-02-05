@@ -53,7 +53,7 @@ class SegmentEntity(Entity):
     
     # ======================================== PROXY GEOMETRIQUE ========================================
     @property
-    def segment(self) -> context.geometry.Segment:
+    def segment(self):
         """Renvoie le segment"""
         return self._segment
 
