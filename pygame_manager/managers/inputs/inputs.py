@@ -77,7 +77,7 @@ class InputsManager:
         """Renvoie l'id correspondant au premier latéral de la souris"""
         return 9
 
-    def add_listener(self, event_id: int, callback: callable, args: list=[], kwargs: dict={}, up: bool=False,condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0):
+    def add_listener(self, event_id: int, callback: callable, args: list=[], kwargs: dict={}, up: bool=False, condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0, give_key: bool = False):
         """
         Ajoute un listener sur une entrée utilisateur
 
@@ -89,6 +89,7 @@ class InputsManager:
             once (bool, optional) : n'éxécute l'action qu'une fois
             repeat (bool, optional) : le maintient du boutton répète l'action
             priority (int, optional) : niveau de priorité du listener si plusieurs ont été associés au même événement
+            give_key (bool, optional) : passe la clé de l'entrée au callback
         """
         listener = {
             "callback": callback,
@@ -97,6 +98,7 @@ class InputsManager:
             "once": once,
             "repeat": repeat,
             "priority": priority,
+            "give_key": give_key,
             "args": args,
             "kwargs": kwargs,
         }
@@ -142,8 +144,9 @@ class InputsManager:
         for listener in self._listeners.get(event_id, []):            
             if listener["condition"] and not listener["condition"]() or up != listener["up"]:
                 continue
-
-            listener["callback"](*listener["args"], **listener["kwargs"])
+            
+            if listener["give_key"]: listener["callback"](*listener["args"], **listener["kwargs"], key=event_id)
+            else: listener["callback"](*listener["args"], **listener["kwargs"])
 
             if listener["once"]:
                 to_remove.append(listener)

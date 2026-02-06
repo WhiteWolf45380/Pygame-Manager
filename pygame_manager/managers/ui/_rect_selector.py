@@ -89,6 +89,7 @@ class RectSelectorObject:
         if not isinstance(width, Real): _raise_error(self, '__init__', 'Invalid width argument')
         if not isinstance(height, Real): _raise_error(self, '__init__', 'Invalid height argument')
         if not isinstance(selection_id, str) or not selection_id: _raise_error(self, '__init__', 'Invalid selection_id argument')
+        if selection_id not in context.ui.get_selections(): _raise_error(self, '__init__', f"Selection {selection_id} does not exist")
         if not isinstance(selector_id, str) or not selector_id: _raise_error(self, '__init__', 'Invalid selector_id argument')
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
         filling_color = _to_color(filling_color, method='__init__')
@@ -356,3 +357,13 @@ class RectSelectorObject:
             surface = self._panel.surface
 
         surface.blit(self._surface, self._surface_rect)
+
+    def left_click(self, up: bool = False):
+        """Clic gauche"""
+        if not up:
+            context.ui.select(self._selection_id, self._selector_id)
+            self.callback()
+
+    def right_click(self, up: bool = False):
+        """Clic droit"""
+        pass

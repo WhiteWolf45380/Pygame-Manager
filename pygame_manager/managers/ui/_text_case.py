@@ -177,6 +177,10 @@ class TextCaseObject:
         # paramètres dynamiques
         self._visible = True
         self._focused = False
+    
+    def _init(self):
+        """Initialisation sécurisée"""
+        context.inputs.add_lister(1, self.unfocus(), args=[self], priority=1)
 
     # ======================================== GETTERS ========================================
     @property
@@ -389,3 +393,13 @@ class TextCaseObject:
             surface = self._panel.surface
 
         surface.blit(self._surface, self._surface_rect)
+
+    def left_click(self, up: bool = False):
+        """Clic gauche"""
+        if not up:
+            self.focuse()
+
+    def right_click(self, up: bool = False):
+        """Clic droit"""
+        if not up:
+            self.unfocus()

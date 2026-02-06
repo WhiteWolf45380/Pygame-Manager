@@ -39,6 +39,10 @@ class Engine:
 
         # confirmation
         self._initialized = True
+
+        # initialisation sécurisée des managers
+        self.ui._init()
+
         return self
 
     def run(self, update):

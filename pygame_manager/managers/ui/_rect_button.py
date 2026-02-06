@@ -295,3 +295,12 @@ class RectButtonObject:
             surface = self._panel.surface
         
         surface.blit(self._surface, self._surface_rect)
+
+    def left_click(self, up: bool = False):
+        """Clic gauche"""
+        if self.callback is not None and not up:
+            self.callback()
+
+    def right_click(self, up: bool = False):
+        """Clic droit"""
+        pass
