@@ -166,6 +166,8 @@ class CircleButtonObject:
         self._border_color_hover = border_color_hover if border_color_hover is not None else border_color
 
         # effet de survol
+        self._scale_ratio = 1.0
+        self._last_scale_ratio = 1.0
         self._hover_scale_ratio = float(hover_scale_ratio)
         self._hover_scale_duration = float(hover_scale_duration)
 
@@ -283,7 +285,22 @@ class CircleButtonObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
-        self._surface = self._preloaded["hover" if self.hovered else "default"]
+        # Calcul du ratio de taille
+        target_ratio = self._hover_scale_ratio if self.hovered else 1.0
+        if self._hover_scale_duration > 0:
+            diff = target_ratio - self._scale_ratio
+            step = diff * min(context.time.dt / self._hover_scale_duration, 1.0)
+            self._scale_ratio += step
+        else:
+            self._scale_ratio = target_ratio
+
+        # Redimensionnement
+        surface = self._preloaded["hover" if self.hovered else "default"]
+        surface_rect = surface.get_rect()
+        if self._last_scale_ratio != self._scale_ratio:
+            self._surface = pygame.transform.smoothscale(surface, (surface_rect.width * self._scale_ratio, surface_rect.height * self._scale_ratio))
+        else:
+            self._surface = surface
         self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
 
     def draw(self):
