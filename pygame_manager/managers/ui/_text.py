@@ -67,7 +67,7 @@ class TextObject:
         if not isinstance(antialias, bool): _raise_error(self, '__init__', 'Invalid antialias argument')
         if background is not None: background = _to_color(background)
         if not isinstance(gradient, bool): _raise_error(self, '__init__', 'Invalid gradient argument')
-        gradient_colors = [c for c in [_to_color(co, raised=False) for co in gradient_colors] if c is not None]
+        if gradient_colors is not None: gradient_colors = [c for c in [_to_color(co, raised=False) for co in gradient_colors] if c is not None]
         if not isinstance(gradient_wave, bool): _raise_error(self, '__init__', 'Invalid gradient_wave argument')
         if not isinstance(gradient_wave_speed, float): _raise_error(self, '__init__', 'Invalid gradient_wave_speed argument')
         if not isinstance(gradient_wave_amplitude, float): _raise_error(self, '__init__', 'Invalid gradient_wave_amplitude argument')
