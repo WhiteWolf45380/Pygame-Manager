@@ -120,6 +120,10 @@ class ScreenManager:
         Méthode appelée à la fin du with
         """
         if self._opened:
+            # Affichage final
+            for surface, rect in self._to_draw:
+                self.blit(surface, rect)
+
             # redimensionnement
             if not self._smooth_rendering:                                                                                                      # rendu pixelisé
                 self._screen_resized = pygame.transform.scale(self._screen, (self._screen_resized_width, self._screen_resized_height))
@@ -127,10 +131,6 @@ class ScreenManager:
                 self._screen_resized = pygame.transform.smoothscale(self._screen, (self._screen_resized_width, self._screen_resized_height))
             self._window.fill((0, 0, 0))                                                                                                        # bandes noires
             self._window.blit(self._screen_resized, (self._screen_resized_x_offset, self._screen_resized_y_offset))
-
-            # Affichage final
-            for surface, rect in self._to_draw:
-                self.blit(surface, rect)
 
             # affichage curseur
             context.mouse._draw()

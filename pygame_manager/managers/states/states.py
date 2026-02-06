@@ -72,7 +72,6 @@ class StatesManager:
             self._transition_alpha = (1 - (progress - 0.5) * 2) * 255
             if not self._transition_switched:
                 self._midstep_transition()
-                self._transition_switched = True
         
         if self._transition_timer >= self._transition_duration:
             self._end_transition()
@@ -86,6 +85,7 @@ class StatesManager:
         self._active_states[self._transition_new_layer] = self._transition_new
         self._clear_upper_layers(self._transition_new_layer)
         self._dict[self._transition_new]["state_obj"].on_enter()
+        self._transition_switched = True
     
     def _end_transition(self):
         """Fin de la transition"""
@@ -187,7 +187,7 @@ class StatesManager:
         if self._transition_new_layer in self._active_states: self._transition_old = self._active_states[self._transition_new_layer]
         else: self._transition_old = None
         
-        if not transition:
+        if not transition or len(self.get_active_states()) == 0:
             self._midstep_transition()
             self._end_transition()
             return
