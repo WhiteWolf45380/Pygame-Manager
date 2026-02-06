@@ -24,7 +24,7 @@ class LanguagesManager:
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     # ======================================== LANGUES ========================================
     def load_language(self, lang: str, path: str):
