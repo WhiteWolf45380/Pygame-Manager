@@ -40,7 +40,7 @@ class ScreenManager:
         # fenêtre pygame
         self._window_width = window[0]
         self._window_height = window[1]
-        self._window = pygame.display.set_mode((self._window_width, self._window_height), pygame.RESIZABLE)
+        self._window = pygame.display.set_mode((self._window_width, self._window_height), pygame.RESIZABLE, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=False)
         self._window_resizable = True                                                                              # possibilité de redimensionner la fenêtre
 
         # plein écran
@@ -282,7 +282,7 @@ class ScreenManager:
         self._window_resizable = value
         if self._fullscreen:
             return
-        self._window = pygame.display.set_mode((self._window_width, self._window_height), pygame.RESIZABLE if self._window_resizable else 0)
+        self._window = pygame.display.set_mode((self._window_width, self._window_height), pygame.RESIZABLE if self._window_resizable else 0, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
 
     def set_smooth_rendering(self, value: bool):
         """
@@ -322,7 +322,7 @@ class ScreenManager:
         size = (0, 0) if self._fullscreen else (self._window_width, self._window_height)
         behavior = pygame.FULLSCREEN if self._fullscreen else pygame.RESIZABLE
         vsync = int(self._vsync)
-        self._window = pygame.display.set_mode(size, behavior, vsync=vsync)
+        self._window = pygame.display.set_mode(size, behavior, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=vsync)
     
     def close(self):
         """
@@ -347,7 +347,7 @@ class ScreenManager:
             self._raise_error('resize_window', 'resizable parameter must be a boolean')
         self._window_resizable = resizable
         os.environ['SDL_VIDEO_CENTERED'] = '1'                                                                              # recentrage de la fenêtre
-        self._window = pygame.display.set_mode(size, pygame.RESIZABLE if self._window_resizable else 0)
+        self._window = pygame.display.set_mode(size, pygame.RESIZABLE if self._window_resizable else 0, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
         self._update_screen()
    
     def toggle_fullscreen(self, fullscreen: bool=None):
@@ -364,10 +364,10 @@ class ScreenManager:
         
         if self._fullscreen:                                                                                               # passage en plein écran
             self._windowed_width, self._windowed_height = self._window_width, self._window_height                       # sauvegarde des dimensions de la fenêtre
-            self._window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            self._window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
         else:                                                                                                               # passage en mode fenêtré
             os.environ['SDL_VIDEO_CENTERED'] = '1'                                                                          # recentrage de la fenêtre
-            self._window = pygame.display.set_mode((self._windowed_width, self._windowed_height), pygame.RESIZABLE if self._window_resizable else 0)
+            self._window = pygame.display.set_mode((self._windowed_width, self._windowed_height), pygame.RESIZABLE if self._window_resizable else 0, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
 
         self._update_screen()                                                                                               # recalcul des dimensions
 
