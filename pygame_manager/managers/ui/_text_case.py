@@ -254,12 +254,12 @@ class TextCaseObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que la zone soit survolée"""
-        return context.ui.hovered_object == self
+        return context.ui.get_hovered() == self
 
     @property
     def hovered(self) -> bool:
         """Vérifie que la zone soit survolée"""
-        return context.ui.hovered_object == self
+        return context.ui.get_hovered() == self
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur la zone"""

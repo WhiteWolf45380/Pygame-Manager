@@ -103,6 +103,10 @@ class UiManager:
         for obj in self._objects:
             if hasattr(obj, 'draw') and callable(obj.draw):
                 obj.draw()
+    
+    def get_hovered(self) -> object | None:
+        """Renvoie l'objet survolé"""
+        return self._hovered_object
 
     # Selectors
     def add_selection(self, id_selection: str, limit=1):

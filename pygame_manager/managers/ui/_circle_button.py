@@ -228,7 +228,7 @@ class CircleButtonObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que le bouton soit survolé"""
-        return context.ui.hovered_object == self
+        return context.ui.get_hovered() == self
     
     @property
     def hovered(self) -> bool:
