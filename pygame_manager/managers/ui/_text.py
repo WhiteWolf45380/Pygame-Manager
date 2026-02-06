@@ -18,6 +18,8 @@ class TextObject:
             font_color: pygame.Color = (0, 0, 0, 255),
             antialias: bool = True,
 
+            background: pygame.Color = None,
+
             anchor: str = "topleft",
 
             auto_draw: bool = True,
@@ -51,6 +53,7 @@ class TextObject:
         if not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
         font_color = _to_color(font_color, method='__init__')
         if not isinstance(antialias, bool): _raise_error(self, '__init__', 'Invalid antialias argument')
+        if background is not None: background = _to_color(background)
         if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(auto_draw, bool): _raise_error(self, '__init__', 'Invalid auto_draw argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
@@ -79,6 +82,8 @@ class TextObject:
                 self._font = pygame.font.Font(None, font_size)
         else:
             self._font = font
+
+        self._background = background
 
         # surface
         self._surface = None
@@ -149,7 +154,7 @@ class TextObject:
     # ======================================== RENDU ========================================
     def _render(self):
         """Génère la surface du texte"""
-        self._surface = self._font.render(self._text, self._antialias, self._font_color)
+        self._surface = self._font.render(self._text, self._antialias, self._font_color, self._background)
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
     def set_position(self, x: Real, y: Real):
