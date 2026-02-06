@@ -56,7 +56,7 @@ class MouseManager:
                 context.screen._window.blit(self._icon_scaled, (mx, my))
 
     # ======================================== GETTERS ========================================
-    def get_mouse_pos(self) -> tuple[float, float]:
+    def get_pos(self) -> tuple[float, float]:
         """
         Renvoie les coordonnées du curseur
         """
@@ -76,20 +76,20 @@ class MouseManager:
         """
         return self._y
     
-    def get_mouse_grab(self) -> bool:
+    def get_grab(self) -> bool:
         """
         Vérifie si le maintient du curseur est activé
         """
         return pygame.event.get_grab()
     
-    def get_mouse_visible(self) -> bool:
+    def get_visible(self) -> bool:
         """
         Vérifie la visibilité du curseur
         """
         return self._visible
     
     # ======================================== SETTERS ========================================
-    def set_mouse_icon(self, icon: pygame.Surface | None, centered: bool=False):
+    def set_icon(self, icon: pygame.Surface | None, centered: bool=False):
         """
         Fixe le logo de la souris
 
@@ -102,14 +102,14 @@ class MouseManager:
             pygame.mouse.set_visible(self._visible)
             return
         if not isinstance(icon, pygame.Surface):
-            self._raise_error('set_mouse_icon', 'Mouse icon must be a Surface object')
+            self._raise_error('set_icon', 'Mouse icon must be a Surface object')
         if not isinstance(centered, bool):
-            self._raise_error('set_mouse_icon', 'Centered parameter must be a boolean')
+            self._raise_error('set_icon', 'Centered parameter must be a boolean')
         self._icon = icon
         pygame.mouse.set_visible(False)
         self._icon_centered = centered
 
-    def set_mouse_grab(self, value: bool):
+    def set_grab(self, value: bool):
         """
         Fixe le maintient du curseur dans la fenêtre
 
@@ -117,10 +117,10 @@ class MouseManager:
             value (bool) : maintient ou non du curseur
         """
         if not isinstance(value, bool):
-            self._raise_error('set_mouse_grab', 'Value type must be boolean')
+            self._raise_error('set_grab', 'Value type must be boolean')
         pygame.event.set_grab(value)
     
-    def set_mouse_visible(self, value: bool):
+    def set_visible(self, value: bool):
         """
         Fixe la visibilité du curseur
 
@@ -128,7 +128,7 @@ class MouseManager:
             value (bool) : curseur visible ou non
         """
         if not isinstance(value, bool):
-            self._raise_error('set_mouse_visible', 'Value type must be boolean')
+            self._raise_error('set_visible', 'Value type must be boolean')
         self._visible = value
         pygame.mouse.set_visible(value and self._icon is None)
 

@@ -183,7 +183,7 @@ class Panel:
     @property
     def mouse_pos(self) -> tuple[float, float]:
         """Renvoie la position relative de la souris"""
-        return self.get_relative(context.screen.get_mouse_pos())
+        return self.get_relative(context.mouse.get_pos())
     
     @property
     def mouse_x(self) -> float:
