@@ -1,6 +1,6 @@
 # ======================================== IMPORTS ========================================
 from ._core import *
-import math
+import numpy as np
 
 # ======================================== OBJET ========================================
 class TextObject:
@@ -244,36 +244,43 @@ class TextObject:
         surface.blit(self._surface, self._rect)
     
     def update_gradient(self):
-        """Actualise le dégradé animé"""
+        """Dégradé animé type 'cycles', optimisé avec numpy, avec amplitude et direction"""
         if not self._gradient or self._gradient_color is None:
             return
+
+        self._gradient_fluctuation_timer += context.time.dt
 
         text_surf = self._font.render(self._text, True, (255, 255, 255))
         w, h = text_surf.get_size()
         gradient = pygame.Surface((w, h), pygame.SRCALPHA)
 
-        c1 = self._font_color
-        c2 = self._gradient_color
+        c1 = np.array(self._font_color[:3], dtype=np.float32)
+        c2 = np.array(self._gradient_color[:3], dtype=np.float32)
+        amp = self._gradient_fluctuation_amplitude
         timer = self._gradient_fluctuation_timer * self._gradient_fluctuation_speed
 
-        for y in range(h):
-            for x in range(w):
-                if self._gradient_direction == "horizontal":
-                    pos = x / w
-                elif self._gradient_direction == "vertical":
-                    pos = y / h
-                elif self._gradient_direction == "diagonal":
-                    pos = (x / w + y / h) / 2
-                else:
-                    pos = x / w
+        if self._gradient_direction == "horizontal":
+            pos = np.linspace(0, 1, w, dtype=np.float32).reshape((w, 1))
+            pos = np.tile(pos, (1, h))
+        elif self._gradient_direction == "vertical":
+            pos = np.linspace(0, 1, h, dtype=np.float32).reshape((1, h))
+            pos = np.tile(pos, (w, 1))
+        elif self._gradient_direction == "diagonal":
+            xv = np.linspace(0, 1, w, dtype=np.float32).reshape((w, 1))
+            yv = np.linspace(0, 1, h, dtype=np.float32).reshape((1, h))
+            pos = (np.tile(xv, (1, h)) + np.tile(yv, (w, 1))) / 2
+        else:
+            pos = np.linspace(0, 1, w, dtype=np.float32).reshape((w, 1))
+            pos = np.tile(pos, (1, h))
 
-                wave = 0.5 + self._gradient_fluctuation_amplitude * math.sin(pos * math.pi * 2 + timer)
+        wave = 0.5 + amp * np.sin(pos * np.pi * 2 + timer)
 
-                r = int(c1[0] * (1 - wave) + c2[0] * wave)
-                g = int(c1[1] * (1 - wave) + c2[1] * wave)
-                b = int(c1[2] * (1 - wave) + c2[2] * wave)
+        array = np.zeros((w, h, 3), dtype=np.uint8)
+        array[..., 0] = (c1[0] * (1 - wave) + c2[0] * wave).astype(np.uint8)
+        array[..., 1] = (c1[1] * (1 - wave) + c2[1] * wave).astype(np.uint8)
+        array[..., 2] = (c1[2] * (1 - wave) + c2[2] * wave).astype(np.uint8)
 
-                gradient.set_at((x, y), (r, g, b, 255))
+        pygame.surfarray.blit_array(gradient, array)
 
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
