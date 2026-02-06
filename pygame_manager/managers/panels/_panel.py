@@ -79,6 +79,10 @@ class Panel:
         # auto-registration
         context.panels.register(self)
 
+    def __str__(self):
+        """Renvoie le nom du panel"""
+        return self._name
+
     # ======================================== CALLBACKS ========================================
     def on_enter(self):
         """Appelé quand le panel devient actif (à override)"""

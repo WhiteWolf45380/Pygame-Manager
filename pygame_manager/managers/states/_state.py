@@ -32,6 +32,10 @@ class State:
         # auto-registration
         context.states.register(self._name, self, layer=self._layer)
     
+    def __str__(self):
+        """Renvoie le nom de l'état"""
+        return self._name
+    
     # ======================================== CALLBACKS ========================================
     def on_enter(self):
         """Appelé quand le state devient actif"""

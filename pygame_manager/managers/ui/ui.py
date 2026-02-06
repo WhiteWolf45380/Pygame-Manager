@@ -68,7 +68,7 @@ class UiManager:
         hovered_panel = context.panels.hovered
         self._hovered_object = None
         for obj in reversed(self._objects):
-            if obj.panel == hovered_panel and obj.collidemouse():
+            if str(obj.panel) == str(hovered_panel) and obj.collidemouse():
                 self._hovered_object = obj
                 return
 
@@ -105,6 +105,11 @@ class UiManager:
                 obj.draw()
     
     def get_hovered(self) -> object | None:
+        """Renvoie l'objet survolé"""
+        return self._hovered_object
+    
+    @property
+    def hovered(self) -> object | None:
         """Renvoie l'objet survolé"""
         return self._hovered_object
 
