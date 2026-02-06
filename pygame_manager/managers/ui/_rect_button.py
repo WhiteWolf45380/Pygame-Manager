@@ -112,7 +112,7 @@ class RectButtonObject:
         self._filling = filling
         self._filling_hover = filling_hover
         self._filling_color = filling_color
-        self._filling_color_hover = filling_color_hover
+        self._filling_color_hover = filling_color_hover if filling_color_hover is not None else filling_color
 
         # image
         self._icon = None
