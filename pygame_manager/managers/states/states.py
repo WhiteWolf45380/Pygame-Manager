@@ -1,5 +1,5 @@
 # ======================================== IMPORTS ========================================
-from _core import _raise_error, context
+from ._core import _raise_error, context
 from ._state import State, pygame
 from typing import Optional
 
