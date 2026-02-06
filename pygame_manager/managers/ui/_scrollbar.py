@@ -16,6 +16,7 @@ class ScrollBarObject:
             y: Real = -1,
             length: Real = -1,
             thickness: Real = 20,
+            anchor: str = "topleft",
 
             orientation: str = "vertical",
 
@@ -88,7 +89,8 @@ class ScrollBarObject:
             width = int(length)
             height = int(thickness)
 
-        self._rect = pygame.Rect(x, y, width, height)
+        self._rect = pygame.Rect(0, 0, width, height)
+        setattr(self._rect, anchor, (x, y))
 
         # couleurs
         self._track_color = track_color

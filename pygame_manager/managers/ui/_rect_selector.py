@@ -16,6 +16,7 @@ class RectSelectorObject:
             y: Real = -1,
             width: Real = -1,
             height: Real = -1,
+            anchor: str = "topleft",
 
             selection_id: str = "",
             selector_id: str = "",
@@ -88,6 +89,7 @@ class RectSelectorObject:
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
         if not isinstance(width, Real): _raise_error(self, '__init__', 'Invalid width argument')
         if not isinstance(height, Real): _raise_error(self, '__init__', 'Invalid height argument')
+        if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(selection_id, str) or not selection_id: _raise_error(self, '__init__', 'Invalid selection_id argument')
         if selection_id not in context.ui.get_selections(): _raise_error(self, '__init__', f"Selection {selection_id} does not exist")
         if not isinstance(selector_id, str) or not selector_id: _raise_error(self, '__init__', 'Invalid selector_id argument')
@@ -133,6 +135,7 @@ class RectSelectorObject:
         height = min(1080, max(5, height))
         self._rect = pygame.Rect(x, y, width, height)
         self._local_rect = pygame.Rect(0, 0, width, height)
+        setattr(self._rect, anchor, (x, y))
 
         # background
         self._filling = filling

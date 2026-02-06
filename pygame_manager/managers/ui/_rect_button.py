@@ -14,6 +14,7 @@ class RectButtonObject:
             y: Real = -1,
             width: Real = -1, 
             height: Real = -1,
+            anchor: str = "topleft",
 
             filling: bool = True,
             filling_hover: bool = True,
@@ -76,6 +77,7 @@ class RectButtonObject:
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
         if not isinstance(width, Real): _raise_error(self, '__init__', 'Invalid width argument')
         if not isinstance(height, Real): _raise_error(self, '__init__', 'Invalid height argument')
+        if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
         if not isinstance(filling_hover, bool): _raise_error(self, '__init__', 'Invalid filling_hover argument')
         filling_color = _to_color(filling_color, method='__init__')
@@ -106,7 +108,8 @@ class RectButtonObject:
         # position et taille
         width = min(1920, max(5, width))
         height = min(1080, max(5, height))
-        self._rect = pygame.Rect(x, y, width, height)
+        self._rect = pygame.Rect(0, 0, width, height)
+        setattr(self._rect, anchor, (x, y))
 
         # background
         self._filling = filling
