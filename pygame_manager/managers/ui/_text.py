@@ -21,7 +21,7 @@ class TextObject:
             antialias: bool = True,
 
             gradient: bool = False,
-            gradient_colors: list[pygame.Color] | None = None,
+            gradient_color: pygame.Color | None = None,
             gradient_wave: bool = False,
             gradient_wave_speed: float = 2.0,
             gradient_wave_amplitude: float = 0.3,
@@ -46,7 +46,7 @@ class TextObject:
             antialias (bool, optional) : antialiasing du texte
 
             gradient (bool, optional) : dégradé
-            gradient_colors (list[Color], optional) : la liste des couleurs du dégradé
+            gradient_colors (Color, optional) : la liste des couleurs du dégradé
             gradient_wave (bool, optional) : fluctuation du dégradé
 
             background (Color, optional) : couleur de fond
@@ -67,7 +67,7 @@ class TextObject:
         if not isinstance(antialias, bool): _raise_error(self, '__init__', 'Invalid antialias argument')
         if background is not None: background = _to_color(background)
         if not isinstance(gradient, bool): _raise_error(self, '__init__', 'Invalid gradient argument')
-        if gradient_colors is not None: gradient_colors = [c for c in [_to_color(co, raised=False) for co in gradient_colors] if c is not None]
+        gradient_color = _to_color(gradient_color, raised=False)
         if not isinstance(gradient_wave, bool): _raise_error(self, '__init__', 'Invalid gradient_wave argument')
         if not isinstance(gradient_wave_speed, float): _raise_error(self, '__init__', 'Invalid gradient_wave_speed argument')
         if not isinstance(gradient_wave_amplitude, float): _raise_error(self, '__init__', 'Invalid gradient_wave_amplitude argument')
@@ -101,8 +101,8 @@ class TextObject:
         self._background = background
 
         # dégradé
-        self._gradient = gradient if gradient_colors else False
-        self._gradient_colors = gradient_colors
+        self._gradient = gradient if gradient_color is not None else False
+        self._gradient_color = gradient_color
         self._gradient_wave = gradient_wave     
         self._gradient_wave_speed =gradient_wave_speed
         self._gradient_wave_amplitude = gradient_wave_amplitude
@@ -241,22 +241,26 @@ class TextObject:
         surface.blit(self._surface, self._rect)
     
     def update_gradient(self):
-        """Actalise la fluctuation du dégradé"""
-        if not self._gradient or not self._gradient_wave:
+        """Actualise la fluctuation horizontale du dégradé"""
+        if not self._gradient or not self._gradient_wave or self._gradient_color is None:
             return
 
         text_surf = self._font.render(self._text, True, (255, 255, 255))
         w, h = text_surf.get_size()
         gradient = pygame.Surface((w, h), pygame.SRCALPHA)
-        c1, c2 = self._gradient_colors
+
+        c1 = self._font_color
+        c2 = self._gradient_color
 
         self._gradient_wave_timer += context.time.dt
-        for y in range(h):
-            wave = (math.sin(self._gradient_wave_timer * self._gradient_wave_speed + y / h * math.pi * 2) * self._gradient_wave_amplitude + 0.5)  # 0..1 fluctuation
+
+        for x in range(w):
+            wave = (math.sin(self._gradient_wave_timer * self._gradient_wave_speed + x / w * math.pi * 4) 
+                    * self._gradient_wave_amplitude + 0.5)
             r = int(c1[0] + (c2[0] - c1[0]) * wave)
             g = int(c1[1] + (c2[1] - c1[1]) * wave)
             b = int(c1[2] + (c2[2] - c1[2]) * wave)
-            pygame.draw.line(gradient, (r, g, b), (0, y), (w, y))
+            pygame.draw.line(gradient, (r, g, b), (x, 0), (x, h))
 
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         self._surface = gradient
