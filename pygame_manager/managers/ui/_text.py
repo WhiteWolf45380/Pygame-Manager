@@ -46,7 +46,7 @@ class TextObject:
             antialias (bool, optional) : antialiasing du texte
 
             gradient (bool, optional) : dégradé
-            gradient_colors (Color, optional) : la liste des couleurs du dégradé
+            gradient_color (Color, optional) : la liste des couleurs du dégradé
             gradient_wave (bool, optional) : fluctuation du dégradé
 
             background (Color, optional) : couleur de fond
@@ -136,7 +136,7 @@ class TextObject:
         w, h = text_surf.get_size()
         gradient = pygame.Surface((w, h), pygame.SRCALPHA)
 
-        c1, c2 = self._gradient_colors
+        c1, c2 = self._font_color, self._gradient_color
         for y in range(h):
             ratio = y / h
             r = int(c1[0] + (c2[0] - c1[0]) * ratio)
@@ -144,7 +144,6 @@ class TextObject:
             b = int(c1[2] + (c2[2] - c1[2]) * ratio)
             pygame.draw.line(gradient, (r, g, b), (0, y), (w, y))
 
-        # appliquer l'alpha du texte
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         self._surface = gradient
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
