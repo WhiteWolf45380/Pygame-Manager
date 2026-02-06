@@ -70,7 +70,8 @@ class OverlayObject:
         self._target_progress = 1.0 if collapsed else 0.0
 
         # panel maître
-        self._panel = panel if panel in context.panels else None
+        if isinstance(panel, str): self._panel = context.panels[panel]
+        else: self._panel = panel if panel in context.panels else None
         self._zorder = zorder
 
         # géométrie

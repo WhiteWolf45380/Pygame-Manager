@@ -44,7 +44,8 @@ class TextCaseObject:
             padding: int = 5,
 
             callback: callable = lambda _: None,
-            panel: object = None
+            panel: object = None,
+            zorder: int = 0,
         ):
         """
         Args:
@@ -109,6 +110,7 @@ class TextCaseObject:
         if not isinstance(padding, int) or padding < 0: _raise_error(self, '__init__', 'Invalid padding argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
+        if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
         context.ui._append(self)
@@ -172,7 +174,9 @@ class TextCaseObject:
         self._callback = callback
 
         # panel maître
-        self._panel = panel if panel in context.panels else None
+        if isinstance(panel, str): self._panel = context.panels[panel]
+        else: self._panel = panel if panel in context.panels else None
+        self._zorder = zorder
 
         # paramètres dynamiques
         self._visible = True
@@ -192,6 +196,11 @@ class TextCaseObject:
     def panel(self) -> object:
         """Renvoie le panel maître"""
         return self._panel
+    
+    @property
+    def zorder(self) -> int:
+        """Renvoie la coordonnée z"""
+        return self._zorder
 
     @property
     def visible(self) -> bool:

@@ -174,7 +174,8 @@ class RectButtonObject:
         self._callback = callback
 
         # panel maître
-        self._panel = panel if panel in context.panels else None
+        if isinstance(panel, str): self._panel = context.panels[panel]
+        else: self._panel = panel if panel in context.panels else None
         self._zorder = zorder
 
         # préchargement
