@@ -19,6 +19,9 @@ class ScreenManager:
         permet un transformation automatique de l'écran virtuel vers la fenêtre réel
     """
     def __init__(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
+        # buffer
+        self._to_draw = []
+
         # initialisation
         if not pygame.get_init():
             pygame.init()
@@ -108,6 +111,7 @@ class ScreenManager:
         """
         Méthode appelée au début du with
         """
+        self._to_draw = []
         if self._opened:
             self._update_screen()
 
@@ -123,6 +127,10 @@ class ScreenManager:
                 self._screen_resized = pygame.transform.smoothscale(self._screen, (self._screen_resized_width, self._screen_resized_height))
             self._window.fill((0, 0, 0))                                                                                                        # bandes noires
             self._window.blit(self._screen_resized, (self._screen_resized_x_offset, self._screen_resized_y_offset))
+
+            # Affichage final
+            for surface, rect in self._to_draw:
+                self.blit(surface, rect)
 
             # affichage curseur
             context.mouse._draw()
@@ -390,6 +398,14 @@ class ScreenManager:
             color (tuple[int, int, int]) : couleur de remplissage
         """
         self._screen.fill(color)
+    
+    def blit_last(self, surface: pygame.Surface, rect: pygame.Rect, end_priority: int=0):
+        """Affichage ultime"""
+        if not isinstance(surface, pygame.Surface):
+            self._raise_error("blit_last", "Invalid surface argument")
+        if not isinstance(rect, (pygame.Rect, tuple)):
+            self._raise_error("blit_last", "Invalid rect argument")
+        self._to_draw.insert(end_priority, (surface, rect))
 
     def window_to_screen(self, pos: tuple[float, float]) -> tuple[float, float]:
         """
