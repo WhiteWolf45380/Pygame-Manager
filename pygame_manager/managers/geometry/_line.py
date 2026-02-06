@@ -12,7 +12,7 @@ class LineObject:
         # représentation paramétrique
         self._origin = context.geometry._to_point(point, copy=True)
         self._vector = context.geometry._to_vector(vector, copy=True)
-        if vector.is_null():
+        if self._vector.is_null():
             _raise_error(self, "__init__", "direction vector cannot be null vector")
         self._origin.equalize(self._vector)
     
