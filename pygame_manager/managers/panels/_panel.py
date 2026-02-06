@@ -69,8 +69,8 @@ class Panel:
         if self._border_width != 0:
             x = self._surface_rect.left - (self._border_width if self._border_around else 0)
             y = self._surface_rect.top - (self._border_width if self._border_around else 0)
-            width = self._surface_rect.width + (self._border_width if self._border_around else 0)
-            height = self._surface_rect.height + (self._border_width if self._border_around else 0)
+            width = self._surface_rect.width + 2 * (self._border_width if self._border_around else 0)
+            height = self._surface_rect.height + 2 * (self._border_width if self._border_around else 0)
             self._border = pygame.Rect(x, y, width, height)
 
         # survol
