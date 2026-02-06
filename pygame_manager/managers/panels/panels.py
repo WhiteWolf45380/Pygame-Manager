@@ -68,12 +68,12 @@ class PanelsManager:
                 obj.on_exit()
                 self._active_panels.remove(panel_name)
     
-    def _update_hovered(self):
+    def _update_hover(self):
         """Renvoie le panel survolé par la souris"""
         for name in reversed(self._active_panels):
             obj = self._dict[name]["object"]
-            if not hasattr(obj, 'surface_rect'): continue
-            if not getattr(obj, "hoverable", True): continue
+            if not hasattr(obj, '_surface_rect'): continue
+            if not getattr(obj, "_hoverable", True): continue
             if any(p not in self._active_panels for p in self._get_chain(name)): continue
             if 0 <= obj.mouse_x <= obj.surface_rect.width and 0 <= obj.mouse_y <= obj.surface_rect.height:
                 self._hovered = name
@@ -337,7 +337,7 @@ class PanelsManager:
         """
         Exécute update de tous les panels actifs
         """
-        self._update_hovered()
+        self._update_hover()
         for name in self._active_panels:
             obj = self._dict[name]["object"]
             if hasattr(obj, 'update'):
