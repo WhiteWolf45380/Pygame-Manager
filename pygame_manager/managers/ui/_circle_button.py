@@ -15,6 +15,7 @@ class CircleButtonObject:
             radius: Real = -1,
 
             filling: bool = True,
+            filling_hover: bool = True,
             filling_color: pygame.Color = (255, 255, 255, 255),
             filling_color_hover: pygame.Color = None,
 
@@ -45,6 +46,7 @@ class CircleButtonObject:
             radius (Real) : rayon du cercle
 
             filling (bool, optional) : remplissage
+            filling_hover (bool, optional) : remplissage lors du survol
             filling_color (Color, optional) : couleur de fond
             filling_color_hover (Color, optional) : couleur de fond lors du survol
             icon (Surface, optional) : image de fond
@@ -59,6 +61,7 @@ class CircleButtonObject:
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
+            border_color_hover (Color, optional) : couleur de la bordure lors du survol
 
             hover_scale_ratio (float, optional) : facteur de redimensionnement lors du survol
             hover_scale_duration (float, optional) : durée de redimensionnement (en secondes)
@@ -71,6 +74,7 @@ class CircleButtonObject:
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
         if not isinstance(radius, Real) or radius <= 0: _raise_error(self, '__init__', 'Invalid radius argument')
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
+        if not isinstance(filling_hover, bool): _raise_error(self, '__init__', 'Invalid filling_hover argument')
         filling_color = _to_color(filling_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)
         if icon is not None and not isinstance(icon, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon argument')
@@ -105,6 +109,7 @@ class CircleButtonObject:
 
         # background
         self._filling = filling
+        self._filling_hover = filling_hover
         self._filling_color = filling_color
         self._filling_color_hover = filling_color_hover if filling_color_hover is not None else filling_color
 
@@ -258,13 +263,14 @@ class CircleButtonObject:
         if self._text_blit:
             surface.blit(self._text_object, self._text_object_rect)
         if self._border_width > 0:
-            pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
+            pygame.draw.circle(surface, self._border_color_hover, self._local_center, self._radius, self._border_width)
         return surface
 
     def load_hover(self) -> pygame.Surface:
         """Génère la surface survolée du bouton"""
-        surface = self._preloaded["default"].copy()
-        if self._filling_color_hover is not None:
+        diameter = self._radius * 2
+        surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+        if self._filling_hover:
             pygame.draw.circle(surface, self._filling_color_hover, self._local_center, self._radius)
         if self._icon_hover is not None:
             surface.blit(self._icon_hover, self._icon_hover_rect)

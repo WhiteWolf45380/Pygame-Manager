@@ -65,6 +65,7 @@ class RectButtonObject:
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
+            border_color_hover (Color, optional) : couleur de la bordure lors du survol
             border_radius (int, optional) : rayon d'arrondissement des coins
 
             hover_scale_ratio (float, optional) : facteur de redimensionnement lors du survol
@@ -262,28 +263,30 @@ class RectButtonObject:
     # ======================================== DESSIN DU BOUTON ========================================
     def load_default(self) -> dict[pygame.Surface]:
         """Renvoie la surface par défaut du bouton'"""
-        default = pygame.Surface((self._rect.width, self._rect.height))
+        default = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+        rect = default.get_rect()
         if self._filling:
-            pygame.draw.rect(default, self._filling_color, self._rect, border_radius=self._border_radius)
+            pygame.draw.rect(default, self._filling_color, rect, border_radius=self._border_radius)
         if self._icon is not None:
-            default.blit(self._icon, self._icon_rect)
+            default.blit(self._icon, self._icon.get_rect(center=rect.center))
         if self._text_blit:
-            default.blit(self._text_object, self._text_object_rect)
+            default.blit(self._text_object, self._text_object.get_rect(center=rect.center))
         if self._border_width > 0:
-            pygame.draw.rect(default, self._border_color, self._rect, border_radius=self._border_radius)
+            pygame.draw.rect(default, self._border_color, rect, self._border_width, border_radius=self._border_radius)
         return default
 
     def load_hover(self) -> dict[pygame.Surface]:
         """Renvoie la surface survolée du bouton'"""
-        hover = pygame.Surface((self._rect.width, self._rect.height))
+        hover = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+        rect = hover.get_rect()
         if self._filling_hover:
-            pygame.draw.rect(hover, self._filling_color_hover, self._rect, border_radius=self._border_radius)
+            pygame.draw.rect(hover, self._filling_color_hover, rect, border_radius=self._border_radius)
         if self._icon_hover is not None:
-            hover.blit(self._icon_hover, self._icon_hover_rect)
+            hover.blit(self._icon_hover, self._icon_hover.get_rect(center=rect.center))
         if self._text_blit:
-            hover.blit(self._text_object_hover, self._text_object_rect)
+            hover.blit(self._text_object_hover, self._text_object.get_rect(center=rect.center))
         if self._border_width > 0:
-            pygame.draw.rect(hover, self._border_color_hover, self._rect, border_radius=self._border_radius)
+            pygame.draw.rect(hover, self._border_color_hover, rect, self._border_width, border_radius=self._border_radius)
         return hover
 
     # ======================================== METHODES DYNAMIQUES ========================================
