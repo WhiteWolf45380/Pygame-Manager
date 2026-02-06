@@ -75,7 +75,7 @@ class PanelsManager:
             if not hasattr(obj, '_surface_rect'): continue
             if not getattr(obj, "_hoverable", True): continue
             if any(p not in self._active_panels for p in self._get_chain(name)): continue
-            if 0 <= obj.mouse_x <= obj.surface_rect.width and 0 <= obj.mouse_y <= obj.surface_rect.height:
+            if 0 <= obj.mouse_x <= obj._surface_rect.width and 0 <= obj.mouse_y <= obj._surface_rect.height:
                 self._hovered = name
                 return
         self._hovered = None
