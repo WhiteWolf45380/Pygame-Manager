@@ -487,57 +487,100 @@ class CircleObject:
         else:
             collision_point = context.geometry._to_point(collision_point)
         
+        # Limiter le border_radius à la moitié de la plus petite dimension
         r = rect.border_radius if rect.border_radius > 0 else 0
+        max_r = min(rect.width, rect.height) / 2
+        r = min(r, max_r)
+        
         px, py = collision_point.x, collision_point.y
         
+        # Cas sans border_radius
         if r <= 0:
             epsilon = 1e-6
             
-            if abs(py - rect.top) < epsilon:
+            # Détection des bords avec tolérance
+            if abs(py - rect.top) < epsilon and rect.left <= px <= rect.right:
                 return context.geometry.Vector(0, -1)
-            elif abs(py - rect.bottom) < epsilon:
+            elif abs(py - rect.bottom) < epsilon and rect.left <= px <= rect.right:
                 return context.geometry.Vector(0, 1)
-            elif abs(px - rect.left) < epsilon:
+            elif abs(px - rect.left) < epsilon and rect.top <= py <= rect.bottom:
                 return context.geometry.Vector(-1, 0)
-            elif abs(px - rect.right) < epsilon:
+            elif abs(px - rect.right) < epsilon and rect.top <= py <= rect.bottom:
                 return context.geometry.Vector(1, 0)
             else:
+                # Point à l'intérieur ou cas dégénéré
                 normal = self._center - collision_point
                 if normal.is_null():
                     return context.geometry.Vector(0, -1)
                 return normal.normalized
         
+        # Cas avec border_radius
+        # Définir les centres des arcs de cercle (coins arrondis)
         corners = [
-            (rect.left + r, rect.top + r),
-            (rect.right - r, rect.top + r),
-            (rect.left + r, rect.bottom - r),
-            (rect.right - r, rect.bottom - r),
+            (rect.left + r, rect.top + r, "top-left"),
+            (rect.right - r, rect.top + r, "top-right"),
+            (rect.left + r, rect.bottom - r, "bottom-left"),
+            (rect.right - r, rect.bottom - r, "bottom-right"),
         ]
-        
-        for cx, cy in corners:
-            dist_to_corner = math.sqrt((px - cx)**2 + (py - cy)**2)
-            
-            if dist_to_corner < r + 1e-6:
-                normal = context.geometry.Vector(px - cx, py - cy)
-                if normal.is_null():
-                    normal = self._center - collision_point
-                if not normal.is_null():
-                    return normal.normalized
         
         epsilon = 1e-6
         
-        if rect.left + r <= px <= rect.right - r:
-            if abs(py - rect.top) < epsilon:
-                return context.geometry.Vector(0, -1)
-            elif abs(py - rect.bottom) < epsilon:
-                return context.geometry.Vector(0, 1)
+        # Vérifier si le point est dans une zone de coin arrondi
+        for cx, cy, corner_name in corners:
+            dx = px - cx
+            dy = py - cy
+            dist_to_corner = math.sqrt(dx**2 + dy**2)
+            
+            # Déterminer si on est dans la zone du coin
+            in_corner_zone = False
+            if corner_name == "top-left":
+                in_corner_zone = px < rect.left + r and py < rect.top + r
+            elif corner_name == "top-right":
+                in_corner_zone = px > rect.right - r and py < rect.top + r
+            elif corner_name == "bottom-left":
+                in_corner_zone = px < rect.left + r and py > rect.bottom - r
+            elif corner_name == "bottom-right":
+                in_corner_zone = px > rect.right - r and py > rect.bottom - r
+            
+            if in_corner_zone:
+                # On est dans la zone du coin arrondi
+                if dist_to_corner > epsilon:
+                    # Normale = vecteur du centre du cercle vers le point
+                    normal = context.geometry.Vector(dx, dy).normalized
+                    return normal
+                else:
+                    # Point exactement sur le centre du coin (rare)
+                    normal = self._center - collision_point
+                    if not normal.is_null():
+                        return normal.normalized
+                    # Fallback basé sur quel coin
+                    if corner_name == "top-left":
+                        return context.geometry.Vector(-1, -1).normalized
+                    elif corner_name == "top-right":
+                        return context.geometry.Vector(1, -1).normalized
+                    elif corner_name == "bottom-left":
+                        return context.geometry.Vector(-1, 1).normalized
+                    else:
+                        return context.geometry.Vector(1, 1).normalized
         
-        if rect.top + r <= py <= rect.bottom - r:
-            if abs(px - rect.left) < epsilon:
-                return context.geometry.Vector(-1, 0)
-            elif abs(px - rect.right) < epsilon:
-                return context.geometry.Vector(1, 0)
+        # Le point est sur un bord droit (pas dans les zones arrondies)
+        # Bord haut
+        if rect.left + r <= px <= rect.right - r and abs(py - rect.top) < epsilon:
+            return context.geometry.Vector(0, -1)
         
+        # Bord bas
+        if rect.left + r <= px <= rect.right - r and abs(py - rect.bottom) < epsilon:
+            return context.geometry.Vector(0, 1)
+        
+        # Bord gauche
+        if rect.top + r <= py <= rect.bottom - r and abs(px - rect.left) < epsilon:
+            return context.geometry.Vector(-1, 0)
+        
+        # Bord droit
+        if rect.top + r <= py <= rect.bottom - r and abs(px - rect.right) < epsilon:
+            return context.geometry.Vector(1, 0)
+        
+        # Cas de fallback (ne devrait normalement pas arriver)
         normal = self._center - collision_point
         if normal.is_null():
             return context.geometry.Vector(0, -1)
