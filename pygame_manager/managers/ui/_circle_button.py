@@ -246,7 +246,7 @@ class CircleButtonObject:
     
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le bouton (distance au centre <= rayon)"""
-        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.screen.get_mouse_pos()
+        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.mouse.get_pos()
         dx = mouse_pos[0] - self._center[0]
         dy = mouse_pos[1] - self._center[1]
         return dx * dx + dy * dy <= self._radius * self._radius

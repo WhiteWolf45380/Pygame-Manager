@@ -272,7 +272,7 @@ class TextCaseObject:
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur la zone"""
-        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.screen.get_mouse_pos()
+        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.mouse.get_pos()
         return self._rect.collidepoint(mouse_pos)
 
     # ======================================== INTERACTION ========================================

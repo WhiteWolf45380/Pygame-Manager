@@ -257,7 +257,7 @@ class RectButtonObject:
         if self._panel is not None:
             mouse_pos = self._panel.mouse_pos
         else:
-            mouse_pos = context.screen.get_mouse_pos()
+            mouse_pos = context.mouse.get_pos()
         return self._rect.collidepoint(mouse_pos)
     
     # ======================================== DESSIN DU BOUTON ========================================

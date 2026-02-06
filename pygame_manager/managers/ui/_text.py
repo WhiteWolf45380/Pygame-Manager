@@ -169,6 +169,15 @@ class TextObject:
         self._font_color = _to_color(color, method='set_color')
         self._render()
 
+    # ======================================== PREDICATS ========================================
+    def collidemouse(self) -> bool:
+        """Vérifie que la souris soit sur le bouton"""
+        if self._panel is not None:
+            mouse_pos = self._panel.mouse_pos
+        else:
+            mouse_pos = context.mouse.get_pos()
+        return self._rect.collidepoint(mouse_pos)
+
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame (vide pour TextObject)"""

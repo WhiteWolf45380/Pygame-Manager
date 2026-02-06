@@ -188,7 +188,7 @@ class OverlayObject:
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur l'overlay"""
         current_rect = self._get_current_rect()
-        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.screen.get_mouse_pos()
+        mouse_pos = self._panel.mouse_pos if self._panel is not None else context.mouse.get_pos()
         return current_rect.collidepoint(mouse_pos)
 
     # ======================================== METHODES DYNAMIQUES ========================================
