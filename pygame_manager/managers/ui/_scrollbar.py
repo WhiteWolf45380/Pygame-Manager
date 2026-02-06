@@ -60,6 +60,7 @@ class ScrollBarObject:
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
         if not isinstance(length, Real) or length <= 0: _raise_error(self, '__init__', 'Invalid length argument')
         if not isinstance(thickness, Real) or thickness <= 0: _raise_error(self, '__init__', 'Invalid thickness argument')
+        if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(orientation, str) or orientation not in ["vertical", "horizontal"]:
             _raise_error(self, '__init__', 'Invalid orientation argument (must be "vertical" or "horizontal")')
         track_color = _to_color(track_color, method='__init__')

@@ -26,10 +26,11 @@ class CircleButtonObject:
             font_path: str = None,
             font_size: int = None,
             font_color: pygame.Color = (0, 0, 0, 255),
-            font_color_hover: pygame.Color = None,
+            font_color_hover: pygame.Color | None = None,
 
             border_width: int = 0,
             border_color: pygame.Color = (0, 0, 0, 255),
+            border_color_hover: pygame.Color | None = None,
 
             hover_scale_ratio: float = 1.0,
             hover_scale_duration: float = 0.0,
@@ -82,6 +83,7 @@ class CircleButtonObject:
         font_color_hover = _to_color(font_color_hover, raised=False)
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color, method='__init__')
+        border_color_hover = _to_color(border_color_hover, raised=False)
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
@@ -156,6 +158,7 @@ class CircleButtonObject:
         # bordure
         self._border_width = max(0, border_width)
         self._border_color = border_color
+        self._border_color_hover = border_color_hover if border_color_hover is not None else border_color
 
         # effet de survol
         self._hover_scale_ratio = float(hover_scale_ratio)
@@ -268,7 +271,7 @@ class CircleButtonObject:
         if self._text_blit:
             surface.blit(self._text_object_hover, self._text_object_rect)
         if self._border_width > 0:
-            pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
+            pygame.draw.circle(surface, self._border_color_hover, self._local_center, self._radius, self._border_width)
         return surface
 
     # ======================================== METHODES DYNAMIQUES ========================================

@@ -19,7 +19,7 @@ class RectButtonObject:
             filling: bool = True,
             filling_hover: bool = True,
             filling_color: pygame.Color = (255, 255, 255, 255),
-            filling_color_hover: pygame.Color = None,
+            filling_color_hover: pygame.Color | None = None,
 
             icon: pygame.Surface = None,
             icon_hover: pygame.Surface = None,
@@ -33,6 +33,7 @@ class RectButtonObject:
 
             border_width : int = 0,
             border_color : pygame.Color = (0, 0, 0, 255),
+            border_color_hover: pygame.Color | None = None,
             border_radius: int = 0,
 
             hover_scale_ratio: float = 1.0,
@@ -91,6 +92,7 @@ class RectButtonObject:
         font_color_hover = _to_color(font_color_hover, raised=False)
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color, method='__init__')
+        filling_color_hover = _to_color(filling_color_hover, raised=False)
         if not isinstance(border_radius, int): _raise_error(self, '__init__', 'Invalid border_radius argument')
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
@@ -167,6 +169,7 @@ class RectButtonObject:
         # bordure
         self._border_width = max(0, border_width)
         self._border_color = border_color
+        self._border_color_hover = border_color_hover if border_color_hover is not None else border_color
         self._border_radius = max(0, border_radius)
         
         # effet de survol
@@ -280,7 +283,7 @@ class RectButtonObject:
         if self._text_blit:
             hover.blit(self._text_object_hover, self._text_object_rect)
         if self._border_width > 0:
-            pygame.draw.rect(hover, self._border_color, self._rect, border_radius=self._border_radius)
+            pygame.draw.rect(hover, self._border_color_hover, self._rect, border_radius=self._border_radius)
         return hover
 
     # ======================================== METHODES DYNAMIQUES ========================================
