@@ -21,7 +21,8 @@ class CircleEntity(Entity):
             self,
             center: tuple[float, float],
             radius: Real, zorder: int = -1,
-            panel: str | None = None
+            panel: str | None = None,
+            auto: bool = True,
             ):
         """
         Initialise le cercle
@@ -31,13 +32,14 @@ class CircleEntity(Entity):
             radius (float): Rayon du cercle
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
+            auto (bool, option) : gestion automatique de l'actualisation
         """
         # Vérifications
         center = context.geometry._to_point(center, copy=False)
         if not isinstance(radius, Real): _raise_error(self, '__init__', 'Invalid radius argument')
 
         # Initialisation d'Entity
-        super().__init__(zorder=zorder, panel=panel)
+        super().__init__(zorder=zorder, panel=panel, auto=auto)
         
         # Objet géométrique
         self._circle = context.geometry.Circle(center, radius)

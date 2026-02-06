@@ -30,7 +30,8 @@ class RectEntity(Entity):
             height: Real,
             border_radius: int = 0,
             zorder: int = -1,
-            panel: str | None = None
+            panel: str | None = None,
+            auto: bool = True,
             ):
         """
         Initialise le rectangle
@@ -42,6 +43,7 @@ class RectEntity(Entity):
             height (float): Hauteur
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
+            auto (bool, option) : gestion automatique de l'actualisation
         """
         # Vérifications
         point = context.geometry._to_point((x, y))
@@ -50,7 +52,7 @@ class RectEntity(Entity):
         if not isinstance(border_radius, int) or border_radius < 0: _raise_error(self, '__init__', 'Invalid border_radius argument')
 
         # Initialisation d'Entity
-        super().__init__(zorder=zorder, panel=panel)
+        super().__init__(zorder=zorder, panel=panel, auto=auto)
         
         # Objet géométrique
         self._rect = context.geometry.Rect(point, width, height, border_radius=border_radius)

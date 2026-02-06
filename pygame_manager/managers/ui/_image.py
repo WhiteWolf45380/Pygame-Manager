@@ -20,7 +20,7 @@ class ImageObject:
 
             anchor: str = "topleft",
 
-            auto_draw: bool = True,
+            auto: bool = True,
             panel: object = None,
             zorder: int = 0,
         ):
@@ -38,7 +38,7 @@ class ImageObject:
 
             anchor (str, optional) : point d'ancrage ("topleft", "center", "midtop", etc.)
 
-            auto_draw (bool, optional) : enregistrement automatique pour draw
+            auto (bool, optional) : enregistrement automatique pour draw
             panel (object, optional) : panel maître
             zorder (int, optional) : ordre de rendu
         """
@@ -53,13 +53,13 @@ class ImageObject:
         if not isinstance(scale, Real) or scale <= 0: _raise_error(self, '__init__', 'Invalid scale argument')
         if not isinstance(keep_ratio, bool): _raise_error(self, '__init__', 'Invalid keep_ratio argument')
         if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
-        if not isinstance(auto_draw, bool): _raise_error(self, '__init__', 'Invalid auto_draw argument')
+        if not isinstance(auto, bool): _raise_error(self, '__init__', 'Invalid auto argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
         if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
-        self._auto_draw = auto_draw
-        if self._auto_draw:
+        self._auto_draw = auto
+        if self._auto:
             context.ui._append(self)
 
         # chargement de l'image

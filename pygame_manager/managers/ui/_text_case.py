@@ -43,7 +43,7 @@ class TextCaseObject:
 
             padding: int = 5,
 
-            callback: callable = lambda text: None,
+            callback: callable = lambda _: None,
             panel: object = None
         ):
         """

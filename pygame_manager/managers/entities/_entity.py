@@ -13,12 +13,14 @@ class Entity:
     def __init__(
             self,
             zorder: Optional[int] = None,
-            panel: Optional[str] = None
+            panel: Optional[str] = None,
+            auto: Optional[bool] = True,
             ):
         """
         Args:
             zorder (int, optional) : priorité d'affichage (0 = derrière)
             panel (str, optional) : panel d'affichage
+            auto (bool, option) : gestion automatique de l'actualisation
         """
         # Vérifications
         if zorder is not None and not isinstance(zorder, int): _raise_error(self, '__init__', "Invalid zorder argument")
@@ -33,8 +35,9 @@ class Entity:
         self._visible = True
 
         # Auto-registration
-        context.entities.register(self)
-        self.on_register()
+        if auto:
+            context.entities.register(self)
+            self.on_register()
 
     # ======================================== GETTERS ========================================
 

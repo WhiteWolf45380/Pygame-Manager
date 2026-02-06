@@ -21,7 +21,8 @@ class LineEntity(Entity):
             point: tuple[Real, Real],
             vector: tuple[float, float],
             zorder: int = -1,
-            panel: str | None = None
+            panel: str | None = None,
+            auto: bool = True,
             ):
         """
         Initialise la droite
@@ -30,14 +31,15 @@ class LineEntity(Entity):
             point (tuple[float, float]) : Point d'origine (x, y)
             vector (tuple[float, float]) : Vecteur directeur (vx, vy)
             zorder (int) : Ordre d'affichage (défaut: -1)
-            panel (str | None) : Nom du panel (défaut: None)
+            panel (str | None) : Nom du panel (défaut: None).
+            auto (bool, option) : gestion automatique de l'actualisation
         """
         # Vérifications
         point = context.geometry._to_point(point, copy=False)
         vector = context.geometry._to_vector(vector, copy=False)
 
         # Initialisation d'Entity
-        super().__init__(zorder=zorder, panel=panel)
+        super().__init__(zorder=zorder, panel=panel, auto=auto)
         
         # Objet géométrique
         self._line = context.geometry.Line(point, vector)

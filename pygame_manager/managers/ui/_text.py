@@ -22,7 +22,7 @@ class TextObject:
 
             anchor: str = "topleft",
 
-            auto_draw: bool = True,
+            auto: bool = True,
             panel: object = None,
             zorder: int = 0,
         ):
@@ -40,7 +40,7 @@ class TextObject:
 
             anchor (str, optional) : point d'ancrage ("topleft", "center", "midtop", etc.)
 
-            auto_draw (bool, optional) : enregistrement automatique pour draw
+            auto (bool, optional) : enregistrement automatique pour draw
             panel (object, optional) : panel maître
             zorder (int, optional) : ordre de rendu
         """
@@ -55,13 +55,12 @@ class TextObject:
         if not isinstance(antialias, bool): _raise_error(self, '__init__', 'Invalid antialias argument')
         if background is not None: background = _to_color(background)
         if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
-        if not isinstance(auto_draw, bool): _raise_error(self, '__init__', 'Invalid auto_draw argument')
+        if not isinstance(auto, bool): _raise_error(self, '__init__', 'Invalid auto argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
         if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
-        self._auto_draw = auto_draw
-        if self._auto_draw:
+        if auto:
             context.ui._append(self)
 
         # position

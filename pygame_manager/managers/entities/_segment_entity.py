@@ -22,7 +22,8 @@ class SegmentEntity(Entity):
             start: tuple[float, float],
             end: tuple[float, float],
             zorder: int = -1,
-            panel: str | None = None
+            panel: str | None = None,
+            auto: bool =True,
             ):
         """
         Initialise le segment
@@ -32,13 +33,15 @@ class SegmentEntity(Entity):
             end (tuple[float, float]): Point d'arrivée (x, y)
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
+            auto (bool, option) : gestion automatique de l'actualisation
+
         """
         # Vérifications
         start = context.geometry._to_point(start, copy=False)
         end = context.geometry._to_point(end, copy=False)
 
         # Initialisation d'Entity
-        super().__init__(zorder=zorder, panel=panel)
+        super().__init__(zorder=zorder, panel=panel, auto=auto)
         
         # Object géométrique
         self._segment = context.geometry.Segment(start, end)

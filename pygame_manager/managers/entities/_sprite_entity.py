@@ -25,6 +25,7 @@ class SpriteEntity(Entity):
             y: Real = 0,
             zorder: int = -1,
             panel: str | None = None,
+            auto: bool = True,
             ):
         """
         Initialise le sprite
@@ -35,6 +36,7 @@ class SpriteEntity(Entity):
             y (Real) : coordonnée y du sprite
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
+            auto (bool, option) : gestion automatique de l'actualisation
         """
         # Vérifications
         if image is not None and not isinstance(image, pygame.Surface): _raise_error(self, '__init__', 'Invalid image argument')
@@ -42,7 +44,7 @@ class SpriteEntity(Entity):
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
 
         # Initialisation d'Entity
-        super().__init__(zorder=zorder, panel=panel)
+        super().__init__(zorder=zorder, panel=panel, auto=auto)
 
         # Image
         self._image: pygame.Surface | None = None

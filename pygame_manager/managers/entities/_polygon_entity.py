@@ -21,7 +21,8 @@ class PolygonEntity(Entity):
             self,
             *points: tuple[Real, Real],
             zorder: int = -1,
-            panel: str | None = None
+            panel: str | None = None,
+            auto: bool = True,
             ):
         """
         Initialise le polygone
@@ -30,12 +31,13 @@ class PolygonEntity(Entity):
             *points (tuple[float, float]): Liste de points (x, y) du polygone
             zorder (int): Ordre d'affichage (défaut: -1)
             panel (str | None): Nom du panel (défaut: None)
+            auto (bool, option) : gestion automatique de l'actualisation
         """
         # Vérifications
         points = list(map(context.geometry._to_point, points))
 
         # Initialisation d'Entity
-        super().__init__(zorder=zorder, panel=panel)
+        super().__init__(zorder=zorder, panel=panel, auto=auto)
         
         # Objet géométrique
         self._polygon = context.geometry.Polygon(*points)
