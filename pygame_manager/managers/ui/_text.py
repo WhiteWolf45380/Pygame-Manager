@@ -24,6 +24,7 @@ class TextObject:
             gradient_color: pygame.Color | None = None,
             gradient_direction: str = "horizontal",
             gradient_fluctuation: str = None,
+            gradient_fluctuation_speed: float = 2.0,
 
             background: pygame.Color = None,
 
@@ -69,7 +70,8 @@ class TextObject:
         if not isinstance(gradient, bool): _raise_error(self, '__init__', 'Invalid gradient argument')
         gradient_color = _to_color(gradient_color, raised=False)
         if not isinstance(gradient_direction, str) or gradient_direction not in ('horizontal', 'vertical', 'diagonal'): _raise_error(self, '__init__', 'Invalid gradient_direction argument')
-        if gradient_fluctuation is not None and not isinstance(gradient_fluctuation, str): _raise_error(self, '__init__', 'Invalid gradient_wave argument')
+        if gradient_fluctuation is not None and not isinstance(gradient_fluctuation, str): _raise_error(self, '__init__', 'Invalid gradient_fluctuation argument')
+        if not isinstance(gradient_fluctuation_speed, float) or gradient_fluctuation_speed <= 0: _raise_error(self, '__init__', 'Invalid gradient_fluctuation_speed argument')
         if not isinstance(auto, bool): _raise_error(self, '__init__', 'Invalid auto argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
         if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
@@ -104,7 +106,8 @@ class TextObject:
         self._gradient_color = gradient_color
         self._gradient_direction = gradient_direction
         self._gradient_fluctuation = gradient_fluctuation
-        self._gradient_wave_timer = 0.0
+        self._gradient_fluctuation_speed = gradient_fluctuation_speed
+        self._gradient_fluctuation_timer = 0.0
 
         # surface
         self._surface = None
@@ -246,52 +249,64 @@ class TextObject:
         w, h = text_surf.get_size()
         gradient = pygame.Surface((w, h), pygame.SRCALPHA)
 
-        self._gradient_wave_timer += context.time.dt
+        self._gradient_fluctuation_timer += context.time.dt
 
-        method_name = f"_update_gradient_{self._gradient_type}"
+        method_name = f"_update_gradient_{self._gradient_fluctuation}"
         if hasattr(self, method_name):
             getattr(self, method_name)(gradient, text_surf, w, h, self._gradient_direction)
         else:
-            self._update_gradient_wave_basic(gradient, text_surf, w, h, self._gradient_direction)
+            self._update_gradient_fluctuation_basic(gradient, text_surf, w, h, self._gradient_direction)
 
         self._surface = gradient
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
 
-    def _update_gradient_cycles(self, gradient, text_surf, w, h, direction):
-        """Dégradé par boucle"""
+    def _update_gradient_sides(self, gradient, text_surf, w, h, direction):
+        """Dégradé par côtés avec fluctuation type vagues asymétriques"""
         c1 = self._font_color
         c2 = self._gradient_color
 
-        for i in range((w if direction in ["horizontal", "diagonal"] else h)):
-            ratio = i / (w if direction in ["horizontal", "diagonal"] else h)
-            r = int(c1[0] + (c2[0] - c1[0]) * ratio)
-            g = int(c1[1] + (c2[1] - c1[1]) * ratio)
-            b = int(c1[2] + (c2[2] - c1[2]) * ratio)
+        # fréquence et amplitude des vagues
+        freq = 3.0  # nombre de vagues sur la largeur
+        amp = 0.3   # amplitude (0..1)
 
-            if direction == "horizontal":
-                pygame.draw.line(gradient, (r, g, b), (i, 0), (i, h))
-            elif direction == "vertical":
-                pygame.draw.line(gradient, (r, g, b), (0, i), (w, i))
-            elif direction == "diagonal":
-                for y in range(h):
-                    x = int(i + y * (w / h))
-                    if 0 <= x < w:
-                        gradient.set_at((x, y), (r, g, b))
+        for x in range(w if direction in ["horizontal", "diagonal"] else 1):
+            for y in range(h if direction in ["vertical", "diagonal"] else 1):
+                # coordonnée normalisée selon la direction
+                pos = x / w if direction in ["horizontal", "diagonal"] else y / h
 
+                # fluctuation asymétrique type vague
+                wave = 0.5 + amp * math.sin(pos * math.pi * 2 * freq + self._gradient_fluctuation_timer * self._gradient_fluctuation_speed + (y/w if w>0 else 0))
+
+                # mélange entre c1 et c2
+                r = int(c1[0] * (1 - wave) + c2[0] * wave)
+                g = int(c1[1] * (1 - wave) + c2[1] * wave)
+                b = int(c1[2] * (1 - wave) + c2[2] * wave)
+
+                # appliquer pixel
+                if direction == "horizontal":
+                    gradient.set_at((x, y), (r, g, b))
+                elif direction == "vertical":
+                    gradient.set_at((y, x), (r, g, b))
+                elif direction == "diagonal":
+                    px = (x + y) % w
+                    gradient.set_at((px, y), (r, g, b))
+
+        # applique l'alpha du texte
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
 
-    def _update_gradient_sides(self, gradient, text_surf, w, h, direction):
-        """Dégradé par côté"""
+
+    def _update_gradient_cycles(self, gradient, text_surf, w, h, direction):
+        """Dégradé par cycles"""
         c1 = self._font_color
         c2 = self._gradient_color
 
         for i in range((w if direction in ["horizontal", "diagonal"] else h)):
-            wave = 0.5 + 0.5 * math.sin(self._gradient_wave_timer * self._gradient_wave_speed + i / (w if direction in ["horizontal","diagonal"] else h) * math.pi * 6)
-            r = int(c1[0] * (1 - wave) + c2[0] * wave)
-            g = int(c1[1] * (1 - wave) + c2[1] * wave)
-            b = int(c1[2] * (1 - wave) + c2[2] * wave)
+            fluctuation = 0.5 + 0.5 * math.sin(self._gradient_fluctuation_timer * self._gradient_fluctuation_speed + i / (w if direction in ["horizontal","diagonal"] else h) * math.pi * 6)
+            r = int(c1[0] * (1 - fluctuation) + c2[0] * fluctuation)
+            g = int(c1[1] * (1 - fluctuation) + c2[1] * fluctuation)
+            b = int(c1[2] * (1 - fluctuation) + c2[2] * fluctuation)
 
             if direction == "horizontal":
                 pygame.draw.line(gradient, (r, g, b), (i, 0), (i, h))
