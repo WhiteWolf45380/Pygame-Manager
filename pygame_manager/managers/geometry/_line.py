@@ -317,16 +317,16 @@ class LineObject:
         if self.is_parallel(line):
             return None
         
-        d1, d2 = self.equalized(line)
-        P1, u1 = d1._origin, d1._vector
-        P2, u2 = d2._origin, d2._vector
+        self.equalize(line)
+        P1, u1 = self._origin, self._vector
+        P2, u2 = line._origin, line._vector
 
         v = P2 - P1
         if not v.is_coplanar(u1, u2):
             return None
 
-        for i in range(d1.dim):
-            for j in range(i + 1, d1.dim):             
+        for i in range(self.dim):
+            for j in range(i + 1, self.dim):             
                 det = u1[i] * (-u2[j]) - u1[j] * (-u2[i])
                 
                 if abs(det) > 1e-10:
