@@ -28,11 +28,15 @@ from .managers.states import State
 
 # ========================================== UI ==========================================
 from .managers.ui import (
+    TextObject, 
+    ImageObject, 
+    SectionObject, 
+    OverlayObject,
     RectButtonObject,
     CircleButtonObject,
     RectSelectorObject,
     CircleSelectorObject,
-    TextCaseObject
+    TextCaseObject,
 )
 
 # ========================================== EXPOSITION ==========================================
@@ -61,6 +65,10 @@ __all__ = [
     "State",
     
     # UI
+    "TextObject", 
+    "ImageObject", 
+    "SectionObject", 
+    "OverlayObject",
     "RectButtonObject",
     "CircleButtonObject",
     "RectSelectorObject",
