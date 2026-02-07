@@ -2,6 +2,7 @@
 from ._core import _raise_error, context
 from ._state import State, pygame
 from typing import Optional
+import time
 
 # ======================================== MANAGER ========================================
 class StatesManager:
@@ -33,7 +34,7 @@ class StatesManager:
         self._transition_old = None
         self._transition_new = None
         self._transition_new_layer = 0
-        self._transition_switched = False
+        self._transition_phase = "in"
 
     def __repr__(self):
         if self._active_states:
@@ -59,21 +60,21 @@ class StatesManager:
             duration = self._transition_duration
         self._transition_active = True
         self._transition_timer = 0.0
-        self._transition_switched = False
+        self._transition_phase = "in"
     
-    def _update_transition(self, screen_size):
+    def _update_transition(self):
         """Met à jour la transition en cours"""
         self._transition_timer = min(self._transition_duration, self._transition_timer + context.time.dt)
-        progress = self._transition_timer / self._transition_duration
+        progress = min(1.0, self._transition_timer / self._transition_duration)
         
         if progress < 0.5:
-            self._transition_alpha = progress * 2 * 255
+            self._transition_alpha = int(progress * 2 * 255)
         else:
-            self._transition_alpha = (1 - (progress - 0.5) * 2) * 255
-            if not self._transition_switched:
+            self._transition_alpha = int((1 - (progress - 0.5) * 2) * 255)
+            if self._transition_phase == "in":
                 self._midstep_transition()
         
-        if self._transition_timer >= self._transition_duration:
+        if progress == 1.0:
             self._end_transition()
 
     def _midstep_transition(self):
@@ -85,7 +86,7 @@ class StatesManager:
         self._active_states[self._transition_new_layer] = self._transition_new
         self._clear_upper_layers(self._transition_new_layer)
         self._dict[self._transition_new]["state_obj"].on_enter()
-        self._transition_switched = True
+        self._transition_phase = "out"
     
     def _end_transition(self):
         """Fin de la transition"""
@@ -94,7 +95,6 @@ class StatesManager:
         self._transition_alpha = 0
         self._transition_old = None
         self._transition_new = None
-        self._transition_switched = False
 
     def _draw_transition(self):
         """Dessine le voile de transition"""
@@ -241,7 +241,7 @@ class StatesManager:
         Exécute update() de tous les states actifs,
         """
         if self._transition_active:
-            self._update_transition(None)
+            self._update_transition()
         
         for layer in sorted(self._active_states):
             name = self._active_states[layer]
