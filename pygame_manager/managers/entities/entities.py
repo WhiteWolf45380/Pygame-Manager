@@ -80,7 +80,8 @@ class EntitiesManager:
         Args:
             entity (Entity) : l'objet de l'entité
         """
-        panel =  getattr(entity, '_panel')
+        panel =  getattr(entity, '_panel', None)
+        if panel is not None: panel = str(panel)
         z = getattr(entity, '_zorder', None)
         if entity not in self._all[panel]:
             if z is None:
