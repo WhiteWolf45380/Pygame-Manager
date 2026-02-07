@@ -147,7 +147,7 @@ class CircleButtonObject:
 
         if self._text is not None:
             if self._font_size is None:
-                self._font_size = max(3, int(self._radius * 0.7))
+                self._font_size = max(3, int(self._radius * 0.75))
 
             if self._font is None:
                 try:

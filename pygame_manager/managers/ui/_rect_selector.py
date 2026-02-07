@@ -188,7 +188,7 @@ class RectSelectorObject:
 
         if self._text is not None:
             if self._font_size is None:
-                self._font_size = max(3, int(self._rect.height * 0.6))
+                self._font_size = max(3, int(self._rect.height * 0.7))
 
             if self._font is None:
                 try:
