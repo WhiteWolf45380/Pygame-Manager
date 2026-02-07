@@ -245,7 +245,7 @@ class TextObject:
     
     def update_gradient(self):
         """Dégradé animé type 'cycles', optimisé avec numpy, avec amplitude et direction"""
-        if not self._gradient or self._gradient_color is None:
+        if not self._gradient or not self._gradient_fluctuation:
             return
 
         self._gradient_fluctuation_timer += context.time.dt
