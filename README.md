@@ -1,0 +1,2 @@
+pip install https://github.com/WhiteWolf45380/Pygame-Manager/archive/refs/heads/main.zip
+
