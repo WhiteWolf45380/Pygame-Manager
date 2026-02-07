@@ -85,9 +85,9 @@ class EntitiesManager:
         z = getattr(entity, '_zorder', None)
         if entity not in self._all[panel]:
             if z is None:
-                self._all[entity._panel].append(entity)
+                self._all[panel].append(entity)
             else:
-                self._all[entity._panel].insert(z, entity)
+                self._all[panel].insert(z, entity)
 
     def discard(self, entity: Entity):
         """

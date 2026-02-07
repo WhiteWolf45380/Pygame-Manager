@@ -97,6 +97,7 @@ class PanelsManager:
     
     def __getitem__(self, key):
         """Renvoie l'objet d'un panel"""
+        if isinstance(key, Panel): key = str(key)
         if key not in self._dict.keys():
             _raise_error(self, '__getitem__', f'panel "{key}" does not exist')
         return self._dict[key]["object"]
