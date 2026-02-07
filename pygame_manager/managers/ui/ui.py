@@ -78,7 +78,7 @@ class UiManager:
             if key == 1: name = 'left_click'
             elif key == 3: name = 'rightclick'
             else: return
-            method = getattr(self._hovered_object, name)
+            method = getattr(self._hovered_object, name, None)
             if method is not None and callable(method):
                 method(up=up)
     

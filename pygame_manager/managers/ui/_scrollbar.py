@@ -305,3 +305,7 @@ class ScrollBarObject:
         """Clic gauche"""
         if not up:
             self.start_drag()
+
+    def right_click(self, up: bool = False):
+        """Clic droit"""
+        pass

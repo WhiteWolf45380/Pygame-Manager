@@ -309,3 +309,11 @@ class TextObject:
 
         self._surface = gradient
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
+
+    def left_click(self, up: bool = False):
+        """Clic gauche"""
+        pass
+
+    def right_click(self, up: bool = False):
+        """Clic droit"""
+        pass

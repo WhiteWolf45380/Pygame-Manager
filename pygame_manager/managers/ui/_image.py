@@ -248,3 +248,11 @@ class ImageObject:
             surface = self._panel.surface
         
         surface.blit(self._surface, self._rect)
+    
+    def left_click(self, up: bool = False):
+        """Clic gauche"""
+        pass
+
+    def right_click(self, up: bool = False):
+        """Clic droit"""
+        pass
