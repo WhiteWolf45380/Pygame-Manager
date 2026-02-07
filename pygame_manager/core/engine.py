@@ -62,8 +62,7 @@ class Engine:
             with self.screen:
                 # Entrées utilisateur
                 self.mouse._update()
-                if not self.inputs.check_all():
-                    break
+                self.inputs.check_all()
 
                 # Actualisation
                 update()
@@ -79,11 +78,14 @@ class Engine:
                 self.panels.draw()
 
         # Fin d'éxécution
-        self.stop()
+        self._end()
 
     def stop(self):
         """Mets fin à la boucle d'éxécution"""
         if self._running:
             self._running = False
-            self.screen.close()
-            pygame.quit()
+    
+    def _end(self):
+        """Ferme pygame"""
+        self.screen.close()
+        pygame.quit()

@@ -1,5 +1,6 @@
+# ======================================== GESTIONNAIRE ========================================
+from ... import context
 import pygame
-
 
 # ======================================== GESTIONNAIRE ========================================
 class InputsManager:
@@ -178,6 +179,7 @@ class InputsManager:
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                context.engine.stop()
                 return False
             self.check_event(event)
         self.check_pressed()
