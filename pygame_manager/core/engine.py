@@ -74,6 +74,7 @@ class Engine:
                 # Affichage
                 self.panels.draw_back()
                 self.entities.draw()
+                self.panels.draw_between()
                 self.ui.draw()
                 self.panels.draw()
 

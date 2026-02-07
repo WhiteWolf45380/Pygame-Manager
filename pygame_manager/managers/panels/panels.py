@@ -345,19 +345,29 @@ class PanelsManager:
 
     def draw_back(self):
         """
-        Exécute draw de tous les panels actifs et affichés 
+        Exécute draw_back de tous les panels actifs et affichés 
         """
         for name in self._active_panels:
             predecessor = self._dict[name]["predecessor"]
             if predecessor is not None and predecessor not in self._active_panels:
                 continue
 
-            if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
-            else: predecessor_surface = context.screen.surface
-
             obj = self._dict[name]["object"]
             if hasattr(obj, 'draw_back'):
                 obj.draw_back(obj._surface)
+
+    def draw_between(self):
+        """
+        Exécute draw_between de tous les panels actifs et affichés 
+        """
+        for name in self._active_panels:
+            predecessor = self._dict[name]["predecessor"]
+            if predecessor is not None and predecessor not in self._active_panels:
+                continue
+
+            obj = self._dict[name]["object"]
+            if hasattr(obj, 'draw_between'):
+                obj.draw_between(obj._surface)
 
     def draw(self):
         """

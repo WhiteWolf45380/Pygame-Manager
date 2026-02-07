@@ -102,6 +102,10 @@ class Panel:
         """Appelé à chaque frame avant l'affichage du panel (à override)"""
         pass
 
+    def draw_between(surface: pygame.Surface):
+        """Appelé à chaque frame entre l'affichage des entités et l'ui (à override)"""
+        pass
+
     def draw(self, surface: pygame.Surface):
         """Affichage du panel sur la surface du prédecesseur"""
         if not isinstance(surface, pygame.Surface):
