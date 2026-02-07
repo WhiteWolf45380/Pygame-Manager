@@ -139,7 +139,7 @@ class StatesManager:
     def get_layer(self, name: str) -> int:
         """Renvoie l'ensemble des états sur une couche donnée"""
         if name not in self._dict:
-            self._raise_error('get_layer', f'state "{name}" does not exist')
+            _raise_error(self, 'get_layer', f'state "{name}" does not exist')
         return self._dict[name]["layer"]
 
     def get_active_states(self) -> list:
@@ -181,7 +181,7 @@ class StatesManager:
     def register(self, name: str, obj: State, layer: int=0):
         """Enregistre un objet State"""
         if name in self._dict:
-            self._raise_error('register', f'state "{name}" already exists')
+            _raise_error(self, 'register', f'state "{name}" already exists')
         self._dict[name] = {
             "layer": layer,
             "state_obj": obj,
@@ -201,7 +201,7 @@ class StatesManager:
             duration (float, optional) : durée de transition en secondes
         """
         if name not in self._dict:
-            self._raise_error('activate', f'state "{name}" does not exist')
+            _raise_error(self, 'activate', f'state "{name}" does not exist')
         new = name
 
         new_layer = self._dict[name]["layer"]
