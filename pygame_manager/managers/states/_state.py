@@ -74,12 +74,12 @@ class State:
     # ======================================== RACCOURCIS ========================================
     def activate(self):
         """Active l'état"""
-        context.states.activate(self.name)
+        context.states.activate(self._name)
 
     def deactivate(self):
         """Désactive l'état"""
-        context.states.deactivate(self.name)
+        context.states.deactivate(self._name)
 
     def is_active(self) -> bool:
         """Vérifie l'activation de l'état"""
-        return context.states.is_active(self.name)
+        return context.states.is_active(self._name)
