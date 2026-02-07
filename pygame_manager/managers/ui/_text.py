@@ -135,22 +135,45 @@ class TextObject:
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
     def _render_gradient(self):
-        """Renders the text with a gradient instead of solid color"""
-        text_surf = self._font.render(self._text, True, (255, 255, 255))
+        """Render le texte avec un dégradé statique selon direction"""
+        text_surf = self._font.render(self._text, self._antialias, (255, 255, 255))
         w, h = text_surf.get_size()
+
         gradient = pygame.Surface((w, h), pygame.SRCALPHA)
 
-        c1, c2 = self._font_color, self._gradient_color
-        for y in range(h):
-            ratio = y / h
-            r = int(c1[0] + (c2[0] - c1[0]) * ratio)
-            g = int(c1[1] + (c2[1] - c1[1]) * ratio)
-            b = int(c1[2] + (c2[2] - c1[2]) * ratio)
-            pygame.draw.line(gradient, (r, g, b), (0, y), (w, y))
+        c1 = self._font_color
+        c2 = self._gradient_color
+
+        if self._gradient_direction == "vertical":
+            for y in range(h):
+                t = y / (h - 1) if h > 1 else 0
+                r = int(c1[0] + (c2[0] - c1[0]) * t)
+                g = int(c1[1] + (c2[1] - c1[1]) * t)
+                b = int(c1[2] + (c2[2] - c1[2]) * t)
+                pygame.draw.line(gradient, (r, g, b), (0, y), (w, y))
+
+        elif self._gradient_direction == "horizontal":
+            for x in range(w):
+                t = x / (w - 1) if w > 1 else 0
+                r = int(c1[0] + (c2[0] - c1[0]) * t)
+                g = int(c1[1] + (c2[1] - c1[1]) * t)
+                b = int(c1[2] + (c2[2] - c1[2]) * t)
+                pygame.draw.line(gradient, (r, g, b), (x, 0), (x, h))
+
+        elif self._gradient_direction == "diagonal":
+            for y in range(h):
+                for x in range(w):
+                    t = ((x / (w - 1 if w > 1 else 1)) +
+                        (y / (h - 1 if h > 1 else 1))) * 0.5
+                    r = int(c1[0] + (c2[0] - c1[0]) * t)
+                    g = int(c1[1] + (c2[1] - c1[1]) * t)
+                    b = int(c1[2] + (c2[2] - c1[2]) * t)
+                    gradient.set_at((x, y), (r, g, b))
 
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         self._surface = gradient
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
+
 
     # ======================================== GETTERS ========================================
     @property
