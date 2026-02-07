@@ -163,7 +163,7 @@ class EntitiesManager:
 
     def update(self):
         """Execute update de toutes les entités"""
-        self.update_filter
+        self.update_filter()
         for panel_name in self._filtered:
             for entity in self._all[panel_name]:
                 getattr(entity, '_update', lambda: None)()

@@ -13,7 +13,7 @@ class Entity:
     def __init__(
             self,
             zorder: Optional[int] = None,
-            panel: Optional[str] = None,
+            panel: Optional[str] | object = None,
             auto: Optional[bool] = True,
             ):
         """
@@ -24,11 +24,12 @@ class Entity:
         """
         # Vérifications
         if zorder is not None and not isinstance(zorder, int): _raise_error(self, '__init__', "Invalid zorder argument")
-        if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
+        if panel is not None and not isinstance(panel, (str, context.panels.Panel)): _raise_error(self, '__init__', 'Invalid panel argument')
 
         # Affichage
         self._zorder = zorder
-        self._panel = panel
+        if isinstance(panel, str): self._panel = context.panels[panel]
+        else: self._panel = panel if panel in context.panels else None
 
         # Paramètres
         self._active = True

@@ -153,10 +153,13 @@ class PanelsManager:
         """Vérifie l'enregistrement d'un panel"""
         if isinstance(panel, str):
             return panel in self._dict
+        return panel in [data["object"] for data in self._dict.values()]
         
-    def is_active(self, name: str) -> bool:
+    def is_active(self, panel: str | Panel) -> bool:
         """Vérifie qu'un panel soit actif"""
-        return name in self._active_panels
+        if isinstance(panel, str):
+            return panel in self._active_panels
+        return panel in [data["object"] for name, data in self._dict.items() if name in self._active_panels]
 
     # ======================================== ACTIVATION ========================================
     def activate(self, name: str):
