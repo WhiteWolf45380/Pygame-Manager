@@ -98,11 +98,11 @@ class Panel:
         pass
 
     # ======================================== AFFICHAGE ========================================
-    def draw_back(surface: pygame.Surface):
+    def draw_back(self, surface: pygame.Surface):
         """Appelé à chaque frame avant l'affichage du panel (à override)"""
         pass
 
-    def draw_between(surface: pygame.Surface):
+    def draw_between(self, surface: pygame.Surface):
         """Appelé à chaque frame entre l'affichage des entités et l'ui (à override)"""
         pass
 
