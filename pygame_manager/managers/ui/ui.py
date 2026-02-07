@@ -42,10 +42,10 @@ class UiManager:
 
     def _init(self):
         """Initialisation sécurisée"""
-        context.inputs.add_listener(1, self._click_down, args=[self], up=False)
-        context.inputs.add_listener(1, self._click_up, args=[self], up=True)
-        context.inputs.add_listener(3, self._click_down, args=[self], up=False)
-        context.inputs.add_listener(3, self._click_up, args=[self], up=True)
+        context.inputs.add_listener(1, self._click_down, give_key=True, up=False)
+        context.inputs.add_listener(1, self._click_up, give_key=True, up=True)
+        context.inputs.add_listener(3, self._click_down, give_key=True, up=False)
+        context.inputs.add_listener(3, self._click_up, give_key=True, up=True)
 
         for obj in self._objects:
             if hasattr(obj, '_init') and callable(obj._init):
