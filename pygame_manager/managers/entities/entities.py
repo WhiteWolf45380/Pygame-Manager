@@ -19,6 +19,7 @@ class EntitiesManager:
     """
     def __init__(self):
         self._all = defaultdict(list)          # {"panel": [Entity1, Entity2], ...}
+        self._filtered = []
 
         self.Entity = Entity
         self.SpriteEntity = SpriteEntity
@@ -152,15 +153,24 @@ class EntitiesManager:
         self._all.clear()
 
     # ======================================== ACTUALISATION ========================================
+    def update_filter(self):
+        """Actualise les entités filtrées"""
+        self._filtered = []
+        for panel_name in self._all.keys():
+            if panel_name is not None and not context.panels.is_active(panel_name):
+                continue
+            self._filtered.append(panel_name)
+
     def update(self):
         """Execute update de toutes les entités"""
-        for panel_name in self._all:
+        self.update_filter
+        for panel_name in self._filtered:
             for entity in self._all[panel_name]:
                 getattr(entity, '_update', lambda: None)()
 
     def draw(self):
         """Execute draw de toutes les entités"""
-        for panel_name in self._all:
+        for panel_name in self._filtered:
             for entity in self._all[panel_name]:
                 if panel_name in context.panels:
                     panel_surface = getattr(context.panels[panel_name], 'surface', context.screen.surface)

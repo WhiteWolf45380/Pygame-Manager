@@ -23,6 +23,7 @@ class UiManager:
     """
     def __init__(self):
         self._objects = []              # ensemble des objets
+        self._filtered = []             # objets actifs
         self._hovered_object = None     # objet survolé
 
         self._selections = {}           # {"id_selection": "id_selector", ...}
@@ -67,7 +68,7 @@ class UiManager:
         """Actualise le survol"""
         hovered_panel = context.panels.hovered
         self._hovered_object = None
-        for obj in reversed(self._objects):
+        for obj in reversed(self._filtered):
             if str(obj.panel) == str(hovered_panel) and obj.collidemouse():
                 self._hovered_object = obj
                 return
@@ -91,16 +92,25 @@ class UiManager:
         self._click(key, up=True)
 
     # ======================================== METHODES PUBLIQUES ========================================
+    def update_filter(self):
+        """Actualisation des objects filtrés"""
+        self._filtered = []
+        for obj in self._objects:
+            panel = getattr(obj, '_panel', None)
+            if panel is not None and not context.panels.is_active(panel): continue
+            self._filtered.append(obj)
+
     def update(self):
         """Actualisation par frame"""
+        self.update_filter()
         self._update_hover()
-        for obj in self._objects:
+        for obj in self._filtered:
             if hasattr(obj, 'update') and callable(obj.update):
                 obj.update()
 
     def draw(self):
         """Affichage pas frame"""
-        for obj in self._objects:
+        for obj in self._filtered:
             if hasattr(obj, 'draw') and callable(obj.draw):
                 obj.draw()
     

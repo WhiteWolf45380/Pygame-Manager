@@ -117,8 +117,6 @@ class Entity:
 
     def _update(self):
         """Proxy vers update"""
-        if self._panel is not None and not context.panels.is_active(self._panel):
-            return
         if not self._active:
             return
         self.update()
