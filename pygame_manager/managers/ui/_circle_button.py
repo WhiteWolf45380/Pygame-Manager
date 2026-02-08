@@ -272,7 +272,7 @@ class CircleButtonObject:
     @property
     def hovered(self) -> bool:
         """Vérifie que le bouton soit survolé"""
-        return context.ui.hovered_object == self
+        return context.ui.get_hovered() == self
     
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le bouton (distance au centre <= rayon)"""
