@@ -8,7 +8,7 @@ class PanelsManager:
     Gestionnaire de panels avec système predecessor/successor.
     """
     def __init__(self):
-        self._dict = {}
+        self._dict = {None: {"predecessor": None, "successors": [], "object": None}}
         self._zorder = []
         self._active_panels = []
         self._hovered = None
@@ -37,9 +37,8 @@ class PanelsManager:
             for child in self._dict[name]["successors"]:
                 visit(child)
 
-        for name, info in self._dict.items():
-            if info["predecessor"] is None:
-                visit(name)
+        for successor in self._dict[None]["successors"]:
+            visit(successor)
         
         self._sort_active_panels()
 
@@ -83,7 +82,7 @@ class PanelsManager:
     # ======================================== GETTERS ========================================
     def get_panels(self) -> list:
         """Renvoie l'ensemble des panels enregistrés"""
-        return list(self._dict.keys())
+        return list(filter(lambda key: key is not None, self._dict.keys()))
 
     def get_active_panels(self) -> list:
         """Renvoie l'ensemble des panels actifs"""
@@ -145,13 +144,14 @@ class PanelsManager:
             "object": obj
         }
 
-        if predecessor is not None:
-            self._dict[predecessor]["successors"].append(name)
+        self._dict[predecessor]["successors"].append(name)
         self._update_zorder()
     
     # ======================================== PREDICATS ========================================
     def __contains__(self, panel: str | Panel):
         """Vérifie l'enregistrement d'un panel"""
+        if panel is None:
+            return False
         if isinstance(panel, str):
             return panel in self._dict
         return panel in [data["object"] for data in self._dict.values()]
@@ -172,7 +172,7 @@ class PanelsManager:
         """
         if name not in self._dict:
             _raise_error(self, 'activate', f'panel "{name}" does not exist')
-        if name in self._active_panels:
+        if name in self._active_panels or name is None:
             return
         self._active_panels.append(name)
         self._sort_active_panels()
@@ -186,7 +186,7 @@ class PanelsManager:
             name (str) : nom du panel à désactiver
             pruning (bool, optional) : fermeture de tous les panels successeurs
         """
-        if name not in self._dict:
+        if name not in self._dict or name is None:
             return
         if name not in self._active_panels:
             return
@@ -221,7 +221,7 @@ class PanelsManager:
 
         if any(tc not in self._dict for tc in to_close):
             _raise_error(self, 'switch', 'Invalid panels to close')
-        if to_activate not in self._dict:
+        if to_activate not in self._dict or to_activate is None:
             _raise_error(self, 'switch', f'{to_activate} panel does not exist')
 
         for name in to_close:
@@ -238,7 +238,7 @@ class PanelsManager:
             direction (str) : "forward", "backward", "front", "back", "index"
             index (int | None) : utilisé uniquement avec "index"
         """
-        if name not in self._dict:
+        if name not in self._dict or name is None:
             _raise_error(self, 'reorder', f'panel "{name}" does not exist')
 
         predecessor = self._dict[name]["predecessor"]
@@ -377,7 +377,7 @@ class PanelsManager:
         """
         Exécute draw de tous les panels actifs et affichés 
         """
-        for name in self._active_panels:
+        for name in reversed(self._active_panels):
             predecessor = self._dict[name]["predecessor"]
             if predecessor is not None and predecessor not in self._active_panels:
                 continue
