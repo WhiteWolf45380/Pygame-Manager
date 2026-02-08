@@ -23,6 +23,8 @@ class RectButtonObject:
 
             icon: pygame.Surface = None,
             icon_hover: pygame.Surface = None,
+            icon_keep_ratio: bool = True,
+            icon_scale_ratio: float = 0.8,
 
             text: str = None,
             font: pygame.font.Font = None,
@@ -59,8 +61,12 @@ class RectButtonObject:
             filling (bool, optional) : remplissage
             filling_color (Color, optional) : couleur de fond
             filling_color_hover (Color, optional) : couleur de fond lors du survol
+    
             icon (Surface, optional) : image de fond
-
+            icon_hover (Surface, optional) : image de fond lors du survol
+            icon_keep_ratio (Surface, optional) : pas de déformation, ratio_locker
+            icon_scale_ratio (Surface, optional) : ratio maximum par rapport aux dimensions du bouton
+ 
             text (str, optional) : texte du boutton
             font (Font, optional) : police du texte
             font_path (str, optional) : chemin vers la police
@@ -95,6 +101,9 @@ class RectButtonObject:
         filling_color = _to_color(filling_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)
         if icon is not None and not isinstance(icon, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon argument')
+        if icon_hover is not None and not isinstance(icon_hover, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_hover argument')
+        if icon_keep_ratio is not None and not isinstance(icon_keep_ratio, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_keep_ratio argument')
+        if icon_scale_ratio is not None and not isinstance(icon_scale_ratio, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
         if text is not None and not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
         if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
@@ -134,13 +143,25 @@ class RectButtonObject:
         self._filling_color = filling_color
         self._filling_color_hover = filling_color_hover if filling_color_hover is not None else filling_color
 
-        # image
+        # Image
+        self._icon_keep_ratio = icon_keep_ratio
+        self._icon_scale_ratio = icon_scale_ratio
+
         self._icon = None
         self._icon_rect = None
         if icon is not None:
             iwidth, iheight = icon.get_size()
-            iwidth = min(iwidth, width * 0.8)
-            iheight = min(iheight, height * 0.8)
+            
+            if self._icon_keep_ratio:
+                width_ratio = (width * self._icon_scale_ratio) / iwidth
+                height_ratio = (height * self._icon_scale_ratio) / iheight
+                scale_ratio = min(width_ratio, height_ratio)
+                iwidth = int(iwidth * scale_ratio)
+                iheight = int(iheight * scale_ratio)
+            else:
+                iwidth = min(iwidth, width * self._icon_scale_ratio)
+                iheight = min(iheight, height * self._icon_scale_ratio)
+            
             self._icon = pygame.transform.smoothscale(icon, (iwidth, iheight))
             self._icon_rect = self._icon.get_rect(center=self._rect.center)
 
@@ -148,8 +169,17 @@ class RectButtonObject:
         self._icon_hover_rect = self._icon_rect
         if icon_hover is not None:
             iwidth, iheight = icon_hover.get_size()
-            iwidth = min(iwidth, width * 0.8)
-            iheight = min(iheight, height * 0.8)
+            
+            if self._icon_keep_ratio:
+                width_ratio = (width * self._icon_scale_ratio) / iwidth
+                height_ratio = (height * self._icon_scale_ratio) / iheight
+                scale_ratio = min(width_ratio, height_ratio)
+                iwidth = int(iwidth * scale_ratio)
+                iheight = int(iheight * scale_ratio)
+            else:
+                iwidth = min(iwidth, width * self._icon_scale_ratio)
+                iheight = min(iheight, height * self._icon_scale_ratio)
+            
             self._icon_hover = pygame.transform.smoothscale(icon_hover, (iwidth, iheight))
             self._icon_hover_rect = self._icon_hover.get_rect(center=self._rect.center)
 
