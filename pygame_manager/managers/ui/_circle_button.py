@@ -140,7 +140,7 @@ class CircleButtonObject:
                 iheight = min(iheight, self._radius * self._icon_scale_ratio)
             
             self._icon = pygame.transform.smoothscale(icon, (iwidth, iheight))
-            self._icon_rect = self._icon.get_rect(center=self._rect.center)
+            self._icon_rect = self._icon.get_rect(center=self._local_center)
 
         self._icon_hover = self._icon
         self._icon_hover_rect = self._icon_rect
@@ -158,7 +158,7 @@ class CircleButtonObject:
                 iheight = min(iheight, self._radius * self._icon_scale_ratio)
             
             self._icon_hover = pygame.transform.smoothscale(icon_hover, (iwidth, iheight))
-            self._icon_hover_rect = self._icon_hover.get_rect(center=self._rect.center)
+            self._icon_hover_rect = self._icon_hover.get_rect(center=self._local_center)
 
         # texte
         self._text = text
@@ -331,7 +331,7 @@ class CircleButtonObject:
             self._surface = pygame.transform.smoothscale(surface, (surface_rect.width * self._scale_ratio, surface_rect.height * self._scale_ratio))
         else:
             self._surface = surface
-        self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
+        self._surface_rect = self._surface.get_rect(center=self._rect.center)
 
     def draw(self):
         """Dessin par frame"""
