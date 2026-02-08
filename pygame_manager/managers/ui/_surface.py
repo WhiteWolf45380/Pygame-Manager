@@ -28,6 +28,7 @@ class SurfaceObject:
             gradient_fluctuation: bool = False,
             gradient_fluctuation_speed: float = 2.0,
             gradient_fluctuation_amplitude: float = 0.3,
+            gradient_fluctuation_bands: int = 60,
             gradient_brightness_pulse: bool = False,
             gradient_brightness_amplitude: float = 0.05,
             
@@ -56,6 +57,7 @@ class SurfaceObject:
             gradient_fluctuation (bool, optional) : fluctuation du dégradé
             gradient_fluctuation_speed (float, optional) : vitesse de fluctuation
             gradient_fluctuation_amplitude (float, optional) : amplitude de fluctuation
+            gradient_fluctuation_bands (int, optional) : nombre de bandes pour la fluctuation (plus = qualité, moins = perf)
             gradient_brightness_pulse (bool, optional) : pulsation de luminosité
             gradient_brightness_amplitude (float, optional) : amplitude de la pulsation (0.0-1.0)
             
@@ -80,6 +82,7 @@ class SurfaceObject:
         if not isinstance(gradient_fluctuation, bool): _raise_error(self, '__init__', 'Invalid gradient_fluctuation argument')
         if not isinstance(gradient_fluctuation_speed, float) or gradient_fluctuation_speed <= 0: _raise_error(self, '__init__', 'Invalid gradient_fluctuation_speed argument')
         if not isinstance(gradient_fluctuation_amplitude, float) or gradient_fluctuation_amplitude <= 0: _raise_error(self, '__init__', 'Invalid gradient_fluctuation_amplitude argument')
+        if not isinstance(gradient_fluctuation_bands, int) or gradient_fluctuation_bands <= 0: _raise_error(self, '__init__', 'Invalid gradient_fluctuation_bands argument')
         if not isinstance(gradient_brightness_pulse, bool): _raise_error(self, '__init__', 'Invalid gradient_brightness_pulse argument')
         if not isinstance(gradient_brightness_amplitude, float) or gradient_brightness_amplitude < 0 or gradient_brightness_amplitude > 1: _raise_error(self, '__init__', 'Invalid gradient_brightness_amplitude argument')
         if not isinstance(auto, bool): _raise_error(self, '__init__', 'Invalid auto argument')
@@ -115,12 +118,10 @@ class SurfaceObject:
         self._gradient_fluctuation = gradient_fluctuation
         self._gradient_fluctuation_speed = gradient_fluctuation_speed
         self._gradient_fluctuation_amplitude = gradient_fluctuation_amplitude
+        self._gradient_fluctuation_bands = gradient_fluctuation_bands
         self._gradient_fluctuation_timer = 0.0
         self._gradient_brightness_pulse = gradient_brightness_pulse
         self._gradient_brightness_amplitude = gradient_brightness_amplitude
-
-        # pré-calcul pour les dégradés (optimisation)
-        self._pos = None
 
         # surface
         self._surface = None
@@ -136,20 +137,6 @@ class SurfaceObject:
         self._visible = True
 
     # ======================================== RENDU ========================================
-    def _prepare_gradient_pos(self):
-        """Pré-calcule la position du dégradé (optimisation)"""
-        w, h = self._width, self._height
-        if self._gradient_direction == "horizontal":
-            self._pos = np.linspace(0, 1, w, dtype=np.float32).reshape((w, 1))
-            self._pos = np.tile(self._pos, (1, h))
-        elif self._gradient_direction == "vertical":
-            self._pos = np.linspace(0, 1, h, dtype=np.float32).reshape((1, h))
-            self._pos = np.tile(self._pos, (w, 1))
-        elif self._gradient_direction == "diagonal":
-            xv = np.linspace(0, 1, w, dtype=np.float32).reshape((w, 1))
-            yv = np.linspace(0, 1, h, dtype=np.float32).reshape((1, h))
-            self._pos = (np.tile(xv, (1, h)) + np.tile(yv, (w, 1))) / 2
-
     def _render(self):
         """Génère la surface"""
         if self._gradient:
@@ -172,12 +159,7 @@ class SurfaceObject:
 
     def _render_gradient(self):
         """Render la surface avec un dégradé statique selon direction"""
-        # Créer la surface une seule fois
         self._surface = pygame.Surface((self._width, self._height), pygame.SRCALPHA)
-        
-        # Pré-calculer les positions pour l'optimisation
-        if self._gradient_fluctuation:
-            self._prepare_gradient_pos()
         
         c1 = self._color
         c2 = self._gradient_color
@@ -331,8 +313,6 @@ class SurfaceObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
-        if not self._visible:
-            return
         self.update_gradient()
 
     def draw(self):
@@ -347,40 +327,77 @@ class SurfaceObject:
         surface.blit(self._surface, self._rect)
     
     def update_gradient(self):
-        """Dégradé animé optimisé avec numpy"""
+        """Dégradé animé ultra-léger avec bandes"""
         if not self._gradient or not self._gradient_fluctuation:
             return
 
         self._gradient_fluctuation_timer += context.time.dt
 
-        c1 = np.array(self._color[:3], dtype=np.float32)
-        c2 = np.array(self._gradient_color[:3], dtype=np.float32)
+        c1 = self._color
+        c2 = self._gradient_color
+        
+        timer = self._gradient_fluctuation_timer * self._gradient_fluctuation_speed
+        num_bands = self._gradient_fluctuation_bands
+        
+        if self._gradient_direction == "horizontal":
+            band_width = self._width / num_bands
+            for i in range(num_bands):
+                t = i / (num_bands - 1) if num_bands > 1 else 0
+                wave = 0.5 + self._gradient_fluctuation_amplitude * np.sin(t * 2 * np.pi + timer)
+                
+                r = int(c1[0] * (1 - wave) + c2[0] * wave)
+                g = int(c1[1] * (1 - wave) + c2[1] * wave)
+                b = int(c1[2] * (1 - wave) + c2[2] * wave)
+                
+                x = int(i * band_width)
+                w = int(band_width) + 1
+                pygame.draw.rect(self._surface, (r, g, b), (x, 0, w, self._height))
+        
+        elif self._gradient_direction == "vertical":
+            band_height = self._height / num_bands
+            for i in range(num_bands):
+                t = i / (num_bands - 1) if num_bands > 1 else 0
+                wave = 0.5 + self._gradient_fluctuation_amplitude * np.sin(t * 2 * np.pi + timer)
+                
+                r = int(c1[0] * (1 - wave) + c2[0] * wave)
+                g = int(c1[1] * (1 - wave) + c2[1] * wave)
+                b = int(c1[2] * (1 - wave) + c2[2] * wave)
+                
+                y = int(i * band_height)
+                h = int(band_height) + 1
+                pygame.draw.rect(self._surface, (r, g, b), (0, y, self._width, h))
+        
+        elif self._gradient_direction == "diagonal":
+            # Pour diagonal, on fait un mix horizontal simplifié
+            band_width = self._width / num_bands
+            for i in range(num_bands):
+                t = i / (num_bands - 1) if num_bands > 1 else 0
+                wave = 0.5 + self._gradient_fluctuation_amplitude * np.sin(t * 2 * np.pi + timer)
+                
+                r = int(c1[0] * (1 - wave) + c2[0] * wave)
+                g = int(c1[1] * (1 - wave) + c2[1] * wave)
+                b = int(c1[2] * (1 - wave) + c2[2] * wave)
+                
+                x = int(i * band_width)
+                w = int(band_width) + 1
+                pygame.draw.rect(self._surface, (r, g, b), (x, 0, w, self._height))
 
-        # Utilisation du pré-calcul pour l'optimisation
-        wave = 0.5 + self._gradient_fluctuation_amplitude * np.sin(
-            self._pos * 2 * np.pi + self._gradient_fluctuation_timer * self._gradient_fluctuation_speed
-        )
-
-        # Calcul du gradient
-        array = np.zeros((self._width, self._height, 3), dtype=np.uint8)
-        array[..., 0] = (c1[0] * (1 - wave) + c2[0] * wave).astype(np.uint8)
-        array[..., 1] = (c1[1] * (1 - wave) + c2[1] * wave).astype(np.uint8)
-        array[..., 2] = (c1[2] * (1 - wave) + c2[2] * wave).astype(np.uint8)
-
-        # Pulsation de luminosité optionnelle
+        # Pulsation de luminosité (optionnelle, très peu coûteuse)
         if self._gradient_brightness_pulse:
-            brightness = 1.0 - self._gradient_brightness_amplitude + self._gradient_brightness_amplitude * np.sin(self._gradient_fluctuation_timer)
-            array = (array * brightness).clip(0, 255).astype(np.uint8)
-
-        # Réutilisation de la surface existante
-        pygame.surfarray.blit_array(self._surface, array)
+            brightness = int(255 * (1.0 - self._gradient_brightness_amplitude + 
+                                    self._gradient_brightness_amplitude * np.sin(timer)))
+            overlay = pygame.Surface((self._width, self._height), pygame.SRCALPHA)
+            overlay.fill((255, 255, 255, int(brightness * 0.04)))  # Alpha très faible pour effet subtil
+            self._surface.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
 
         # Bordure
         if self._border:
             if self._border_radius > 0:
-                pygame.draw.rect(self._surface, self._border_color, (0, 0, self._width, self._height), width=self._border_width, border_radius=self._border_radius)
+                pygame.draw.rect(self._surface, self._border_color, (0, 0, self._width, self._height), 
+                               width=self._border_width, border_radius=self._border_radius)
             else:
-                pygame.draw.rect(self._surface, self._border_color, (0, 0, self._width, self._height), width=self._border_width)
+                pygame.draw.rect(self._surface, self._border_color, (0, 0, self._width, self._height), 
+                               width=self._border_width)
 
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
