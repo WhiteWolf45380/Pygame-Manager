@@ -194,6 +194,8 @@ class OverlayObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
+        if not self._visible:
+            return
         # animation du collapse
         if self._collapse_duration > 0 and abs(self._collapse_progress - self._target_progress) > 0.01:
             speed = context.time.dt / self._collapse_duration

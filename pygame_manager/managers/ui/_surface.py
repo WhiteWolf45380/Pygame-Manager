@@ -331,6 +331,8 @@ class SurfaceObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
+        if not self._visible:
+            return
         self.update_gradient()
 
     def draw(self):

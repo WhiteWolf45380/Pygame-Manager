@@ -236,7 +236,8 @@ class ImageObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
-        pass
+        if not self._visible:
+            return
 
     def draw(self):
         """Dessin par frame"""

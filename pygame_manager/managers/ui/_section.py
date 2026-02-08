@@ -190,6 +190,8 @@ class SectionObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
+        if not self._visible:
+            return
         self._surface = self._preloaded
         if self._shadow:
             offset_x = max(0, -self._shadow_offset[0])

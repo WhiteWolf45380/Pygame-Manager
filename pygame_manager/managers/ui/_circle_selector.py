@@ -339,6 +339,9 @@ class CircleSelectorObject:
 
     def update(self):
         """Actualisation par frame"""
+        if not self._visible:
+            return
+        
         # Calcul du ratio de taille
         target_ratio = self._hover_scale_ratio if self.hovered else 1.0
         if self._hover_scale_duration > 0:

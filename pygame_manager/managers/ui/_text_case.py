@@ -378,6 +378,8 @@ class TextCaseObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
+        if not self._visible:
+            return
         # clignotement du cursor
         if self._focused:
             self._cursor_timer += context.time.dt

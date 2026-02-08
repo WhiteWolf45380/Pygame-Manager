@@ -285,6 +285,8 @@ class ScrollBarObject:
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
         """Actualisation par frame"""
+        if not self._visible:
+            return
         if self._dragging:
             self.update_drag()
         self._surface = self._render_surface()
