@@ -215,7 +215,7 @@ class RectSelectorObject:
             while text_render_test.get_width() / self._rect.width > self._font_size_ratio_limit:
                 test_font_size -= 1
                 if self.font_type == "font":
-                    test_font = pygame.font.Font(self._font, test_font_size)
+                    test_font = self._font
                 elif self.font_type == "path":
                     test_font = pygame.font.Font(self._font_path, test_font_size)
                 else:
@@ -225,16 +225,19 @@ class RectSelectorObject:
             self._font_size = test_font_size
             self._font = test_font
 
+            # Génération (classic)
+            self._text_object = self._font.render(self._text, 1, self._font_color)
+
             # Effets
             self._font.set_bold(bold)
             self._font.set_italic(italic)
             self._font.set_underline(underline)
+            
+            # Génération (hover)
+            self._text_object_hover = self._font.render(self._text, 1, self._font_color_hover)
 
-            # Génération
-            self._text_object = self._font.render(self._text, True, self._font_color)
-            self._text_object_hover = self._font.render(self._text, True, self._font_color_hover)
-            self._text_object_selected = self._font.render(self._text, True, self._font_color_selected)
-            self._text_object_rect = self._text_object.get_rect(center=self._local_rect.center)
+            # Hitbox
+            self._text_object_rect = self._text_object.get_rect(center=self._rect.center)
             self._text_blit = True
 
         # bordure

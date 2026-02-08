@@ -188,7 +188,7 @@ class RectButtonObject:
             while text_render_test.get_width() / self._rect.width > self._font_size_ratio_limit:
                 test_font_size -= 1
                 if self.font_type == "font":
-                    test_font = pygame.font.Font(self._font, test_font_size)
+                    test_font = self._font
                 elif self.font_type == "path":
                     test_font = pygame.font.Font(self._font_path, test_font_size)
                 else:
@@ -197,15 +197,20 @@ class RectButtonObject:
 
             self._font_size = test_font_size
             self._font = test_font
+            self._font_hover = test_font
+
+            # Génération (classic)
+            self._text_object = self._font.render(self._text, 1, self._font_color)
 
             # Effets
             self._font.set_bold(bold)
             self._font.set_italic(italic)
             self._font.set_underline(underline)
-
-            # Génération
-            self._text_object = self._font.render(self._text, 1, self._font_color)
+            
+            # Génération (hover)
             self._text_object_hover = self._font.render(self._text, 1, self._font_color_hover)
+
+            # Hitbox
             self._text_object_rect = self._text_object.get_rect(center=self._rect.center)
             self._text_blit = True
 
@@ -328,7 +333,7 @@ class RectButtonObject:
         if self._icon_hover is not None:
             hover.blit(self._icon_hover, self._icon_hover.get_rect(center=rect.center))
         if self._text_blit:
-            hover.blit(self._text_object_hover, self._text_object.get_rect(center=rect.center))
+            hover.blit(self._text_object_hover, self._text_object_hover.get_rect(center=rect.center))
         if self._border_width > 0:
             pygame.draw.rect(hover, self._border_color_hover, rect, self._border_width, border_radius=self._border_radius)
         return hover
