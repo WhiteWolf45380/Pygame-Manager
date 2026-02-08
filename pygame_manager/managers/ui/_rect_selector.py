@@ -189,7 +189,7 @@ class RectSelectorObject:
         self.font_type = None
         if self._text is not None: # génération
             if self._font_size is None: # taille de police auto
-                self._font_size = max(3, int(self._rect.height * 0.67))
+                self._font_size = max(3, int(self._rect.height * 0.7))
 
             self.font_type = "font"
             if self._font is None: # chargement de la police
