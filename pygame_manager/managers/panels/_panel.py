@@ -178,6 +178,17 @@ class Panel:
         self._hoverable = value
 
     # ======================================== GETTERS ========================================
+    # Surface
+    @property
+    def surface(self) -> pygame.Surface:
+        """Renvoie la surface"""
+        return self._surface
+
+    @property
+    def surface_rect(self) -> pygame.Rect:
+        """Renvoie la hitbox de la surface"""
+        return self._surface_rect
+
     # Conversions
     def get_absolute(self, point: tuple) -> tuple:
         """Converts a point relative to this panel into absolute (screen) coordinates"""
