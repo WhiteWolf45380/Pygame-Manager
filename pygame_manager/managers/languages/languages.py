@@ -27,6 +27,17 @@ class LanguagesManager:
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     # ======================================== LANGUES ========================================
+    def translate(self, key: str, lang: Optional[str] = None, **kwargs) -> str:
+        """
+        Traduit une clé
+
+        Args:
+            key (str) : clé de traduction
+            lang (str) : langue spécifique (None = langue actuelle)
+            kwargs : variables de formatage
+        """
+        return self(key, lang=lang, **kwargs)
+
     def load_language(self, lang: str, path: str):
         """
         Charge un fichier de traduction JSON
@@ -78,6 +89,7 @@ class LanguagesManager:
                 self._raise_error("set_language", f"Language '{lang}' not loaded")
         else:
             self._lang = lang
+            self._fallback_lang = fallback
 
     def get_language(self) -> str:
         """
