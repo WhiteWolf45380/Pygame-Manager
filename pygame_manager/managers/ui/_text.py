@@ -20,6 +20,13 @@ class TextObject:
             font_color: pygame.Color = (0, 0, 0, 255),
             antialias: bool = True,
 
+            bold: bool = False,
+            italic: bool = False,
+            underline: bool = False,
+            shadow: bool = False,
+            shadow_color: pygame.Color = (0, 0, 0),
+            shadow_offset: int = 2,
+
             gradient: bool = False,
             gradient_color: pygame.Color | None = None,
             gradient_direction: str = "horizontal",
@@ -46,10 +53,17 @@ class TextObject:
             font_color (Color, optional) : couleur du texte
             antialias (bool, optional) : antialiasing du texte
 
+            bold (bool, optional) : texte en gras
+            italic (bool, optional) : texte en italique
+            underline (bool, optional) : texte souligné
+            shadow (bool, optional) : ombre du texte
+            shadow_color (Color, optional) : couleur de l'ombre
+            shadow_offset (int, optional) : décalage de l'ombre
+
             gradient (bool, optional) : dégradé
-            gradient_color (Color, optional) : la liste des couleurs du dégradé
+            gradient_color (Color, optional) : seconde couleur
             gradient_direction (str, optional) : direction du dégradé parmi ('horizontal', 'vertical', 'diagonal')
-            gradient_fluctuation (str, optional) : fluctuation du dégradé parmi ('cycles', 'sides')
+            gradient_fluctuation (bool, optional) : fluctuation du dégradé
 
             background (Color, optional) : couleur de fond
 
@@ -67,6 +81,12 @@ class TextObject:
         if not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
         font_color = _to_color(font_color, method='__init__')
         if not isinstance(antialias, bool): _raise_error(self, '__init__', 'Invalid antialias argument')
+        if not isinstance(bold, bool): _raise_error(self, "__init__", "Invalid bool argument")
+        if not isinstance(italic, bool): _raise_error(self, "__init__", "Invalid italic argument")
+        if not isinstance(underline, bool): _raise_error(self, "__init__", "Invalid underline argument")
+        if not isinstance(shadow, bool): _raise_error(self, "__init__", "Invalid shadow argument")
+        shadow_color = _to_color(shadow_color, method='__init__')
+        if not isinstance(shadow_offset, int): _raise_error(self, "__init__", "Invalid shadow_offset argument")
         if background is not None: background = _to_color(background)
         if not isinstance(gradient, bool): _raise_error(self, '__init__', 'Invalid gradient argument')
         gradient_color = _to_color(gradient_color, raised=False)
@@ -95,12 +115,22 @@ class TextObject:
         # police
         if font is None:
             try:
-                self._font = pygame.font.Font(font_path, font_size)
+                self._font: pygame.font.Font = pygame.font.Font(font_path, font_size)
             except Exception as _:
-                self._font = pygame.font.Font(None, font_size)
+                self._font: pygame.font.Font = pygame.font.Font(None, font_size)
         else:
-            self._font = font
+            self._font: pygame.font.Font = font
 
+        # Effets
+        self._font.set_bold(bold)
+        self._font.set_italic(italic)
+        self._font.set_underline(underline)
+        self._shadow = shadow
+        self._shadow_color = shadow_color
+        self._shadow_offset = shadow_offset
+        self._shadow_surface = None
+
+        # Fond
         self._background = background
 
         # dégradé
@@ -132,6 +162,7 @@ class TextObject:
         if self._gradient:
             return self._render_gradient()
         self._surface = self._font.render(self._text, self._antialias, self._font_color, self._background)
+        self._shadow_surface = self._font.render(self._text, self._antialias, self._shadow_color)
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
     def _render_gradient(self):
@@ -172,6 +203,7 @@ class TextObject:
 
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         self._surface = gradient
+        self._shadow_surface = self._font.render(self._text, self._antialias, self._shadow_color)
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
 
@@ -264,6 +296,8 @@ class TextObject:
         if self._panel is not None and hasattr(self._panel, 'surface'):
             surface = self._panel.surface
         
+        if self._shadow is not None:
+            surface.blit(self._shadow_surface, (self._rect.x + self._shadow_offset, self._rect.y + self._shadow_offset))
         surface.blit(self._surface, self._rect)
     
     def update_gradient(self):

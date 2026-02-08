@@ -32,6 +32,10 @@ class RectButtonObject:
             font_color : pygame.Color = (0, 0, 0, 255),
             font_color_hover : pygame.Color = None,
 
+            bold: bool = False,
+            italic: bool = False,
+            underline: bool = False,
+
             border_width : int = 0,
             border_color : pygame.Color = (0, 0, 0, 255),
             border_color_hover: pygame.Color | None = None,
@@ -65,6 +69,10 @@ class RectButtonObject:
             font_color (Color, optional) : couleur de la police
             font_color_hover (Color, optional) : couleur de la police lors du survol
 
+            bold (bool, optional): texte en gras
+            italic (bool, optional): texte en italique
+            underline (bool, optional): texte souligné
+
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
             border_color_hover (Color, optional) : couleur de la bordure lors du survol
@@ -94,6 +102,9 @@ class RectButtonObject:
         if not isinstance(font_size_ratio_limit, (float, int)): _raise_error(self, '__init__', 'Invalid font_size_ratio_limit argument')
         font_color = _to_color(font_color, method='__init__')
         font_color_hover = _to_color(font_color_hover, raised=False)
+        if not isinstance(bold, bool): _raise_error(self, '__init__', 'Invalid bold argument')
+        if not isinstance(italic, bool): _raise_error(self, '__init__', 'Invalid italic argument')
+        if not isinstance(underline, bool): _raise_error(self, '__init__', 'Invalid underline argument')
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)
@@ -186,6 +197,11 @@ class RectButtonObject:
 
             self._font_size = test_font_size
             self._font = test_font
+
+            # Effets
+            self._font.set_bold(bold)
+            self._font.set_italic(italic)
+            self._font.set_underline(underline)
 
             # Génération
             self._text_object = self._font.render(self._text, 1, self._font_color)

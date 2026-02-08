@@ -38,6 +38,10 @@ class RectSelectorObject:
             font_color_hover: pygame.Color = None,
             font_color_selected: pygame.Color = None,
 
+            bold: bool = False,
+            italic: bool = False,
+            underline: bool = False,
+
             border_width: int = 0,
             border_color: pygame.Color = (0, 0, 0, 255),
             border_radius: int = 0,
@@ -73,6 +77,10 @@ class RectSelectorObject:
             font_color (Color, optional) : couleur de la police
             font_color_hover (Color, optional) : couleur de la police lors du survol
             font_color_selected (Color, optional) : couleur de la police lorsque sélectionné
+
+            bold (bool, optional): texte en gras
+            italic (bool, optional): texte en italique
+            underline (bool, optional): texte souligné
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
@@ -216,6 +224,11 @@ class RectSelectorObject:
 
             self._font_size = test_font_size
             self._font = test_font
+
+            # Effets
+            self._font.set_bold(bold)
+            self._font.set_italic(italic)
+            self._font.set_underline(underline)
 
             # Génération
             self._text_object = self._font.render(self._text, True, self._font_color)
