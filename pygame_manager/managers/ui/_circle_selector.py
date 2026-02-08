@@ -152,14 +152,14 @@ class CircleSelectorObject:
             iwidth, iheight = icon.get_size()
             
             if self._icon_keep_ratio:
-                width_ratio = (self._radius * self._icon_scale_ratio) / iwidth
-                height_ratio = (self._radius * self._icon_scale_ratio) / iheight
+                width_ratio = (2 * self._radius * self._icon_scale_ratio) / iwidth
+                height_ratio = (2 * self._radius * self._icon_scale_ratio) / iheight
                 scale_ratio = min(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, self._radius * self._icon_scale_ratio)
-                iheight = min(iheight, self._radius * self._icon_scale_ratio)
+                iwidth = min(iwidth, 2 * self._radius * self._icon_scale_ratio)
+                iheight = min(iheight, 2 * self._radius * self._icon_scale_ratio)
             
             self._icon = pygame.transform.smoothscale(icon, (int(iwidth), int(iheight)))
             self._icon_rect = self._icon.get_rect(center=self._local_rect.center)
@@ -170,14 +170,14 @@ class CircleSelectorObject:
             iwidth, iheight = icon_hover.get_size()
             
             if self._icon_keep_ratio:
-                width_ratio = (self._radius * self._icon_scale_ratio) / iwidth
-                height_ratio = (self._radius * self._icon_scale_ratio) / iheight
+                width_ratio = (2 * self._radius * self._icon_scale_ratio) / iwidth
+                height_ratio = (2 * self._radius * self._icon_scale_ratio) / iheight
                 scale_ratio = min(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, self._radius * self._icon_scale_ratio)
-                iheight = min(iheight, self._radius * self._icon_scale_ratio)
+                iwidth = min(iwidth, 2 * self._radius * self._icon_scale_ratio)
+                iheight = min(iheight, 2 * self._radius * self._icon_scale_ratio)
             
             self._icon_hover = pygame.transform.smoothscale(icon_hover, (int(iwidth), int(iheight)))
             self._icon_hover_rect = self._icon_hover.get_rect(center=self._local_rect.center)
@@ -188,14 +188,14 @@ class CircleSelectorObject:
             iwidth, iheight = icon_selected.get_size()
             
             if self._icon_keep_ratio:
-                width_ratio = (self._radius * self._icon_scale_ratio) / iwidth
-                height_ratio = (self._radius * self._icon_scale_ratio) / iheight
+                width_ratio = (2 * self._radius * self._icon_scale_ratio) / iwidth
+                height_ratio = (2 * self._radius * self._icon_scale_ratio) / iheight
                 scale_ratio = min(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, self._radius * self._icon_scale_ratio)
-                iheight = min(iheight, self._radius * self._icon_scale_ratio)
+                iwidth = min(iwidth, 2 * self._radius * self._icon_scale_ratio)
+                iheight = min(iheight, 2 * self._radius * self._icon_scale_ratio)
             
             self._icon_selected = pygame.transform.smoothscale(icon_selected, (int(iwidth), int(iheight)))
             self._icon_selected_rect = self._icon_selected.get_rect(center=self._local_rect.center)
