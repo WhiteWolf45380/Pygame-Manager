@@ -77,7 +77,7 @@ class ScreenManager:
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
     
     def __getattribute__(self, name):
         """
@@ -90,7 +90,7 @@ class ScreenManager:
         Proxy automatique vers la surface virtuelle
         """
         if name in self._SURFACE_BLACKLIST:
-            raise AttributeError(f"{self._class__.__name__}: access to Surface.{name} is forbidden")
+            raise AttributeError(f"{self.__class__.__name__}: access to Surface.{name} is forbidden")
         return getattr(self._screen, name)
     
     def __enter__(self):

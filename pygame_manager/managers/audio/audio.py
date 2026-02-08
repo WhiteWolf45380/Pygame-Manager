@@ -42,7 +42,7 @@ class AudioManager:
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
     
     def __str__(self):
         """

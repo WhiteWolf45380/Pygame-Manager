@@ -25,7 +25,7 @@ class InputsManager:
             method (str) : méthode dans laquelle l'erreur survient
             text (str) : message d'erreur
         """
-        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     # ======================================== METHODES INTERACTIVES ========================================
     @staticmethod

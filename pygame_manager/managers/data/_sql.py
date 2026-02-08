@@ -25,7 +25,7 @@ class SQLHandler:
         """
         Lève une erreur
         """
-        raise RuntimeError(f"[{self._class__.__name__}].{method} : {text}")
+        raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     def connect(self, path: str):
         """
