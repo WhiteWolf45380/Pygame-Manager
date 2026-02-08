@@ -26,7 +26,7 @@ class NetworkManager:
         self._udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._udp_sock.bind(("", DISCOVERY_PORT))
-        self._udp_sock.setblocking(False)
+        self._udp_sock.setblocking(True)
 
         self._lobbies: dict[str, dict] = {}
         self._last_seen: dict[str, float] = {}
@@ -45,7 +45,7 @@ class NetworkManager:
             self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._server_socket.bind(("0.0.0.0", port))
             self._server_socket.listen(1)
-            self._server_socket.setblocking(False)
+            self._server_socket.setblocking(True)
 
             self._lobby_info = {
                 **kwargs,
@@ -68,7 +68,7 @@ class NetworkManager:
             port = port or GAME_PORT
             self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._tcp_socket.connect((ip, port))
-            self._tcp_socket.setblocking(False)
+            self._tcp_socket.setblocking(True)
 
             self._connected = True
             self._is_host = False
@@ -122,7 +122,7 @@ class NetworkManager:
         try:
             client, addr = self._server_socket.accept()
             self._tcp_socket = client
-            self._tcp_socket.setblocking(False)
+            self._tcp_socket.setblocking(True)
 
             self._connected = True
             self._lobby_info["status"] = "in_game"
@@ -139,9 +139,14 @@ class NetworkManager:
             return False
 
         try:
-            msg = json.dumps(data) + "\n"
-            self._tcp_socket.sendall(msg.encode())
+            msg = (json.dumps(data) + "\n").encode()
+            self._tcp_socket.sendall(msg)
             return True
+
+        except (BlockingIOError, OSError):
+            # buffer plein → on drop ce frame
+            return False
+
         except Exception as e:
             print(f"[Network] Send error: {e}")
             self._connected = False
