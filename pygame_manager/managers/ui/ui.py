@@ -8,6 +8,7 @@ from ._text_case import TextCaseObject
 from ._section import SectionObject
 from ._text import TextObject
 from ._image import ImageObject
+from ._surface import SurfaceObject
 from ._overlay import OverlayObject
 from ._scrollbar import ScrollBarObject
 
@@ -38,6 +39,7 @@ class UiManager:
         self.Section = SectionObject
         self.Text = TextObject
         self.Image = ImageObject
+        self.Surface = SurfaceObject
         self.Overlay = OverlayObject
         self.ScrollBar = ScrollBarObject
 

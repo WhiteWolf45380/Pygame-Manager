@@ -29,7 +29,8 @@ from .managers.states import State
 # ========================================== UI ==========================================
 from .managers.ui import (
     TextObject, 
-    ImageObject, 
+    ImageObject,
+    SurfaceObject,
     SectionObject, 
     OverlayObject,
     RectButtonObject,
@@ -67,6 +68,7 @@ __all__ = [
     # UI
     "TextObject", 
     "ImageObject", 
+    "SurfaceObject",
     "SectionObject", 
     "OverlayObject",
     "RectButtonObject",
