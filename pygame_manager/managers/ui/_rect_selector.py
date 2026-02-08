@@ -114,7 +114,7 @@ class RectSelectorObject:
         if icon_hover is not None and not isinstance(icon_hover, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_hover argument')
         if icon_selected is not None and not isinstance(icon_selected, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_selected argument')
         if not isinstance(icon_keep_ratio, bool): _raise_error(self, '__init__', 'Invalid icon_keep_ratio argument')
-        if not isinstance(icon_scale_ratio, bool): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
+        if not isinstance(icon_scale_ratio, Real): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
         if text is not None and not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
         if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
