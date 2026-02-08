@@ -54,7 +54,7 @@ class Panel:
         self._predecessor = predecessor
 
         # surface
-        if centered: rect.center = context.panels["predecessor"].surface_rect.center if predecessor is not None else context.screen.center
+        if centered: rect.center = context.panels[predecessor].surface_rect.center if predecessor is not None else context.screen.center
         self._surface_rect = rect.rect
         self._surface_width = rect.width
         self._surface_height = rect.height
