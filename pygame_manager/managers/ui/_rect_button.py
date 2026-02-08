@@ -28,6 +28,7 @@ class RectButtonObject:
             font: pygame.font.Font = None,
             font_path: str = None,
             font_size: int = None,
+            font_size_ratio_limit: float= 0.8,
             font_color : pygame.Color = (0, 0, 0, 255),
             font_color_hover : pygame.Color = None,
 
@@ -60,6 +61,7 @@ class RectButtonObject:
             font (Font, optional) : police du texte
             font_path (str, optional) : chemin vers la police
             font_size (int, optional) : taille de la police
+            font_size_ratio_limit (float, optional) : limite de la taille du texte par rapport à la largeur du boutton
             font_color (Color, optional) : couleur de la police
             font_color_hover (Color, optional) : couleur de la police lors du survol
 
@@ -89,6 +91,7 @@ class RectButtonObject:
         if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
         if font_size is not None and not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
+        if not isinstance(font_size_ratio_limit, (float, int)): _raise_error(self, '__init__', 'Invalid font_size_ratio_limit argument')
         font_color = _to_color(font_color, method='__init__')
         font_color_hover = _to_color(font_color_hover, raised=False)
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
@@ -144,6 +147,7 @@ class RectButtonObject:
         self._font = font
         self._font_path = font_path
         self._font_size = font_size
+        self._font_size_ratio_limit = min(1.0, max(0.05, font_size_ratio_limit))
         self._font_color = font_color
         self._font_color_hover = font_color_hover if font_color_hover is not None else font_color
 
@@ -152,16 +156,38 @@ class RectButtonObject:
         self._text_object_rect = None
         self._text_blit = False
 
+        self.font_type = None
         if self._text is not None: # génération
             if self._font_size is None: # taille de police auto
-                self._font_size = max(3, int(self._rect.height * 0.7))
+                self._font_size = max(3, int(self._rect.height * 0.67))
 
+            self.font_type = "font"
             if self._font is None: # chargement de la police
                 try:
                     self._font = pygame.font.Font(self._font_path, self._font_size)
+                    self.font_type = "path"
                 except Exception as _:
                     self._font = pygame.font.Font(None, self._font_size)
+                    self.font_type = "default"
 
+            # Auto ajustement
+            test_font_size = self._font_size
+            test_font = self._font
+            text_render_test = self._font.render(self._text, True, (0, 0, 0))
+            while text_render_test.get_width() / self._rect.width > self._font_size_ratio_limit:
+                test_font_size -= 1
+                if self.font_type == "font":
+                    test_font = pygame.font.Font(self._font, test_font_size)
+                elif self.font_type == "path":
+                    test_font = pygame.font.Font(self._font_path, test_font_size)
+                else:
+                    test_font = pygame.font.Font(None, test_font_size)
+                text_render_test = test_font.render(self._text, True, (0, 0, 0))
+
+            self._font_size = test_font_size
+            self._font = test_font
+
+            # Génération
             self._text_object = self._font.render(self._text, 1, self._font_color)
             self._text_object_hover = self._font.render(self._text, 1, self._font_color_hover)
             self._text_object_rect = self._text_object.get_rect(center=self._rect.center)

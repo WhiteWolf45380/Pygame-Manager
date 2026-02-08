@@ -186,16 +186,38 @@ class RectSelectorObject:
         self._text_object_rect = None
         self._text_blit = False
 
-        if self._text is not None:
-            if self._font_size is None:
-                self._font_size = max(3, int(self._rect.height * 0.7))
+        self.font_type = None
+        if self._text is not None: # génération
+            if self._font_size is None: # taille de police auto
+                self._font_size = max(3, int(self._rect.height * 0.67))
 
-            if self._font is None:
+            self.font_type = "font"
+            if self._font is None: # chargement de la police
                 try:
                     self._font = pygame.font.Font(self._font_path, self._font_size)
+                    self.font_type = "path"
                 except Exception as _:
                     self._font = pygame.font.Font(None, self._font_size)
+                    self.font_type = "default"
 
+            # Auto ajustement
+            test_font_size = self._font_size
+            test_font = self._font
+            text_render_test = self._font.render(self._text, True, (0, 0, 0))
+            while text_render_test.get_width() / self._rect.width > self._font_size_ratio_limit:
+                test_font_size -= 1
+                if self.font_type == "font":
+                    test_font = pygame.font.Font(self._font, test_font_size)
+                elif self.font_type == "path":
+                    test_font = pygame.font.Font(self._font_path, test_font_size)
+                else:
+                    test_font = pygame.font.Font(None, test_font_size)
+                text_render_test = test_font.render(self._text, True, (0, 0, 0))
+
+            self._font_size = test_font_size
+            self._font = test_font
+
+            # Génération
             self._text_object = self._font.render(self._text, True, self._font_color)
             self._text_object_hover = self._font.render(self._text, True, self._font_color_hover)
             self._text_object_selected = self._font.render(self._text, True, self._font_color_selected)
