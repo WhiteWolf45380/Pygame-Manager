@@ -71,7 +71,7 @@ class UiManager:
         hovered_panel = context.panels.hovered
         self._hovered_object = None
         for obj in reversed(self._filtered):
-            if str(obj.panel) == str(hovered_panel) and obj.collidemouse():
+            if str(obj.panel) == str(hovered_panel) and obj.collidemouse() and obj.visible:
                 self._hovered_object = obj
                 return
 
