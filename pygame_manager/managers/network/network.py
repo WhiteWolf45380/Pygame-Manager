@@ -38,6 +38,7 @@ class NetworkManager:
 
     # ========================= HOST =========================
     def host(self, port: int = GAME_PORT, **kwargs) -> bool:
+        """Héberge la connexion"""
         try:
             self._is_host = True
 
@@ -64,6 +65,7 @@ class NetworkManager:
 
     # ========================= JOIN =========================
     def join(self, ip: str, port: int | None = None) -> bool:
+        """Se connecte à un hébergeur"""
         try:
             port = port or GAME_PORT
             self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,9 +83,41 @@ class NetworkManager:
         except Exception as e:
             print(f"[Network] Join error: {e}")
             return False
+    
+    # ========================= DISCONNECT =========================
+    def disconnect(self):
+        self._connected = False
+        self._broadcast_running = False
+
+        if self._tcp_socket:
+            try:
+                self._tcp_socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            try:
+                self._tcp_socket.close()
+            except OSError:
+                pass
+            self._tcp_socket = None
+
+        if self._server_socket:
+            try:
+                self._server_socket.close()
+            except OSError:
+                pass
+            self._server_socket = None
+
+        with self._lock:
+            self._buffer = ""
+            self._latest_data = None
+
+        self._is_host = False
+        self._lobby_info = {}
+        print("[Network] Disconnected cleanly")
 
     # ========================= UPDATE LOOP =========================
     def update(self):
+        """Emet (host) et reçoit (client)"""
         self._receive_lobbies()
         self._cleanup_lobbies()
 
@@ -92,6 +126,7 @@ class NetworkManager:
 
     # ========================= LOBBIES =========================
     def _receive_lobbies(self):
+        """Reçoit les lobbies"""
         try:
             while True:
                 data, addr = self._udp_sock.recvfrom(2048)
@@ -104,6 +139,7 @@ class NetworkManager:
             pass
 
     def _cleanup_lobbies(self):
+        """Nettoie les lobbies"""
         now = time.time()
         for ip in list(self._lobbies.keys()):
             if now - self._last_seen[ip] > LOBBY_TIMEOUT:
@@ -111,6 +147,7 @@ class NetworkManager:
                 del self._last_seen[ip]
 
     def get_lobbies(self, **filters):
+        """Renvoie la liste des lobbys [(ip, {content})]"""
         return [
             (ip, lobby)
             for ip, lobby in self._lobbies.items()
@@ -119,6 +156,7 @@ class NetworkManager:
 
     # ========================= TCP ACCEPT (HOST) =========================
     def _accept_client(self):
+        """Accepte la connexion d'un client"""
         try:
             client, addr = self._server_socket.accept()
             self._tcp_socket = client
@@ -135,6 +173,7 @@ class NetworkManager:
 
     # ========================= DATA SYNC =========================
     def send(self, data: dict[str, Any]) -> bool:
+        """Envoie un dictionnaire"""
         if not self._connected or not self._tcp_socket:
             return False
 
@@ -153,15 +192,18 @@ class NetworkManager:
             return False
 
     def receive(self) -> dict[str, Any] | None:
+        """Reçoit un dictionnaire"""
         with self._lock:
             data = self._latest_data
             self._latest_data = None
             return data
 
     def _start_receive_thread(self):
+        """Démarre le thread de réception"""
         threading.Thread(target=self._receive_loop, daemon=True).start()
 
     def _receive_loop(self):
+        """Boucle de réception"""
         while self._connected:
             try:
                 chunk = self._tcp_socket.recv(4096).decode()
@@ -185,6 +227,7 @@ class NetworkManager:
 
     # ========================= BROADCAST =========================
     def _start_broadcast(self):
+        """Démarre le broadcast"""
         self._broadcast_running = True
         self._broadcast_thread = threading.Thread(
             target=self._broadcast_loop, daemon=True
@@ -192,6 +235,7 @@ class NetworkManager:
         self._broadcast_thread.start()
 
     def _broadcast_loop(self):
+        """Actualise le broadcast"""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
@@ -205,18 +249,22 @@ class NetworkManager:
         sock.close()
 
     def _stop_broadcast(self):
+        """Arrêt le broadcast"""
         self._broadcast_running = False
 
     # ========================= PROPS =========================
     @property
     def is_connected(self):
+        """Vérifie la conneixon"""
         return self._connected
 
     @property
     def is_host(self):
+        """Vérifie que la machine soit l'hébergeur"""
         return self._is_host
 
     def __repr__(self):
+        """Renvoie une représentation du network manager"""
         return f"<NetworkManager {'host' if self._is_host else 'client'} | {'connected' if self._connected else 'idle'}>"
 
 # ========================= INSTANCE =========================
