@@ -302,6 +302,12 @@ class SurfaceObject:
         self._color = _to_color(color, method='set_color')
         self._render()
 
+    def set_alpha(self, alpha: int):
+        """Modifie l'opacité"""
+        if not isinstance(alpha, int) or not 0 <= alpha <= 255:
+            _raise_error(self, 'set_alpha', 'Invalid alpha argument')
+        self._surface.set_alpha(alpha)
+
     # ======================================== PREDICATS ========================================
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur la surface"""
