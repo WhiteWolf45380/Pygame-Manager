@@ -86,6 +86,13 @@ class NetworkManager:
     
     # ========================= DISCONNECT =========================
     def disconnect(self):
+        """Déconnexion volontaire"""
+        if self._connected and self._tcp_socket:
+            try:
+                self.send({"type": "disconnect"})
+            except Exception:
+                pass
+
         self._connected = False
         self._broadcast_running = False
 
@@ -209,12 +216,16 @@ class NetworkManager:
                 chunk = self._tcp_socket.recv(4096).decode()
                 if not chunk:
                     self._connected = False
-                    break
+                    return
 
                 self._buffer += chunk
                 while "\n" in self._buffer:
                     line, self._buffer = self._buffer.split("\n", 1)
                     data = json.loads(line)
+                    if data.get("type") == "disconnect":
+                        print("[Network] Peer disconnected gracefully")
+                        self.disconnect()
+                        return
                     with self._lock:
                         self._latest_data = data
 
