@@ -35,7 +35,9 @@ class RectSelectorObject:
             title: str = None,
             text: str = None,
             description: str = None,
-            text_anchor: str = "center",  # Position du bloc de texte
+            title_anchor: str = "center",  # Position du title
+            text_anchor: str = "center",  # Position du text
+            description_anchor: str = "center",  # Position de la description
             text_width_ratio: float = 0.8,
             text_height_ratio: float = 0.8,
             title_size_ratio: float = 1.0,  # Ratio de taille du title (relatif)
@@ -80,9 +82,11 @@ class RectSelectorObject:
             title/text/description (str or list, optional) : textes du sélecteur (peuvent être combinés)
                 - Si str : texte sur une seule ligne (les \n sont automatiquement convertis en sauts de ligne)
                 - Si list : chaque élément de la liste est affiché sur une nouvelle ligne
-            text_anchor (str, optional) : position du bloc de texte (ex: "topleft", "center", "bottomright")
+            title_anchor (str, optional) : position du title (ex: "topleft", "center", "bottomright")
+            text_anchor (str, optional) : position du text (ex: "topleft", "center", "bottomright")
+            description_anchor (str, optional) : position de la description (ex: "topleft", "center", "bottomright")
             text_width_ratio (float, optional) : ratio max du texte par rapport à la largeur
-            text_height_ratio (float, optional) : ratio max du texte par rapport à la hauteur
+            text_height_ratio (float, optional) : ratio max du texte par rapport à la hauteur (avec 1.0 = toute la hauteur)
             title_size_ratio (float, optional) : ratio de taille du title (relatif aux autres, défaut 1.0)
             text_size_ratio (float, optional) : ratio de taille du text (relatif aux autres, défaut 0.75)
             description_size_ratio (float, optional) : ratio de taille de la description (relatif aux autres, défaut 0.55)
@@ -136,7 +140,9 @@ class RectSelectorObject:
         if icon_selected is not None and not isinstance(icon_selected, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_selected argument')
         if not isinstance(icon_keep_ratio, bool): _raise_error(self, '__init__', 'Invalid icon_keep_ratio argument')
         if not isinstance(icon_scale_ratio, Real): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
+        if not isinstance(title_anchor, str): _raise_error(self, '__init__', 'Invalid title_anchor argument')
         if not isinstance(text_anchor, str): _raise_error(self, '__init__', 'Invalid text_anchor argument')
+        if not isinstance(description_anchor, str): _raise_error(self, '__init__', 'Invalid description_anchor argument')
         if not isinstance(text_width_ratio, (float, int)) or not (0 < text_width_ratio <= 1): _raise_error(self, '__init__', 'Invalid text_width_ratio argument')
         if not isinstance(text_height_ratio, (float, int)) or not (0 < text_height_ratio <= 1): _raise_error(self, '__init__', 'Invalid text_height_ratio argument')
         if not isinstance(title_size_ratio, (float, int)) or title_size_ratio <= 0: _raise_error(self, '__init__', 'Invalid title_size_ratio argument')
@@ -234,7 +240,9 @@ class RectSelectorObject:
             self._icon_selected_rect = self._icon_selected.get_rect(center=self._local_rect.center)
 
         # texte — gestion title / text / description
+        self._title_anchor = title_anchor
         self._text_anchor = text_anchor
+        self._description_anchor = description_anchor
         self._text_width_ratio = text_width_ratio
         self._text_height_ratio = text_height_ratio
         self._title_size_ratio = title_size_ratio
@@ -276,13 +284,10 @@ class RectSelectorObject:
             # Calculer la somme des ratios présents
             total_ratio = sum(size_ratios[ttype] for ttype in ["title", "text", "description"] if self._texts.get(ttype) is not None)
             
-            # Espacement entre les types (10% de l'espace d'un élément de ratio 1.0)
-            spacing_count = num_text_types - 1 if num_text_types > 1 else 0
-            spacing_total = 0.1 * spacing_count
-            
-            # Hauteur de référence pour un ratio de 1.0
-            # TOUTE la hauteur disponible doit être utilisée
-            base_height = available_height / (total_ratio + spacing_total)
+            # CORRECTION: Ne PAS soustraire l'espacement de la hauteur disponible
+            # L'espacement est INCLUS dans la hauteur de chaque texte
+            # base_height représente la hauteur pour un ratio de 1.0
+            base_height = available_height / total_ratio
 
             # Phase 1: Créer les textes avec leur taille maximale théorique
             temp_fonts = {}
@@ -291,16 +296,19 @@ class RectSelectorObject:
                 if text_content is None:
                     continue
                 
-                # Hauteur allouée pour ce type
+                # Hauteur TOTALE allouée pour ce type (incluant l'espacement interne)
                 type_height = base_height * size_ratios[text_type]
                 
-                # Taille de police initiale = toute la hauteur allouée
+                # Taille de police initiale
                 if isinstance(text_content, list):
-                    # Pour les listes, diviser par le nombre de lignes + espacement (10% entre lignes)
+                    # Pour les listes: répartir la hauteur entre les lignes
+                    # Avec 10% d'espacement entre chaque ligne
                     num_lines = len(text_content)
-                    line_spacing_total = 0.1 * (num_lines - 1) if num_lines > 1 else 0
-                    # Chaque ligne prend 1.0, espacement prend 0.1 par gap
-                    initial_size = int(type_height / (num_lines + line_spacing_total))
+                    # Formule: total_height = num_lines * line_height + (num_lines - 1) * 0.1 * line_height
+                    #         = line_height * (num_lines + 0.1 * (num_lines - 1))
+                    #         = line_height * (num_lines * 1.1 - 0.1)
+                    line_height = type_height / (num_lines * 1.1 - 0.1) if num_lines > 1 else type_height
+                    initial_size = int(line_height)
                 else:
                     # Pour une seule ligne, utiliser toute la hauteur
                     initial_size = int(type_height)
@@ -485,75 +493,45 @@ class RectSelectorObject:
     # ======================================== CALCUL POSITIONS TEXTE ========================================
     def _calculate_text_positions(self):
         """
-        Calcule les positions verticales des textes title -> text -> description
-        selon text_anchor.
-        
-        Pour "bottom*" : title en bas, text au-dessus, description encore au-dessus
-        Pour "top*" : title en haut, text en dessous, description encore en dessous
-        Pour "center*" : centré verticalement
+        Calcule les positions des textes selon leurs anchors individuels.
+        Chaque texte est positionné indépendamment selon son propre anchor.
         """
         if not self._text_blit:
             return
 
-        # Ordre d'affichage selon anchor
-        if "bottom" in self._text_anchor:
-            # De bas en haut : title, text, description
-            order = ["title", "text", "description"]
-        elif "top" in self._text_anchor:
-            # De haut en bas : title, text, description
-            order = ["title", "text", "description"]
-        else:  # center
-            # Centré : title, text, description
-            order = ["title", "text", "description"]
+        # Dictionnaire des anchors par type
+        anchors = {
+            "title": self._title_anchor,
+            "text": self._text_anchor,
+            "description": self._description_anchor
+        }
 
-        # Filtrer uniquement les textes présents
-        present_order = [t for t in order if t in self._text_objects]
-        
-        if not present_order:
-            return
-
-        # Calculer la hauteur totale du bloc de texte
-        total_height = 0
-        for i, text_type in enumerate(present_order):
-            surf = self._text_objects[text_type]
-            total_height += surf.get_height()
-            if i < len(present_order) - 1:  # Espacement entre les textes
-                total_height += int(surf.get_height() * 0.2)
-
-        # Déterminer le point de départ vertical
-        if "bottom" in self._text_anchor:
-            # Partir du bas
-            current_y = self._local_rect.bottom - int(total_height)
-            direction = 1  # Vers le haut
-        elif "top" in self._text_anchor:
-            # Partir du haut
-            current_y = self._local_rect.top
-            direction = 1  # Vers le bas
-        else:  # center
-            # Partir du centre
-            current_y = int(self._local_rect.centery - total_height / 2)
-            direction = 1  # Vers le bas
-
-        # Positionner chaque texte
-        for i, text_type in enumerate(present_order):
+        # Positionner chaque texte selon son anchor
+        for text_type in ["title", "text", "description"]:
+            if text_type not in self._text_objects:
+                continue
+            
             surf = self._text_objects[text_type]
             rect = surf.get_rect()
+            anchor = anchors[text_type]
             
-            # Position horizontale selon anchor
-            if "left" in self._text_anchor:
+            # Position horizontale
+            if "left" in anchor:
                 rect.left = self._local_rect.left
-            elif "right" in self._text_anchor:
+            elif "right" in anchor:
                 rect.right = self._local_rect.right
             else:  # center
                 rect.centerx = self._local_rect.centerx
             
             # Position verticale
-            rect.top = int(current_y)
+            if "top" in anchor:
+                rect.top = self._local_rect.top
+            elif "bottom" in anchor:
+                rect.bottom = self._local_rect.bottom
+            else:  # center
+                rect.centery = self._local_rect.centery
             
             self._text_rects[text_type] = rect
-            
-            # Avancer pour le prochain texte
-            current_y += rect.height + int(rect.height * 0.2)
 
     # ======================================== GETTERS ========================================
     @property
