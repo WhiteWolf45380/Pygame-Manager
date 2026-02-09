@@ -286,10 +286,18 @@ class RectSelectorObject:
         """
         if not self._text_blit:
             return
-        # Décalage vertical cumulatif
+
         total_height = sum([surf.get_height()*1.2 for surf in self._text_objects.values()])
-        y_start = getattr(self._local_rect, self._text_anchor) - total_height//2 if "center" in self._text_anchor else getattr(self._local_rect, self._text_anchor)
+
+        if "top" in self._text_anchor:
+            y_start = self._local_rect.top
+        elif "bottom" in self._text_anchor:
+            y_start = self._local_rect.bottom - total_height
+        else:
+            y_start = self._local_rect.centery - total_height / 2
+
         current_y = y_start
+
         for ttype in ["title", "text", "description"]:
             if ttype not in self._text_objects:
                 continue
@@ -298,6 +306,7 @@ class RectSelectorObject:
             rect.y = current_y
             self._text_rects[ttype] = rect
             current_y += rect.height*1.2
+
 
     # ======================================== GETTERS ========================================
     @property
