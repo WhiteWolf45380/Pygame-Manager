@@ -144,6 +144,7 @@ class TextObject:
 
         # surface
         self._surface = None
+        self._surface_init = None
         self._rect = None
         if self._gradient: self._render_gradient()
         self._render()
@@ -162,6 +163,7 @@ class TextObject:
         if self._gradient:
             return self._render_gradient()
         self._surface = self._font.render(self._text, self._antialias, self._font_color, self._background)
+        self._surface_init = self._surface.copy()
         self._shadow_surface = self._font.render(self._text, self._antialias, self._shadow_color)
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
@@ -203,6 +205,7 @@ class TextObject:
 
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         self._surface = gradient
+        self._surface_init = self._surface.copy()
         self._shadow_surface = self._font.render(self._text, self._antialias, self._shadow_color)
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
@@ -272,6 +275,12 @@ class TextObject:
         """Modifie la couleur et re-render"""
         self._font_color = _to_color(color, method='set_color')
         self._render()
+    
+    def set_alpha(self, alpha: int):
+        """Modifie l'opacité"""
+        if not isinstance(alpha, int) or not 0 <= alpha <= 255:
+            _raise_error(self, 'set_alpha', 'Invalid alpha argument')
+        self._surface.set_alpha(alpha)
 
     # ======================================== PREDICATS ========================================
     def collidemouse(self) -> bool:
@@ -286,6 +295,13 @@ class TextObject:
     def kill(self):
         """Détruit l'objet"""
         context.ui._remove(self)
+
+    def scale(self, ratio: Real):
+        """Redimensionne l'objet"""
+        if not isinstance(ratio, Real) or not 0.0 < ratio <= 1.0:
+            _raise_error(self, 'scale', 'Invalid ratio_argument')
+        self._surface = pygame.transform.smoothscale(self._surface_init, (self._surface_init.get_width() * ratio, self._surface_init.get_height() * ratio))
+        self._rect = self._surface.get_rect(center=self._rect.center)
 
     def update(self):
         """Actualisation par frame"""
@@ -348,6 +364,7 @@ class TextObject:
         gradient.blit(text_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
         self._surface = gradient
+        self._surface_init = self._surface.copy()
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
     def left_click(self, up: bool = False):
