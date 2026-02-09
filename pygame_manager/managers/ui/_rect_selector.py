@@ -32,17 +32,15 @@ class RectSelectorObject:
             icon_keep_ratio: bool = True,
             icon_scale_ratio: float = 0.8,
 
+            title: str = None,
             text: str = None,
-            font: pygame.font.Font = None,
-            font_path: str = None,
-            font_size: int = None,
+            description: str = None,
+            text_anchor: str = "center",  # Position du bloc de texte
+            text_width_ratio: float = 0.8,
+            text_height_ratio: float = 0.8,
             font_color: pygame.Color = (0, 0, 0, 255),
             font_color_hover: pygame.Color = None,
             font_color_selected: pygame.Color = None,
-
-            bold: bool = False,
-            italic: bool = False,
-            underline: bool = False,
 
             border_width: int = 0,
             border_color: pygame.Color = (0, 0, 0, 255),
@@ -60,6 +58,7 @@ class RectSelectorObject:
             y (Real) : coordonnée du haut
             width (Real) : largeur
             height (Real) : hauteur
+            anchor (str) : point d'ancrage du rectangle
 
             selection_id (str) : identifiant du groupe de sélection
             selector_id (str) : identifiant unique de ce sélecteur dans le groupe
@@ -68,24 +67,20 @@ class RectSelectorObject:
             filling_color (Color, optional) : couleur de fond
             filling_color_hover (Color, optional) : couleur de fond lors du survol
             filling_color_selected (Color, optional) : couleur de fond lorsque sélectionné
-    
+
             icon (Surface, optional) : image de fond
             icon_hover (Surface, optional) : image lors du survol
             icon_selected (Surface, optional) : image lorsque sélectionné
-            icon_keep_ratio (Surface, optional) : pas de déformation, ratio_locker
-            icon_scale_ratio (Surface, optional) : ratio maximum par rapport aux dimensions du bouton
+            icon_keep_ratio (bool, optional) : pas de déformation, ratio_locker
+            icon_scale_ratio (float, optional) : ratio maximum par rapport aux dimensions du bouton
 
-            text (str, optional) : texte du sélecteur
-            font (Font, optional) : police du texte
-            font_path (str, optional) : chemin vers la police
-            font_size (int, optional) : taille de la police
+            title/text/description (str, optional) : textes du sélecteur
+            text_anchor (str, optional) : position du bloc de texte (ex: "topleft", "center", "bottomright")
+            text_width_ratio (float, optional) : ratio max du texte par rapport à la largeur
+            text_height_ratio (float, optional) : ratio max du texte par rapport à la hauteur
             font_color (Color, optional) : couleur de la police
             font_color_hover (Color, optional) : couleur de la police lors du survol
             font_color_selected (Color, optional) : couleur de la police lorsque sélectionné
-
-            bold (bool, optional): texte en gras
-            italic (bool, optional): texte en italique
-            underline (bool, optional): texte souligné
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
@@ -115,10 +110,9 @@ class RectSelectorObject:
         if icon_selected is not None and not isinstance(icon_selected, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_selected argument')
         if not isinstance(icon_keep_ratio, bool): _raise_error(self, '__init__', 'Invalid icon_keep_ratio argument')
         if not isinstance(icon_scale_ratio, Real): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
-        if text is not None and not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
-        if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
-        if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
-        if font_size is not None and not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
+        if not isinstance(text_anchor, str): _raise_error(self, '__init__', 'Invalid text_anchor argument')
+        if not isinstance(text_width_ratio, (float, int)) or not (0 < text_width_ratio <= 1): _raise_error(self, '__init__', 'Invalid text_width_ratio argument')
+        if not isinstance(text_height_ratio, (float, int)) or not (0 < text_height_ratio <= 1): _raise_error(self, '__init__', 'Invalid text_height_ratio argument')
         font_color = _to_color(font_color, method='__init__')
         font_color_hover = _to_color(font_color_hover, raised=False)
         font_color_selected = _to_color(font_color_selected, raised=False)
@@ -148,9 +142,9 @@ class RectSelectorObject:
         # position et taille
         width = min(1920, max(5, width))
         height = min(1080, max(5, height))
-        self._rect = pygame.Rect(x, y, width, height)
-        self._local_rect = pygame.Rect(0, 0, width, height)
+        self._rect = pygame.Rect(0, 0, width, height)
         setattr(self._rect, anchor, (x, y))
+        self._local_rect = pygame.Rect(0, 0, width, height)
 
         # background
         self._filling = filling
@@ -166,7 +160,6 @@ class RectSelectorObject:
         self._icon_rect = None
         if icon is not None:
             iwidth, iheight = icon.get_size()
-            
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
@@ -174,17 +167,15 @@ class RectSelectorObject:
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, width * self._icon_scale_ratio)
-                iheight = min(iheight, height * self._icon_scale_ratio)
-            
-            self._icon = pygame.transform.smoothscale(icon, (int(iwidth), int(iheight)))
+                iwidth = int(min(iwidth, width * self._icon_scale_ratio))
+                iheight = int(min(iheight, height * self._icon_scale_ratio))
+            self._icon = pygame.transform.smoothscale(icon, (iwidth, iheight))
             self._icon_rect = self._icon.get_rect(center=self._local_rect.center)
 
         self._icon_hover = self._icon
         self._icon_hover_rect = self._icon_rect
         if icon_hover is not None:
             iwidth, iheight = icon_hover.get_size()
-            
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
@@ -192,17 +183,15 @@ class RectSelectorObject:
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, width * self._icon_scale_ratio)
-                iheight = min(iheight, height * self._icon_scale_ratio)
-            
-            self._icon_hover = pygame.transform.smoothscale(icon_hover, (int(iwidth), int(iheight)))
+                iwidth = int(min(iwidth, width * self._icon_scale_ratio))
+                iheight = int(min(iheight, height * self._icon_scale_ratio))
+            self._icon_hover = pygame.transform.smoothscale(icon_hover, (iwidth, iheight))
             self._icon_hover_rect = self._icon_hover.get_rect(center=self._local_rect.center)
 
         self._icon_selected = self._icon
         self._icon_selected_rect = self._icon_rect
         if icon_selected is not None:
             iwidth, iheight = icon_selected.get_size()
-            
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
@@ -210,72 +199,58 @@ class RectSelectorObject:
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, width * self._icon_scale_ratio)
-                iheight = min(iheight, height * self._icon_scale_ratio)
-            
-            self._icon_selected = pygame.transform.smoothscale(icon_selected, (int(iwidth), int(iheight)))
+                iwidth = int(min(iwidth, width * self._icon_scale_ratio))
+                iheight = int(min(iheight, height * self._icon_scale_ratio))
+            self._icon_selected = pygame.transform.smoothscale(icon_selected, (iwidth, iheight))
             self._icon_selected_rect = self._icon_selected.get_rect(center=self._local_rect.center)
 
-        # texte — 3 états
-        self._text = text
-        self._font = font
-        self._font_path = font_path
-        self._font_size = font_size
+        # texte — gestion title / text / description
+        self._text_anchor = text_anchor
+        self._text_width_ratio = text_width_ratio
+        self._text_height_ratio = text_height_ratio
         self._font_color = font_color
         self._font_color_hover = font_color_hover if font_color_hover is not None else font_color
         self._font_color_selected = font_color_selected if font_color_selected is not None else font_color
 
-        self._text_object = None
-        self._text_object_hover = None
-        self._text_object_selected = None
-        self._text_object_rect = None
-        self._text_blit = False
+        self._texts = {
+            "title": title,
+            "text": text,
+            "description": description
+        }
 
-        self.font_type = None
-        if self._text is not None: # génération
-            if self._font_size is None: # taille de police auto
-                self._font_size = max(3, int(self._rect.height * 0.7))
+        self._text_objects = {}
+        self._text_objects_hover = {}
+        self._text_objects_selected = {}
+        self._text_rects = {}
+        self._text_blit = any(self._texts.values())
 
-            self.font_type = "font"
-            if self._font is None: # chargement de la police
-                try:
-                    self._font = pygame.font.Font(self._font_path, self._font_size)
-                    self.font_type = "path"
-                except Exception as _:
-                    self._font = pygame.font.Font(None, self._font_size)
-                    self.font_type = "default"
+        if self._text_blit:
+            # Calcul de hauteur cumulée pour les 3 textes
+            total_texts = sum(1 for t in self._texts.values() if t)
+            available_height = self._rect.height * self._text_height_ratio / max(total_texts,1)
+            available_width = self._rect.width * self._text_width_ratio
 
-            # Auto ajustement
-            test_font_size = self._font_size
-            test_font = self._font
-            text_render_test = self._font.render(self._text, True, (0, 0, 0))
-            while text_render_test.get_width() / self._rect.width > self._font_size_ratio_limit:
-                test_font_size -= 1
-                if self.font_type == "font":
-                    test_font = self._font
-                elif self.font_type == "path":
-                    test_font = pygame.font.Font(self._font_path, test_font_size)
-                else:
-                    test_font = pygame.font.Font(None, test_font_size)
-                text_render_test = test_font.render(self._text, True, (0, 0, 0))
+            for ttype, tstr in self._texts.items():
+                if tstr is None:
+                    continue
+                # Taille de base
+                base_size = max(9, int(min(available_height*0.8, available_width*0.1)))
+                font = pygame.font.Font(None, base_size)
+                # Ajustement si nécessaire
+                test_size = base_size
+                test_render = font.render(tstr, True, (0,0,0))
+                while (test_render.get_width() > available_width or test_render.get_height() > available_height) and test_size > 5:
+                    test_size -= 1
+                    font = pygame.font.Font(None, test_size)
+                    test_render = font.render(tstr, True, (0,0,0))
+                # Création surfaces
+                self._text_objects[ttype] = font.render(tstr, True, self._font_color)
+                self._text_objects_hover[ttype] = font.render(tstr, True, self._font_color_hover)
+                self._text_objects_selected[ttype] = font.render(tstr, True, self._font_color_selected)
+                self._text_rects[ttype] = self._text_objects[ttype].get_rect()
 
-            self._font_size = test_font_size
-            self._font = test_font
-
-            # Génération (classic)
-            self._text_object = self._font.render(self._text, 1, self._font_color)
-
-            # Effets
-            self._font.set_bold(bold)
-            self._font.set_italic(italic)
-            self._font.set_underline(underline)
-            
-            # Génération (hover)
-            self._text_object_hover = self._font.render(self._text, 1, self._font_color_hover)
-
-            # Hitbox
-            self._text_object_rect = self._text_object.get_rect(center=self._rect.center)
-            self._text_blit = True
+            # Calcul positions verticales
+            self._calculate_text_positions()
 
         # bordure
         self._border_width = max(0, border_width)
@@ -303,6 +278,27 @@ class RectSelectorObject:
 
         # paramètres dynamiques
         self._visible = True
+
+    # ======================================== CALCUL POSITIONS TEXTE ========================================
+    def _calculate_text_positions(self):
+        """
+        Calcule les positions verticales des textes title -> text -> description
+        selon text_anchor.
+        """
+        if not self._text_blit:
+            return
+        # Décalage vertical cumulatif
+        total_height = sum([surf.get_height()*1.2 for surf in self._text_objects.values()])
+        y_start = getattr(self._local_rect, self._text_anchor) - total_height//2 if "center" in self._text_anchor else getattr(self._local_rect, self._text_anchor)
+        current_y = y_start
+        for ttype in ["title", "text", "description"]:
+            if ttype not in self._text_objects:
+                continue
+            rect = self._text_objects[ttype].get_rect()
+            rect.centerx = self._local_rect.centerx
+            rect.y = current_y
+            self._text_rects[ttype] = rect
+            current_y += rect.height*1.2
 
     # ======================================== GETTERS ========================================
     @property
@@ -381,33 +377,41 @@ class RectSelectorObject:
         if self._icon is not None:
             surface.blit(self._icon, self._icon_rect)
         if self._text_blit:
-            surface.blit(self._text_object, self._text_object_rect)
+            for ttype in ["title","text","description"]:
+                if ttype in self._text_objects:
+                    surface.blit(self._text_objects[ttype], self._text_rects[ttype])
         if self._border_width > 0:
             pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
 
     def load_hover(self) -> pygame.Surface:
         """Génère la surface survolée"""
-        surface = self._preloaded["default"].copy()
-        if self._filling_color_hover is not None:
-            pygame.draw.rect(surface, self._filling_color_hover, self._local_rect, border_radius=self._border_radius)
+        surface = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+        hover_color = self._filling_color_hover if self._filling_color_hover is not None else self._filling_color
+        if self._filling:
+            pygame.draw.rect(surface, hover_color, self._local_rect, border_radius=self._border_radius)
         if self._icon_hover is not None:
             surface.blit(self._icon_hover, self._icon_hover_rect)
         if self._text_blit:
-            surface.blit(self._text_object_hover, self._text_object_rect)
+            for ttype in ["title","text","description"]:
+                if ttype in self._text_objects_hover:
+                    surface.blit(self._text_objects_hover[ttype], self._text_rects[ttype])
         if self._border_width > 0:
             pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
 
     def load_selected(self) -> pygame.Surface:
         """Génère la surface sélectionnée"""
-        surface = self._preloaded["default"].copy()
-        if self._filling_color_selected is not None:
-            pygame.draw.rect(surface, self._filling_color_selected, self._local_rect, border_radius=self._border_radius)
+        surface = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+        selected_color = self._filling_color_selected if self._filling_color_selected is not None else self._filling_color
+        if self._filling:
+            pygame.draw.rect(surface, selected_color, self._local_rect, border_radius=self._border_radius)
         if self._icon_selected is not None:
             surface.blit(self._icon_selected, self._icon_selected_rect)
         if self._text_blit:
-            surface.blit(self._text_object_selected, self._text_object_rect)
+            for ttype in ["title","text","description"]:
+                if ttype in self._text_objects_selected:
+                    surface.blit(self._text_objects_selected[ttype], self._text_rects[ttype])
         if self._border_width > 0:
             pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
@@ -432,12 +436,13 @@ class RectSelectorObject:
             self._scale_ratio = target_ratio
 
         # Redimensionnement
-        if self.selected: surface = self._preloaded["selected"]
-        elif self.hovered: surface = self._preloaded["hover"]
-        else: surface = self._preloaded["default"]
+        surface = self._preloaded["selected" if self.selected else "hover" if self.hovered else "default"]
         surface_rect = surface.get_rect()
         if self._last_scale_ratio != self._scale_ratio:
-            self._surface = pygame.transform.smoothscale(surface, (surface_rect.width * self._scale_ratio, surface_rect.height * self._scale_ratio))
+            new_width = int(surface_rect.width * self._scale_ratio)
+            new_height = int(surface_rect.height * self._scale_ratio)
+            self._surface = pygame.transform.smoothscale(surface, (new_width, new_height))
+            self._last_scale_ratio = self._scale_ratio
         else:
             self._surface = surface
         self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
@@ -446,18 +451,16 @@ class RectSelectorObject:
         """Dessin par frame"""
         if not self._visible:
             return
-
         surface = context.screen.surface
         if self._panel is not None and hasattr(self._panel, 'surface'):
             surface = self._panel.surface
-
         surface.blit(self._surface, self._surface_rect)
 
     def left_click(self, up: bool = False):
         """Clic gauche"""
         if not up:
             context.ui.select(self._selection_id, self._selector_id)
-            self.callback()
+            self._callback()
 
     def right_click(self, up: bool = False):
         """Clic droit"""
