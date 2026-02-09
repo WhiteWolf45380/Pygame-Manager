@@ -160,7 +160,7 @@ class UiManager:
         if len(selected) == 0:
             return None
         elif len(selected) == 1:
-            return self._selections
+            return selected[0]
         return selected
 
 # ======================================== INSTANCE ========================================
