@@ -38,6 +38,9 @@ class RectSelectorObject:
             text_anchor: str = "center",  # Position du bloc de texte
             text_width_ratio: float = 0.8,
             text_height_ratio: float = 0.8,
+            title_size_ratio: float = 1.0,  # Ratio de taille du title (relatif)
+            text_size_ratio: float = 0.75,  # Ratio de taille du text (relatif)
+            description_size_ratio: float = 0.55,  # Ratio de taille de la description (relatif)
             font_color: pygame.Color = (0, 0, 0, 255),
             font_color_hover: pygame.Color = None,
             font_color_selected: pygame.Color = None,
@@ -80,6 +83,9 @@ class RectSelectorObject:
             text_anchor (str, optional) : position du bloc de texte (ex: "topleft", "center", "bottomright")
             text_width_ratio (float, optional) : ratio max du texte par rapport à la largeur
             text_height_ratio (float, optional) : ratio max du texte par rapport à la hauteur
+            title_size_ratio (float, optional) : ratio de taille du title (relatif aux autres, défaut 1.0)
+            text_size_ratio (float, optional) : ratio de taille du text (relatif aux autres, défaut 0.75)
+            description_size_ratio (float, optional) : ratio de taille de la description (relatif aux autres, défaut 0.55)
             font_color (Color, optional) : couleur de la police
             font_color_hover (Color, optional) : couleur de la police lors du survol
             font_color_selected (Color, optional) : couleur de la police lorsque sélectionné
@@ -133,6 +139,9 @@ class RectSelectorObject:
         if not isinstance(text_anchor, str): _raise_error(self, '__init__', 'Invalid text_anchor argument')
         if not isinstance(text_width_ratio, (float, int)) or not (0 < text_width_ratio <= 1): _raise_error(self, '__init__', 'Invalid text_width_ratio argument')
         if not isinstance(text_height_ratio, (float, int)) or not (0 < text_height_ratio <= 1): _raise_error(self, '__init__', 'Invalid text_height_ratio argument')
+        if not isinstance(title_size_ratio, (float, int)) or title_size_ratio <= 0: _raise_error(self, '__init__', 'Invalid title_size_ratio argument')
+        if not isinstance(text_size_ratio, (float, int)) or text_size_ratio <= 0: _raise_error(self, '__init__', 'Invalid text_size_ratio argument')
+        if not isinstance(description_size_ratio, (float, int)) or description_size_ratio <= 0: _raise_error(self, '__init__', 'Invalid description_size_ratio argument')
         font_color = _to_color(font_color, method='__init__')
         font_color_hover = _to_color(font_color_hover, raised=False)
         font_color_selected = _to_color(font_color_selected, raised=False)
@@ -228,6 +237,9 @@ class RectSelectorObject:
         self._text_anchor = text_anchor
         self._text_width_ratio = text_width_ratio
         self._text_height_ratio = text_height_ratio
+        self._title_size_ratio = title_size_ratio
+        self._text_size_ratio = text_size_ratio
+        self._description_size_ratio = description_size_ratio
         self._font_color = font_color
         self._font_color_hover = font_color_hover if font_color_hover is not None else font_color
         self._font_color_selected = font_color_selected if font_color_selected is not None else font_color
@@ -246,8 +258,7 @@ class RectSelectorObject:
 
         if self._text_blit:
             # Compter le nombre de types de textes présents
-            texts_present = [t for t in self._texts.values() if t is not None]
-            num_text_types = len(texts_present)
+            num_text_types = sum(1 for t in self._texts.values() if t is not None)
             
             if num_text_types == 0:
                 return
@@ -255,60 +266,87 @@ class RectSelectorObject:
             available_width = self._rect.width * self._text_width_ratio
             available_height = self._rect.height * self._text_height_ratio
             
-            # Définir les ratios de taille relatifs entre les types
-            # title:text:description = 1.0:0.75:0.55
+            # Utiliser les ratios personnalisables
             size_ratios = {
-                "title": 1.0,
-                "text": 0.75,
-                "description": 0.55
+                "title": self._title_size_ratio,
+                "text": self._text_size_ratio,
+                "description": self._description_size_ratio
             }
             
-            # Calculer la somme des ratios présents (avec espacement de 20% entre chaque type)
+            # Calculer la somme des ratios présents
             total_ratio = sum(size_ratios[ttype] for ttype in ["title", "text", "description"] if self._texts.get(ttype) is not None)
-            spacing_ratio = 0.2 * (num_text_types - 1) if num_text_types > 1 else 0
             
-            # Hauteur de base pour un ratio de 1.0
-            base_height = available_height / (total_ratio + spacing_ratio)
+            # Espacement entre les types (10% de l'espace d'un élément de ratio 1.0)
+            spacing_count = num_text_types - 1 if num_text_types > 1 else 0
+            spacing_total = 0.1 * spacing_count
+            
+            # Hauteur de référence pour un ratio de 1.0
+            # TOUTE la hauteur disponible doit être utilisée
+            base_height = available_height / (total_ratio + spacing_total)
 
-            # Création des textes avec tailles appropriées
+            # Phase 1: Créer les textes avec leur taille maximale théorique
+            temp_fonts = {}
+            
             for text_type, text_content in self._texts.items():
                 if text_content is None:
                     continue
                 
-                # Calculer la hauteur allouée pour ce type de texte
+                # Hauteur allouée pour ce type
                 type_height = base_height * size_ratios[text_type]
                 
-                # Taille de police de base selon le type (proportion de la hauteur allouée)
-                if text_type == "title":
-                    base_size = max(12, int(type_height * 0.9))
-                elif text_type == "description":
-                    base_size = max(8, int(type_height * 0.8))
-                else:  # "text"
-                    base_size = max(10, int(type_height * 0.85))
-
-                # Création de la police
-                font = pygame.font.Font(None, base_size)
+                # Taille de police initiale = toute la hauteur allouée
+                if isinstance(text_content, list):
+                    # Pour les listes, diviser par le nombre de lignes + espacement (10% entre lignes)
+                    num_lines = len(text_content)
+                    line_spacing_total = 0.1 * (num_lines - 1) if num_lines > 1 else 0
+                    # Chaque ligne prend 1.0, espacement prend 0.1 par gap
+                    initial_size = int(type_height / (num_lines + line_spacing_total))
+                else:
+                    # Pour une seule ligne, utiliser toute la hauteur
+                    initial_size = int(type_height)
                 
-                # Italique pour description
+                initial_size = max(5, initial_size)
+                temp_fonts[text_type] = (initial_size, text_content, type_height)
+
+            # Phase 2: Ajuster les tailles pour respecter la largeur
+            for text_type, (initial_size, text_content, type_height) in temp_fonts.items():
+                
+                font = pygame.font.Font(None, initial_size)
                 if text_type == "description":
                     font.set_italic(True)
-
-                # Gestion des listes (multi-lignes)
+                
                 if isinstance(text_content, list):
-                    # Créer une surface multi-lignes avec ajustement
-                    self._text_objects[text_type] = self._create_multiline_surface(
-                        text_content, font, self._font_color, available_width, type_height, base_size
-                    )
-                    self._text_objects_hover[text_type] = self._create_multiline_surface(
-                        text_content, font, self._font_color_hover, available_width, type_height, base_size
-                    )
-                    self._text_objects_selected[text_type] = self._create_multiline_surface(
-                        text_content, font, self._font_color_selected, available_width, type_height, base_size
-                    )
+                    # Tester avec multi-lignes
+                    test_size = initial_size
+                    
+                    while test_size > 5:
+                        test_font = pygame.font.Font(None, test_size)
+                        if text_type == "description":
+                            test_font.set_italic(True)
+                        
+                        # Espacement de 10% de la taille de police
+                        line_spacing = int(test_size * 0.1)
+                        
+                        # Vérifier la largeur max et la hauteur totale
+                        max_width = 0
+                        total_height = 0
+                        for i, line in enumerate(text_content):
+                            line_surf = test_font.render(line, True, (0, 0, 0))
+                            max_width = max(max_width, line_surf.get_width())
+                            total_height += line_surf.get_height()
+                            if i < len(text_content) - 1:
+                                total_height += line_spacing
+                        
+                        # Si ça rentre, on garde cette taille
+                        if max_width <= available_width and total_height <= type_height:
+                            break
+                        
+                        test_size -= 1
+                    
+                    final_size = max(5, test_size)
                 else:
-                    # Gestion normale pour une seule ligne
-                    # Ajustement si nécessaire
-                    test_size = base_size
+                    # Ajuster pour une seule ligne
+                    test_size = initial_size
                     test_font = font
                     test_render = test_font.render(text_content, True, (0, 0, 0))
                     
@@ -318,11 +356,28 @@ class RectSelectorObject:
                         if text_type == "description":
                             test_font.set_italic(True)
                         test_render = test_font.render(text_content, True, (0, 0, 0))
-
-                    # Création des surfaces pour les 3 états
-                    self._text_objects[text_type] = test_font.render(text_content, True, self._font_color)
-                    self._text_objects_hover[text_type] = test_font.render(text_content, True, self._font_color_hover)
-                    self._text_objects_selected[text_type] = test_font.render(text_content, True, self._font_color_selected)
+                    
+                    final_size = max(5, test_size)
+                
+                # Créer les surfaces finales
+                final_font = pygame.font.Font(None, final_size)
+                if text_type == "description":
+                    final_font.set_italic(True)
+                
+                if isinstance(text_content, list):
+                    self._text_objects[text_type] = self._create_multiline_surface(
+                        text_content, final_font, self._font_color, available_width, type_height, final_size
+                    )
+                    self._text_objects_hover[text_type] = self._create_multiline_surface(
+                        text_content, final_font, self._font_color_hover, available_width, type_height, final_size
+                    )
+                    self._text_objects_selected[text_type] = self._create_multiline_surface(
+                        text_content, final_font, self._font_color_selected, available_width, type_height, final_size
+                    )
+                else:
+                    self._text_objects[text_type] = final_font.render(text_content, True, self._font_color)
+                    self._text_objects_hover[text_type] = final_font.render(text_content, True, self._font_color_hover)
+                    self._text_objects_selected[text_type] = final_font.render(text_content, True, self._font_color_selected)
 
             # Calcul des positions
             self._calculate_text_positions()
@@ -379,7 +434,7 @@ class RectSelectorObject:
             test_font.set_italic(True)
         
         test_size = base_size
-        line_spacing = int(test_size * 0.2)  # 20% d'espacement entre lignes
+        line_spacing = int(test_size * 0.1)  # 10% d'espacement entre lignes
         
         # Fonction pour calculer les dimensions
         def calculate_dimensions(fnt, spacing):
@@ -403,7 +458,7 @@ class RectSelectorObject:
             if font.get_italic():
                 test_font.set_italic(True)
             
-            line_spacing = int(test_size * 0.2)
+            line_spacing = int(test_size * 0.1)
             max_line_width, total_height, line_height = calculate_dimensions(test_font, line_spacing)
         
         # Créer les surfaces de chaque ligne
