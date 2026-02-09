@@ -74,7 +74,9 @@ class RectSelectorObject:
             icon_keep_ratio (bool, optional) : pas de déformation, ratio_locker
             icon_scale_ratio (float, optional) : ratio maximum par rapport aux dimensions du bouton
 
-            title/text/description (str, optional) : textes du sélecteur
+            title/text/description (str or list, optional) : textes du sélecteur (peuvent être combinés)
+                - Si str : texte sur une seule ligne
+                - Si list : chaque élément de la liste est affiché sur une nouvelle ligne
             text_anchor (str, optional) : position du bloc de texte (ex: "topleft", "center", "bottomright")
             text_width_ratio (float, optional) : ratio max du texte par rapport à la largeur
             text_height_ratio (float, optional) : ratio max du texte par rapport à la hauteur
@@ -100,6 +102,15 @@ class RectSelectorObject:
         if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(selection_id, str) or not selection_id: _raise_error(self, '__init__', 'Invalid selection_id argument')
         if not isinstance(selector_id, str) or not selector_id: _raise_error(self, '__init__', 'Invalid selector_id argument')
+        if title is not None and not isinstance(title, (str, list)): _raise_error(self, '__init__', 'Invalid title argument (must be str or list)')
+        if text is not None and not isinstance(text, (str, list)): _raise_error(self, '__init__', 'Invalid text argument (must be str or list)')
+        if description is not None and not isinstance(description, (str, list)): _raise_error(self, '__init__', 'Invalid description argument (must be str or list)')
+        if isinstance(title, list):
+            if not all(isinstance(line, str) for line in title): _raise_error(self, '__init__', 'All title list items must be strings')
+        if isinstance(text, list):
+            if not all(isinstance(line, str) for line in text): _raise_error(self, '__init__', 'All text list items must be strings')
+        if isinstance(description, list):
+            if not all(isinstance(line, str) for line in description): _raise_error(self, '__init__', 'All description list items must be strings')
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
         filling_color = _to_color(filling_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)
@@ -224,31 +235,67 @@ class RectSelectorObject:
         self._text_blit = any(self._texts.values())
 
         if self._text_blit:
-            # Calcul de hauteur cumulée pour les 3 textes
-            total_texts = sum(1 for t in self._texts.values() if t)
-            available_height = self._rect.height * self._text_height_ratio / max(total_texts,1)
+            # Calcul de hauteur disponible par texte
+            texts_present = [t for t in self._texts.values() if t is not None]
+            num_texts = len(texts_present)
+            
             available_width = self._rect.width * self._text_width_ratio
+            available_height = self._rect.height * self._text_height_ratio
+            
+            # Hauteur par texte (avec espacement de 20%)
+            height_per_text = available_height / (num_texts + (num_texts - 1) * 0.2) if num_texts > 0 else available_height
 
-            for ttype, tstr in self._texts.items():
-                if tstr is None:
+            # Création des textes avec tailles appropriées
+            for text_type, text_content in self._texts.items():
+                if text_content is None:
                     continue
-                # Taille de base
-                base_size = max(9, int(min(available_height*0.8, available_width*0.1)))
-                font = pygame.font.Font(None, base_size)
-                # Ajustement si nécessaire
-                test_size = base_size
-                test_render = font.render(tstr, True, (0,0,0))
-                while (test_render.get_width() > available_width or test_render.get_height() > available_height) and test_size > 5:
-                    test_size -= 1
-                    font = pygame.font.Font(None, test_size)
-                    test_render = font.render(tstr, True, (0,0,0))
-                # Création surfaces
-                self._text_objects[ttype] = font.render(tstr, True, self._font_color)
-                self._text_objects_hover[ttype] = font.render(tstr, True, self._font_color_hover)
-                self._text_objects_selected[ttype] = font.render(tstr, True, self._font_color_selected)
-                self._text_rects[ttype] = self._text_objects[ttype].get_rect()
+                
+                # Tailles de base selon le type
+                if text_type == "title":
+                    base_size = max(10, int(min(height_per_text * 0.8, available_width * 0.15)))
+                elif text_type == "description":
+                    base_size = max(8, int(min(height_per_text * 0.6, available_width * 0.08)))
+                else:  # "text"
+                    base_size = max(9, int(min(height_per_text * 0.7, available_width * 0.1)))
 
-            # Calcul positions verticales
+                # Création de la police
+                font = pygame.font.Font(None, base_size)
+                
+                # Italique pour description
+                if text_type == "description":
+                    font.set_italic(True)
+
+                # Gestion des listes (multi-lignes)
+                if isinstance(text_content, list):
+                    # Créer une surface multi-lignes
+                    self._text_objects[text_type] = self._create_multiline_surface(
+                        text_content, font, self._font_color, available_width, height_per_text
+                    )
+                    self._text_objects_hover[text_type] = self._create_multiline_surface(
+                        text_content, font, self._font_color_hover, available_width, height_per_text
+                    )
+                    self._text_objects_selected[text_type] = self._create_multiline_surface(
+                        text_content, font, self._font_color_selected, available_width, height_per_text
+                    )
+                else:
+                    # Gestion normale pour une seule ligne
+                    # Ajustement si nécessaire
+                    test_size = base_size
+                    test_render = font.render(text_content, True, (0, 0, 0))
+                    
+                    while (test_render.get_width() > available_width or test_render.get_height() > height_per_text) and test_size > 5:
+                        test_size -= 1
+                        font = pygame.font.Font(None, test_size)
+                        if text_type == "description":
+                            font.set_italic(True)
+                        test_render = font.render(text_content, True, (0, 0, 0))
+
+                    # Création des surfaces pour les 3 états
+                    self._text_objects[text_type] = font.render(text_content, True, self._font_color)
+                    self._text_objects_hover[text_type] = font.render(text_content, True, self._font_color_hover)
+                    self._text_objects_selected[text_type] = font.render(text_content, True, self._font_color_selected)
+
+            # Calcul des positions
             self._calculate_text_positions()
 
         # bordure
@@ -278,35 +325,147 @@ class RectSelectorObject:
         # paramètres dynamiques
         self._visible = True
 
+    # ======================================== CREATION SURFACE MULTI-LIGNES ========================================
+    def _create_multiline_surface(self, lines: list, font: pygame.font.Font, color: pygame.Color, max_width: float, max_height: float) -> pygame.Surface:
+        """
+        Crée une surface avec plusieurs lignes de texte.
+        
+        Args:
+            lines: Liste de chaînes de caractères
+            font: Police à utiliser
+            color: Couleur du texte
+            max_width: Largeur maximale
+            max_height: Hauteur maximale
+            
+        Returns:
+            Surface pygame contenant toutes les lignes
+        """
+        if not lines:
+            return pygame.Surface((1, 1), pygame.SRCALPHA)
+        
+        # Ajuster la taille de la police si nécessaire
+        test_font = font
+        test_size = font.get_height()
+        line_spacing = int(test_size * 0.2)  # 20% d'espacement entre lignes
+        
+        # Trouver la ligne la plus large
+        max_line_width = 0
+        for line in lines:
+            test_render = test_font.render(line, True, (0, 0, 0))
+            max_line_width = max(max_line_width, test_render.get_width())
+        
+        # Calculer la hauteur totale nécessaire
+        total_height = len(lines) * test_size + (len(lines) - 1) * line_spacing
+        
+        # Réduire la taille si nécessaire
+        while (max_line_width > max_width or total_height > max_height) and test_size > 5:
+            test_size -= 1
+            test_font = pygame.font.Font(None, test_size)
+            # Conserver l'italique si c'est une description
+            if font.get_italic():
+                test_font.set_italic(True)
+            
+            line_spacing = int(test_size * 0.2)
+            total_height = len(lines) * test_size + (len(lines) - 1) * line_spacing
+            
+            max_line_width = 0
+            for line in lines:
+                test_render = test_font.render(line, True, (0, 0, 0))
+                max_line_width = max(max_line_width, test_render.get_width())
+        
+        # Créer les surfaces de chaque ligne
+        line_surfaces = []
+        for line in lines:
+            line_surf = test_font.render(line, True, color)
+            line_surfaces.append(line_surf)
+        
+        # Calculer les dimensions finales
+        final_width = max(surf.get_width() for surf in line_surfaces)
+        final_height = sum(surf.get_height() for surf in line_surfaces) + line_spacing * (len(lines) - 1)
+        
+        # Créer la surface finale
+        final_surface = pygame.Surface((int(final_width), int(final_height)), pygame.SRCALPHA)
+        
+        # Blit chaque ligne
+        current_y = 0
+        for surf in line_surfaces:
+            final_surface.blit(surf, (0, current_y))
+            current_y += surf.get_height() + line_spacing
+        
+        return final_surface
+
     # ======================================== CALCUL POSITIONS TEXTE ========================================
     def _calculate_text_positions(self):
         """
         Calcule les positions verticales des textes title -> text -> description
         selon text_anchor.
+        
+        Pour "bottom*" : title en bas, text au-dessus, description encore au-dessus
+        Pour "top*" : title en haut, text en dessous, description encore en dessous
+        Pour "center*" : centré verticalement
         """
         if not self._text_blit:
             return
 
-        total_height = sum([surf.get_height()*1.2 for surf in self._text_objects.values()])
+        # Ordre d'affichage selon anchor
+        if "bottom" in self._text_anchor:
+            # De bas en haut : title, text, description
+            order = ["title", "text", "description"]
+        elif "top" in self._text_anchor:
+            # De haut en bas : title, text, description
+            order = ["title", "text", "description"]
+        else:  # center
+            # Centré : title, text, description
+            order = ["title", "text", "description"]
 
-        if "top" in self._text_anchor:
-            y_start = self._local_rect.top
-        elif "bottom" in self._text_anchor:
-            y_start = self._local_rect.bottom - total_height
-        else:
-            y_start = self._local_rect.centery - total_height / 2
+        # Filtrer uniquement les textes présents
+        present_order = [t for t in order if t in self._text_objects]
+        
+        if not present_order:
+            return
 
-        current_y = y_start
+        # Calculer la hauteur totale du bloc de texte
+        total_height = 0
+        for i, text_type in enumerate(present_order):
+            surf = self._text_objects[text_type]
+            total_height += surf.get_height()
+            if i < len(present_order) - 1:  # Espacement entre les textes
+                total_height += int(surf.get_height() * 0.2)
 
-        for ttype in ["title", "text", "description"]:
-            if ttype not in self._text_objects:
-                continue
-            rect = self._text_objects[ttype].get_rect()
-            rect.centerx = self._local_rect.centerx
-            rect.y = current_y
-            self._text_rects[ttype] = rect
-            current_y += rect.height*1.2
+        # Déterminer le point de départ vertical
+        if "bottom" in self._text_anchor:
+            # Partir du bas
+            current_y = self._local_rect.bottom - int(total_height)
+            direction = 1  # Vers le haut
+        elif "top" in self._text_anchor:
+            # Partir du haut
+            current_y = self._local_rect.top
+            direction = 1  # Vers le bas
+        else:  # center
+            # Partir du centre
+            current_y = int(self._local_rect.centery - total_height / 2)
+            direction = 1  # Vers le bas
 
+        # Positionner chaque texte
+        for i, text_type in enumerate(present_order):
+            surf = self._text_objects[text_type]
+            rect = surf.get_rect()
+            
+            # Position horizontale selon anchor
+            if "left" in self._text_anchor:
+                rect.left = self._local_rect.left
+            elif "right" in self._text_anchor:
+                rect.right = self._local_rect.right
+            else:  # center
+                rect.centerx = self._local_rect.centerx
+            
+            # Position verticale
+            rect.top = int(current_y)
+            
+            self._text_rects[text_type] = rect
+            
+            # Avancer pour le prochain texte
+            current_y += rect.height + int(rect.height * 0.2)
 
     # ======================================== GETTERS ========================================
     @property
@@ -385,9 +544,9 @@ class RectSelectorObject:
         if self._icon is not None:
             surface.blit(self._icon, self._icon_rect)
         if self._text_blit:
-            for ttype in ["title","text","description"]:
-                if ttype in self._text_objects:
-                    surface.blit(self._text_objects[ttype], self._text_rects[ttype])
+            for text_type in ["title", "text", "description"]:
+                if text_type in self._text_objects:
+                    surface.blit(self._text_objects[text_type], self._text_rects[text_type])
         if self._border_width > 0:
             pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
@@ -401,9 +560,9 @@ class RectSelectorObject:
         if self._icon_hover is not None:
             surface.blit(self._icon_hover, self._icon_hover_rect)
         if self._text_blit:
-            for ttype in ["title","text","description"]:
-                if ttype in self._text_objects_hover:
-                    surface.blit(self._text_objects_hover[ttype], self._text_rects[ttype])
+            for text_type in ["title", "text", "description"]:
+                if text_type in self._text_objects_hover:
+                    surface.blit(self._text_objects_hover[text_type], self._text_rects[text_type])
         if self._border_width > 0:
             pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
@@ -417,9 +576,9 @@ class RectSelectorObject:
         if self._icon_selected is not None:
             surface.blit(self._icon_selected, self._icon_selected_rect)
         if self._text_blit:
-            for ttype in ["title","text","description"]:
-                if ttype in self._text_objects_selected:
-                    surface.blit(self._text_objects_selected[ttype], self._text_rects[ttype])
+            for text_type in ["title", "text", "description"]:
+                if text_type in self._text_objects_selected:
+                    surface.blit(self._text_objects_selected[text_type], self._text_rects[text_type])
         if self._border_width > 0:
             pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
