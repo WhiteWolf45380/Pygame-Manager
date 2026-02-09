@@ -156,7 +156,12 @@ class UiManager:
 
     def get_selected(self, id_selection: str) -> list[str]:
         """Renvoie la liste des sélecteurs sélectionnés"""
-        return self._selections.get(id_selection, [])
+        selected = self._selections.get(id_selection, [])
+        if len(selected) == 0:
+            return None
+        elif len(selected) == 1:
+            return self._selections
+        return selected
 
 # ======================================== INSTANCE ========================================
 ui_manager = UiManager()
