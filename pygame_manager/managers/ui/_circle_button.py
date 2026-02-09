@@ -1,5 +1,6 @@
 # ======================================== IMPORTS ========================================
 from ._core import *
+from typing import Any
 
 # ======================================== OBJET ========================================
 class CircleButtonObject:
@@ -38,8 +39,12 @@ class CircleButtonObject:
             hover_scale_ratio: float = 1.0,
             hover_scale_duration: float = 0.0,
 
+            id: Any = None,
             callback: callable = lambda: None,
-            panel: object = None
+            callback_give_id: bool = False,
+
+            panel: object = None,
+            zorder: int = 0,
         ):
         """
         Args:
@@ -71,8 +76,12 @@ class CircleButtonObject:
             hover_scale_ratio (float, optional) : facteur de redimensionnement lors du survol
             hover_scale_duration (float, optional) : durée de redimensionnement (en secondes)
 
+            id (Any, optional) : id du bouton
             callback (callable, optional) : action en cas de pression du bouton
+            callback_give_name (bool, optional) : passe l'id du bouton en argument du callback
+
             panel (object, optional) : panel maître pour affichage automatique sur la surface
+            zorder (int, optional) : ordre d'affichage
         """
         # vérifications
         if not isinstance(x, Real): _raise_error(self, '__init__', 'Invalid x argument')
@@ -98,6 +107,7 @@ class CircleButtonObject:
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
+        if not isinstance(callback_give_id, bool): _raise_error(self, '__init__', 'Invalid callback_give_id argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
 
         # auto-registration
@@ -200,7 +210,9 @@ class CircleButtonObject:
         self._hover_scale_duration = float(hover_scale_duration)
 
         # action de clique
+        self._id = id
         self._callback = callback
+        self._callback_give_id = callback_give_id
 
         # panel maître
         if isinstance(panel, str): self._panel = context.panels[panel]
@@ -347,7 +359,10 @@ class CircleButtonObject:
     def left_click(self, up: bool = False):
         """Clic gauche"""
         if self.callback is not None and not up:
-            self.callback()
+            if self._callback_give_id:
+                self.callback(id=self._id)
+            else:
+                self.callback()
 
     def right_click(self, up: bool = False):
         """Clic droit"""
