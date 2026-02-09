@@ -311,6 +311,10 @@ class SurfaceObject:
         return self._rect.collidepoint(mouse_pos)
 
     # ======================================== METHODES DYNAMIQUES ========================================
+    def kill(self):
+        """Détruit l'objet"""
+        context.ui._remove(self)
+
     def update(self):
         """Actualisation par frame"""
         self.update_gradient()

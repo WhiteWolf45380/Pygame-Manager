@@ -62,8 +62,14 @@ class UiManager:
 
     def _append(self, obj: object):
         """Enregistrement d'un objet en maintenant l'ordre z"""
+        if obj in self._objects: return
         self._objects.append(obj)
         self._objects.sort(key=lambda o: getattr(o, 'zorder', 0))
+    
+    def _remove(self, obj: object):
+        """Suppression d'un objet"""
+        if obj not in self._objects: return
+        self._objects.remove(obj)
     
     # Souris
     def _update_hover(self):

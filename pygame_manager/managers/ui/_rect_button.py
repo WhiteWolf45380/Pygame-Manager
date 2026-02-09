@@ -379,6 +379,10 @@ class RectButtonObject:
         return hover
 
     # ======================================== METHODES DYNAMIQUES ========================================
+    def kill(self):
+        """Détruit l'objet"""
+        context.ui._remove(self)
+
     def update(self):
         """Actualisation par frame"""
         if not self._visible:

@@ -417,6 +417,10 @@ class RectSelectorObject:
         return surface
 
     # ======================================== METHODES DYNAMIQUES ========================================
+    def kill(self):
+        """Détruit l'objet"""
+        context.ui._remove(self)
+
     def select(self):
         """Sélectionne ce sélecteur dans son groupe et lance le callback"""
         context.ui._select(self._selection_id, self._selector_id)
