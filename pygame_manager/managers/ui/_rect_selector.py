@@ -75,7 +75,7 @@ class RectSelectorObject:
             icon_scale_ratio (float, optional) : ratio maximum par rapport aux dimensions du bouton
 
             title/text/description (str or list, optional) : textes du sélecteur (peuvent être combinés)
-                - Si str : texte sur une seule ligne
+                - Si str : texte sur une seule ligne (les \n sont automatiquement convertis en sauts de ligne)
                 - Si list : chaque élément de la liste est affiché sur une nouvelle ligne
             text_anchor (str, optional) : position du bloc de texte (ex: "topleft", "center", "bottomright")
             text_width_ratio (float, optional) : ratio max du texte par rapport à la largeur
@@ -105,6 +105,16 @@ class RectSelectorObject:
         if title is not None and not isinstance(title, (str, list)): _raise_error(self, '__init__', 'Invalid title argument (must be str or list)')
         if text is not None and not isinstance(text, (str, list)): _raise_error(self, '__init__', 'Invalid text argument (must be str or list)')
         if description is not None and not isinstance(description, (str, list)): _raise_error(self, '__init__', 'Invalid description argument (must be str or list)')
+        
+        # Convertir les chaînes avec \n en listes
+        if isinstance(title, str) and '\n' in title:
+            title = title.split('\n')
+        if isinstance(text, str) and '\n' in text:
+            text = text.split('\n')
+        if isinstance(description, str) and '\n' in description:
+            description = description.split('\n')
+        
+        # Validation des listes
         if isinstance(title, list):
             if not all(isinstance(line, str) for line in title): _raise_error(self, '__init__', 'All title list items must be strings')
         if isinstance(text, list):
