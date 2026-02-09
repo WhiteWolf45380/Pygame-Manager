@@ -129,6 +129,7 @@ class TextObject:
         self._shadow_color = shadow_color
         self._shadow_offset = shadow_offset
         self._shadow_surface = None
+        self._shadow_surface_init = None
 
         # Fond
         self._background = background
@@ -165,6 +166,7 @@ class TextObject:
         self._surface = self._font.render(self._text, self._antialias, self._font_color, self._background)
         self._surface_init = self._surface.copy()
         self._shadow_surface = self._font.render(self._text, self._antialias, self._shadow_color)
+        self._shadow_surface_init = self._shadow_surface.copy()
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
     def _render_gradient(self):
@@ -207,6 +209,7 @@ class TextObject:
         self._surface = gradient
         self._surface_init = self._surface.copy()
         self._shadow_surface = self._font.render(self._text, self._antialias, self._shadow_color)
+        self._shadow_surface_init = self._shadow_surface.copy()
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
 
 
@@ -307,6 +310,7 @@ class TextObject:
         if not isinstance(ratio, Real) or not 0.0 < ratio <= 1.0:
             _raise_error(self, 'scale', 'Invalid ratio_argument')
         self._surface = pygame.transform.smoothscale(self._surface_init, (self._surface_init.get_width() * ratio, self._surface_init.get_height() * ratio))
+        self._shadow_surface = pygame.transform.smoothscale(self._shadow_surface_init, (self._shadow_surface_init.get_width() * ratio, self._shadow_surface_init.get_height() * ratio))
         self._rect = self._surface.get_rect(center=self._rect.center)
 
     def update(self):
@@ -324,7 +328,7 @@ class TextObject:
         if self._panel is not None and hasattr(self._panel, 'surface'):
             surface = self._panel.surface
         
-        if self._shadow is not None:
+        if self._shadow_surface is not None:
             surface.blit(self._shadow_surface, (self._rect.x + self._shadow_offset, self._rect.y + self._shadow_offset))
         surface.blit(self._surface, self._rect)
     
