@@ -295,6 +295,12 @@ class TextObject:
     def kill(self):
         """Détruit l'objet"""
         context.ui._remove(self)
+    
+    def reset(self):
+        """Supprime les effets"""
+        self.set_alpha(255)
+        self._surface = self._surface_init.copy()
+        self._rect = self._surface.get_rect(center=self._rect.center)
 
     def scale(self, ratio: Real):
         """Redimensionne l'objet"""
