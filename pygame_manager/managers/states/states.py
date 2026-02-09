@@ -210,6 +210,7 @@ class StatesManager:
         if new_layer in self._active_states: old = self._active_states[new_layer]
         else: old = None
 
+        if old == self._transition_old and new == self._transition_new: return
         if not transition or not (ease_in or ease_out) or duration == 0.0:
             if old is not None:
                 old_obj = self._dict[old]["state_obj"]
