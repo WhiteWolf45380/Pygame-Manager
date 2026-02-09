@@ -126,7 +126,7 @@ class RectSelectorObject:
 
         # auto-registration
         context.ui._append(self)
-        context.ui._add_selection(selection_id)
+        context.ui.add_selection(selection_id)
 
         # zorder
         self._zorder = 0
