@@ -2,70 +2,81 @@ import socket
 import json
 import threading
 import time
+from collections import deque
 from typing import Any
 
 DISCOVERY_PORT = 50000
 GAME_PORT = 5555
 BROADCAST_INTERVAL = 1.0
 LOBBY_TIMEOUT = 3.0
+CLIENT_TIMEOUT = 5.0
+MAX_BUFFER_SIZE = 65536
 
 
 class NetworkManager:
     def __init__(self):
-        self._tcp_socket = None
+        # ================= TCP =================
         self._server_socket = None
+        self._clients: deque[socket.socket] = deque()
+        self._tcp_socket: socket.socket | None = None
+
         self._connected = False
         self._is_host = False
 
-        # ================= TCP SYNC =================
-        self._buffer = ""
-        self._latest_data: dict[str, Any] | None = None
+        # ================= DATA =================
+        self._latest_data = None
+        self._latest_by_client: dict[socket.socket, dict | None] = {}
+        self._last_seen: dict[socket.socket, float] = {}
         self._lock = threading.Lock()
 
-        # ================= UDP DISCOVERY =================
+        # ================= UDP =================
         self._udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._udp_sock.bind(("", DISCOVERY_PORT))
         self._udp_sock.setblocking(False)
 
         self._lobbies: dict[str, dict] = {}
-        self._last_seen: dict[str, float] = {}
+        self._last_lobby_seen: dict[str, float] = {}
 
         # ================= BROADCAST =================
         self._broadcast_running = False
         self._broadcast_thread = None
         self._lobby_info = {}
 
+        # ================= HEARTBEAT =================
+        self._heartbeat_interval = 1.0
+        self._heartbeat_thread = None
+
     # ========================= HOST =========================
-    def host(self, port: int = GAME_PORT, **kwargs) -> bool:
-        """Héberge la connexion"""
+    def host(self, port: int = GAME_PORT, max_players: int | None = None, **kwargs) -> bool:
         try:
             self._is_host = True
+            self._connected = True
 
             self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._server_socket.bind(("0.0.0.0", port))
-            self._server_socket.listen(1)
+            self._server_socket.listen()
             self._server_socket.setblocking(False)
 
             self._lobby_info = {
                 **kwargs,
                 "port": port,
                 "players": 1,
+                "max_players": max_players,
                 "status": "open",
             }
 
             self._start_broadcast()
+            self._start_heartbeat()
             print(f"[Network] Hosting lobby {self._lobby_info}")
             return True
-
         except Exception as e:
             print(f"[Network] Host error: {e}")
             return False
 
     # ========================= JOIN =========================
     def join(self, ip: str, port: int | None = None) -> bool:
-        """Se connecte à un hébergeur"""
         try:
             port = port or GAME_PORT
             self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -76,206 +87,254 @@ class NetworkManager:
             self._is_host = False
             self._stop_broadcast()
 
-            self._start_receive_thread()
+            threading.Thread(target=self._receive_loop_client, daemon=True).start()
             print(f"[Network] Joined {ip}:{port}")
             return True
-
         except Exception as e:
             print(f"[Network] Join error: {e}")
             return False
-    
+
     # ========================= DISCONNECT =========================
     def disconnect(self):
-        """Déconnexion volontaire"""
-        if self._connected and self._tcp_socket:
-            try:
-                self.send({"type": "disconnect"})
-            except Exception:
-                pass
-
         self._connected = False
         self._broadcast_running = False
 
         if self._tcp_socket:
-            try:
-                self._tcp_socket.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
             try:
                 self._tcp_socket.close()
             except OSError:
                 pass
             self._tcp_socket = None
 
-        if self._server_socket:
-            try:
-                self._server_socket.close()
-            except OSError:
-                pass
-            self._server_socket = None
-
         with self._lock:
-            self._buffer = ""
-            self._latest_data = None
+            for c in self._clients:
+                try:
+                    c.close()
+                except OSError:
+                    pass
+            self._clients.clear()
+            self._latest_by_client.clear()
+            self._last_seen.clear()
 
+        self._latest_data = None
         self._is_host = False
         self._lobby_info = {}
         print("[Network] Disconnected cleanly")
 
-    # ========================= UPDATE LOOP =========================
+    # ========================= UPDATE =========================
     def update(self):
-        """Emet (host) et reçoit (client)"""
         self._receive_lobbies()
         self._cleanup_lobbies()
-
-        if self._is_host and not self._connected:
-            self._accept_client()
+        if self._is_host:
+            self._accept_clients()
+            self._cleanup_dead_clients()
 
     # ========================= LOBBIES =========================
     def _receive_lobbies(self):
-        """Reçoit les lobbies"""
         try:
             while True:
                 data, addr = self._udp_sock.recvfrom(2048)
-                lobby = json.loads(data.decode())
+                try:
+                    lobby = json.loads(data.decode())
+                except json.JSONDecodeError:
+                    continue
                 ip = addr[0]
-
                 self._lobbies[ip] = lobby
-                self._last_seen[ip] = time.time()
+                self._last_lobby_seen[ip] = time.time()
         except BlockingIOError:
             pass
 
     def _cleanup_lobbies(self):
-        """Nettoie les lobbies"""
         now = time.time()
         for ip in list(self._lobbies.keys()):
-            if now - self._last_seen[ip] > LOBBY_TIMEOUT:
+            if now - self._last_lobby_seen[ip] > LOBBY_TIMEOUT:
                 del self._lobbies[ip]
-                del self._last_seen[ip]
+                del self._last_lobby_seen[ip]
 
     def get_lobbies(self, **filters):
-        """Renvoie la liste des lobbys [(ip, {content})]"""
         return [
             (ip, lobby)
             for ip, lobby in self._lobbies.items()
             if all(lobby.get(k) == v for k, v in filters.items())
         ]
 
-    # ========================= TCP ACCEPT (HOST) =========================
-    def _accept_client(self):
-        """Accepte la connexion d'un client"""
+    # ========================= ACCEPT CLIENTS =========================
+    def _accept_clients(self):
         try:
-            client, addr = self._server_socket.accept()
-            self._tcp_socket = client
-            self._tcp_socket.setblocking(False)
+            while True:
+                with self._lock:
+                    max_players = self._lobby_info.get("max_players")
+                    if max_players and len(self._clients) >= max_players:
+                        return
 
-            self._connected = True
-            self._lobby_info["status"] = "in_game"
-            self._stop_broadcast()
+                client, addr = self._server_socket.accept()
+                client.setblocking(False)
 
-            self._start_receive_thread()
-            print(f"[Network] Client connected: {addr}")
+                with self._lock:
+                    self._clients.append(client)
+                    self._latest_by_client[client] = None
+                    self._last_seen[client] = time.time()
+                    self._lobby_info["players"] += 1
+
+                threading.Thread(target=self._receive_loop_host, args=(client,), daemon=True).start()
+                print(f"[Network] Client connected: {addr}")
+
         except BlockingIOError:
             pass
 
-    # ========================= DATA SYNC =========================
+    # ========================= SEND =========================
     def send(self, data: dict[str, Any]) -> bool:
-        """Envoie un dictionnaire"""
-        if not self._connected or not self._tcp_socket:
-            return False
+        msg = (json.dumps(data) + "\n").encode()
+        if self._is_host:
+            with self._lock:
+                clients = list(self._clients)
+            for c in clients:
+                try:
+                    c.sendall(msg)
+                except OSError:
+                    print(f"[Network] Warning: client {c} send failed")
+        else:
+            try:
+                self._tcp_socket.sendall(msg)
+            except Exception as e:
+                print(f"[Network] Send error: {e}")
+                return False
+        return True
 
-        try:
-            msg = (json.dumps(data) + "\n").encode()
-            self._tcp_socket.sendall(msg)
-            return True
+    # ========================= RECEIVE =========================
+    def receive(self):
+        if not self._is_host:
+            with self._lock:
+                data = self._latest_data
+                self._latest_data = None
+                return data
 
-        except (BlockingIOError, OSError):
-            # buffer plein → on drop ce frame
-            return False
-
-        except Exception as e:
-            print(f"[Network] Send error: {e}")
-            self._connected = False
-            return False
-
-    def receive(self) -> dict[str, Any] | None:
-        """Reçoit un dictionnaire"""
         with self._lock:
-            data = self._latest_data
-            self._latest_data = None
-            return data
+            if not self._clients:
+                return None
 
-    def _start_receive_thread(self):
-        """Démarre le thread de réception"""
-        threading.Thread(target=self._receive_loop, daemon=True).start()
+            for _ in range(len(self._clients)):
+                client = self._clients[0]
+                data = self._latest_by_client.get(client)
 
-    def _receive_loop(self):
-        """Boucle de réception"""
+                if data is None:
+                    try:
+                        client.close()
+                    except OSError:
+                        pass
+                    self._clients.popleft()
+                    self._latest_by_client.pop(client, None)
+                    self._last_seen.pop(client, None)
+                    self._lobby_info["players"] = max(1, len(self._clients) + 1)
+                    if not self._clients:
+                        return None
+                    continue
+
+                self._latest_by_client[client] = None
+                self._clients.rotate(-1)
+                return client, data
+        return None
+
+    # ========================= RECEIVE LOOPS =========================
+    def _receive_loop_client(self):
+        buffer = ""
         while self._connected:
             try:
                 chunk = self._tcp_socket.recv(4096).decode()
                 if not chunk:
-                    self._connected = False
-                    return
-
-                self._buffer += chunk
-                while "\n" in self._buffer:
-                    line, self._buffer = self._buffer.split("\n", 1)
-                    data = json.loads(line)
-                    if data.get("type") == "disconnect":
-                        print("[Network] Peer disconnected gracefully")
-                        self.disconnect()
-                        return
+                    break
+                buffer += chunk
+                if len(buffer) > MAX_BUFFER_SIZE:
+                    print("[Network] Warning: client buffer overflow, clearing buffer")
+                    buffer = ""
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
                     with self._lock:
-                        self._latest_data = data
-
+                        self._latest_data = json.loads(line)
             except BlockingIOError:
                 pass
             except Exception as e:
-                print(f"[Network] Receive error: {e}")
-                self._connected = False
+                print(f"[Network] Client receive error: {e}")
                 break
+        self.disconnect()
+
+    def _receive_loop_host(self, client: socket.socket):
+        buffer = ""
+        while self._connected:
+            try:
+                chunk = client.recv(4096).decode()
+                if not chunk:
+                    break
+                buffer += chunk
+                if len(buffer) > MAX_BUFFER_SIZE:
+                    print(f"[Network] Warning: client {client} buffer overflow, clearing buffer")
+                    buffer = ""
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    data = json.loads(line)
+                    with self._lock:
+                        self._latest_by_client[client] = data
+                        self._last_seen[client] = time.time()
+            except BlockingIOError:
+                pass
+            except Exception as e:
+                print(f"[Network] Host receive error: {e}")
+                break
+        print("[Network] Client disconnected (lazy)")
+
+    # ========================= HEARTBEAT / CLEANUP =========================
+    def _start_heartbeat(self):
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
+        self._heartbeat_thread.start()
+
+    def _heartbeat_loop(self):
+        while self._connected:
+            now = time.time()
+            with self._lock:
+                for client in list(self._clients):
+                    if now - self._last_seen.get(client, 0) > CLIENT_TIMEOUT:
+                        try:
+                            client.close()
+                        except OSError:
+                            pass
+                        self._clients.remove(client)
+                        self._latest_by_client.pop(client, None)
+                        self._last_seen.pop(client, None)
+                        self._lobby_info["players"] = max(1, len(self._clients) + 1)
+            time.sleep(self._heartbeat_interval)
 
     # ========================= BROADCAST =========================
     def _start_broadcast(self):
-        """Démarre le broadcast"""
         self._broadcast_running = True
-        self._broadcast_thread = threading.Thread(
-            target=self._broadcast_loop, daemon=True
-        )
+        self._broadcast_thread = threading.Thread(target=self._broadcast_loop, daemon=True)
         self._broadcast_thread.start()
 
     def _broadcast_loop(self):
-        """Actualise le broadcast"""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
+        broadcast_addr = "<broadcast>"
+        try:
+            sock.sendto(b"", ("255.255.255.255", DISCOVERY_PORT))
+        except OSError:
+            broadcast_addr = "<broadcast>"
         while self._broadcast_running:
-            sock.sendto(
-                json.dumps(self._lobby_info).encode(),
-                ("<broadcast>", DISCOVERY_PORT),
-            )
+            sock.sendto(json.dumps(self._lobby_info).encode(), (broadcast_addr, DISCOVERY_PORT))
             time.sleep(BROADCAST_INTERVAL)
-
         sock.close()
 
     def _stop_broadcast(self):
-        """Arrêt le broadcast"""
         self._broadcast_running = False
 
     # ========================= PROPS =========================
     @property
     def is_connected(self):
-        """Vérifie la conneixon"""
         return self._connected
 
     @property
     def is_host(self):
-        """Vérifie que la machine soit l'hébergeur"""
         return self._is_host
 
     def __repr__(self):
-        """Renvoie une représentation du network manager"""
         return f"<NetworkManager {'host' if self._is_host else 'client'} | {'connected' if self._connected else 'idle'}>"
 
 # ========================= INSTANCE =========================
