@@ -40,7 +40,7 @@ class RectSelectorObject:
             description_anchor: str = "center",
             title_size_ratio: float = 1.0,  # Ratio multiplicateur (1.0 = taille par défaut)
             text_size_ratio: float = 0.75,   # Ratio multiplicateur
-            description_size_ratio: float = 0.55,  # Ratio multiplicateur
+            description_size_ratio: float = 0.5,  # Ratio multiplicateur
             padding: int = 5,  # Padding en pixels
             font_color: pygame.Color = (0, 0, 0, 255),
             font_color_hover: pygame.Color = None,
@@ -287,7 +287,7 @@ class RectSelectorObject:
                     continue
                 
                 # Calcul de la taille de base selon la hauteur disponible
-                base_font_size = int(available_height * 0.8)  # 80% de la hauteur dispo
+                base_font_size = int(available_height * 0.75)
                 
                 # Application du ratio multiplicateur
                 font_size = int(base_font_size * size_ratios[text_type])
