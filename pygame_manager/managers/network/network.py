@@ -118,12 +118,24 @@ class NetworkManager:
         self._connected = False
         self._broadcast_running = False
 
+        if self._broadcast_thread:
+            self._broadcast_thread.join(timeout=2)
+        if self._heartbeat_thread:
+            self._heartbeat_thread.join(timeout=2)
+
         if self._tcp_socket:
             try:
                 self._tcp_socket.close()
             except OSError:
                 pass
             self._tcp_socket = None
+
+        if self._server_socket:
+            try:
+                self._server_socket.close()
+            except OSError:
+                pass
+            self._server_socket = None
 
         with self._lock:
             for c in self._clients:
@@ -149,7 +161,6 @@ class NetworkManager:
         self._cleanup_lobbies()
         if self._is_host:
             self._accept_clients()
-            self._cleanup_dead_clients()
 
     # ========================= LOBBIES =========================
     def _receive_lobbies(self):
@@ -192,7 +203,7 @@ class NetworkManager:
                 client.setblocking(False)
 
                 with self._lock:
-                    num_players = sum(1 for i in self._clients_info.values() if i["role"] == "player")
+                    num_players = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
                     num_spectators = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
 
                     if num_players < self._max_players:
@@ -261,8 +272,8 @@ class NetworkManager:
 
             for _ in range(len(self._clients)):
                 client = self._clients[0]
-                info = self._clients_info[client]
-                if info["role"] == "player" and info["last_data"] is not None:
+                info = self._clients_info.get(client)
+                if info and info["role"] == "player" and info["last_data"] is not None:
                     data = info["last_data"]
                     info["last_data"] = None
                     self._clients.rotate(-1)
@@ -286,15 +297,18 @@ class NetworkManager:
                     buffer = ""
                 while "\n" in buffer:
                     line, buffer = buffer.split("\n", 1)
-                    msg = json.loads(line)
-                    if "role" in msg:
-                        with self._role_lock:
-                            self._role_client = msg["role"]
-                    else:
-                        with self._lock:
-                            self._latest_data = msg
+                    try:
+                        msg = json.loads(line)
+                        if "role" in msg:
+                            with self._role_lock:
+                                self._role_client = msg["role"]
+                        else:
+                            with self._lock:
+                                self._latest_data = msg
+                    except json.JSONDecodeError:
+                        continue
             except BlockingIOError:
-                pass
+                time.sleep(0.01)
             except (ConnectionResetError, BrokenPipeError):
                 break
             except Exception as e:
@@ -316,16 +330,20 @@ class NetworkManager:
                     buffer = ""
                 while "\n" in buffer:
                     line, buffer = buffer.split("\n", 1)
-                    data = json.loads(line)
-                    with self._lock:
-                        info = self._clients_info[client]
-                        if info["role"] == "player":
-                            info["last_data"] = data
-                        else:
-                            print(f"[Network] Spectator {client} tried to send data → ignored")
-                        info["last_seen"] = time.time()
+                    try:
+                        data = json.loads(line)
+                        with self._lock:
+                            info = self._clients_info.get(client)
+                            if info:
+                                if info["role"] == "player":
+                                    info["last_data"] = data
+                                else:
+                                    print(f"[Network] Spectator {client} tried to send data → ignored")
+                                info["last_seen"] = time.time()
+                    except json.JSONDecodeError:
+                        continue
             except BlockingIOError:
-                pass
+                time.sleep(0.01)
             except (ConnectionResetError, BrokenPipeError):
                 break
             except Exception as e:
@@ -342,10 +360,12 @@ class NetworkManager:
     def _cleanup_dead_clients(self):
         """Coupe la connexion avec les clients inactifs"""
         now = time.time()
+        should_disconnect = False
+        
         with self._lock:
             for client in list(self._clients):
-                info = self._clients_info[client]
-                if now - info["last_seen"] > CLIENT_TIMEOUT:
+                info = self._clients_info.get(client)
+                if info and now - info["last_seen"] > CLIENT_TIMEOUT:
                     role = info["role"]
                     try:
                         client.close()
@@ -355,10 +375,14 @@ class NetworkManager:
                     self._clients_info.pop(client, None)
                     if role == "player":
                         print("[Network] Player disconnected → closing session")
-                        self.disconnect()
-                        return
-            self._lobby_info["players"] = sum(1 for i in self._clients_info.values() if i["role"] == "player")
-            self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
+                        should_disconnect = True
+                        break
+            if not should_disconnect:
+                self._lobby_info["players"] = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
+                self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
+        
+        if should_disconnect:
+            self.disconnect()
 
     def _heartbeat_loop(self):
         """Boucle de nettoyage"""
@@ -412,6 +436,25 @@ class NetworkManager:
         """Renvoie le rôle du client"""
         with self._role_lock:
             return self._role_client
+    
+    def is_lobby_ready(self) -> bool:
+        """Vérifie que le lobby soit plein (joueurs uniquement)"""
+        if not self._is_host:
+            return False
+        with self._lock:
+            num_players = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
+            return num_players >= self._max_players
+    
+    def is_lobby_full(self) -> bool:
+        """Vérifie que le lobby soit plein (joueurs et spectateurs)"""
+        if not self._is_host:
+            return False
+        with self._lock:
+            num_players = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
+            num_spectators = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
+            players_full = num_players >= self._max_players
+            spectators_full = self._max_spectators is None or num_spectators >= self._max_spectators
+            return players_full and spectators_full
 
 # ========================= INSTANCE =========================
 network_manager = NetworkManager()
