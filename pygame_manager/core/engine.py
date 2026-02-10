@@ -17,6 +17,21 @@ class Engine:
                 setattr(self, attr, manager_instance)
                 setattr(context, attr, manager_instance)
         context.engine = self
+
+        if not hasattr(self, "screen"):
+            raise RuntimeError("Screen manager is missing")
+        if not hasattr(self, "inputs"):
+            raise RuntimeError("Inputs manager is missing")
+        if not hasattr(self, "time"):
+            raise RuntimeError("Time manager is missing")
+        if not hasattr(self, "ui"):
+            raise RuntimeError("UI manager is missing")
+        if not hasattr(self, "entities"):
+            raise RuntimeError("Entities manager is missing")
+        if not hasattr(self, "panels"):
+            raise RuntimeError("Panels manager is missing")
+        if not hasattr(self, "states"):
+            raise RuntimeError("States manager is missing")
     
         self._initialized = False
         self._running = False
