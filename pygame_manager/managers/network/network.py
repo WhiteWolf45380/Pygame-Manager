@@ -54,7 +54,7 @@ class NetworkManager:
         self._max_spectators: int | None = None
 
     # ========================= HOST =========================
-    def host(self, port: int = GAME_PORT, max_players: int = 1, max_spectators: int | None = None, **kwargs) -> bool:
+    def host(self, port: int = GAME_PORT, max_players: int = 2, max_spectators: int | None = None, **kwargs) -> bool:
         """Host a lobby with max_players + max_spectators"""
         try:
             self._is_host = True
