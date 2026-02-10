@@ -22,12 +22,13 @@ class NetworkManager:
 
         self._connected = False
         self._is_host = False
+        self._game_started = False
 
         # ================= DATA =================
         self._clients_info: dict[socket.socket, dict] = {}
         self._lock = threading.Lock()
 
-        self._latest_data = None  # client side
+        self._latest_data = None                # client side
         self._role_client: str | None = None  # role côté client
         self._role_lock = threading.Lock()    # lock pour _role_client
 
@@ -63,6 +64,7 @@ class NetworkManager:
         try:
             self._is_host = True
             self._connected = True
+            self._game_started = False
 
             self._max_players = max_players
             self._max_spectators = max_spectators
@@ -73,11 +75,10 @@ class NetworkManager:
             self._server_socket.listen()
             self._server_socket.setblocking(False)
 
-            # host est considéré comme joueur dès le départ
             self._lobby_info = {
                 **kwargs,
                 "port": port,
-                "players": 1,   # host compte comme joueur
+                "players": 1,
                 "spectators": 0,
                 "max_players": max_players,
                 "max_spectators": max_spectators,
@@ -116,6 +117,7 @@ class NetworkManager:
     def disconnect(self):
         """Met fin à la connexion"""
         self._connected = False
+        self._game_started = False
         self._broadcast_running = False
 
         if self._broadcast_thread:
@@ -217,7 +219,6 @@ class NetworkManager:
                     self._clients.append(client)
                     self._clients_info[client] = {"role": role, "last_data": None, "last_seen": time.time()}
 
-                    # Send role to client (try/except spécifique)
                     try:
                         client.sendall((json.dumps({"role": role}) + "\n").encode())
                     except (ConnectionResetError, BrokenPipeError):
@@ -227,9 +228,14 @@ class NetworkManager:
                         self._clients_info.pop(client, None)
                         continue
 
-                    # Update lobby info
                     self._lobby_info["players"] = num_players + (1 if role == "player" else 0)
                     self._lobby_info["spectators"] = num_spectators + (1 if role == "spectator" else 0)
+
+                    if not self._game_started and self.is_lobby_ready():
+                        self.send({"type": "start_game"})
+                        self._game_started = True
+                    elif self._game_started:
+                        client.send({"type": "start_game"})
 
                 threading.Thread(target=self._receive_loop_host, args=(client,), daemon=True).start()
                 print(f"[Network] Client connected: {addr} as {role}")
@@ -302,6 +308,8 @@ class NetworkManager:
                         if "role" in msg:
                             with self._role_lock:
                                 self._role_client = msg["role"]
+                        elif msg.get("type") == "start_game":
+                            self._game_started = True
                         else:
                             with self._lock:
                                 self._latest_data = msg
@@ -455,6 +463,10 @@ class NetworkManager:
             players_full = num_players >= self._max_players
             spectators_full = self._max_spectators is None or num_spectators >= self._max_spectators
             return players_full and spectators_full
+    
+    def is_game_started(self) -> bool:
+        """Vérifie que la partie soit lancée"""
+        return self._game_started
 
 # ========================= INSTANCE =========================
 network_manager = NetworkManager()
