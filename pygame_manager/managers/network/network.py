@@ -250,6 +250,9 @@ class NetworkManager:
     # ========================= SEND =========================
     def send(self, data: dict[str, Any]) -> bool:
         """Envoie un dictionnaire de données"""
+        if not self._connected:
+            return False
+
         msg = (json.dumps(data) + "\n").encode()
         if self._is_host:
             with self._lock:
