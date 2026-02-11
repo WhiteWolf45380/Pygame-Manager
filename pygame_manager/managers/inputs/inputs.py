@@ -11,10 +11,25 @@ class InputsManager:
         éxécuter une fonction prédéfinie de gestion des entrées
         ajouter des listeners à certaines entrées
     """
+
+    # Constantes pour les boutons de souris
+    MOUSELEFT = 1
+    MOUSEWHEEL = 2
+    MOUSERIGHT = 3
+    MOUSEWHEELUP = 4
+    MOUSEWHEELDOWN = 5
+    MOUSEBACKWARD = 8
+    MOUSEFORWARD = 9
+
     def __init__(self):
-        self._listeners = {}       # ensemble des listeners
-        self._step = []            # touches qui viennent d'être pressées
-        self._pressed = {}         # touches pressées
+        self._listeners = {}            # ensemble des listeners
+        self._step = []                 # touches qui viennent d'être pressées
+        self._pressed = {}              # touches pressées
+
+        # nouveaux systèmes
+        self._any_listeners = []        # listeners globaux (any)
+        self._all_listeners = []        # listeners combos (all)
+        self._triggered_combos = set()  # combos déjà déclenchés
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -35,6 +50,9 @@ class InputsManager:
         
         Args :
             event (pygame.event.Event) : événement en tout genre
+            
+        Returns :
+            int : identifiant unique de l'événement
         """
         if event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
             return event.button
@@ -42,56 +60,30 @@ class InputsManager:
             return event.key
         else:
             return event.type
-    
-    @property
-    def MOUSELEFT(self):
-        """Renvoie l'id correspondant au bouton gauche de la souris"""
-        return 1
-    
-    @property
-    def MOUSEWHEEL(self):
-        """Renvoie l'id correspondant au bouton central de la souris"""
-        return 2
-    
-    @property
-    def MOUSERIGHT(self):
-        """Renvoie l'id correspondant au bouton droit de la souris"""
-        return 3
-    
-    @property
-    def MOUSEWHEELUP(self):
-        """Renvoie l'id correspondant au scroll vers la haut"""
-        return 4
-    
-    @property
-    def MOUSEWHEELDOWN(self):
-        """Renvoie l'id correspondant au scroll vers le bas"""
-        return 5
-    
-    @property
-    def MOUSEBACKWARD(self):
-        """Renvoie l'id correspondant au bouton droit de la souris"""
-        return 8
-    
-    @property
-    def MOUSEFORWARD(self):
-        """Renvoie l'id correspondant au premier latéral de la souris"""
-        return 9
 
-    def add_listener(self, event_id: int, callback: callable, args: list=[], kwargs: dict={}, up: bool=False, condition: callable=None, once: bool=False, repeat: bool=False, priority: int=0, give_key: bool = False):
+    # ======================================== LISTENERS SIMPLES ========================================
+
+    def add_listener(self, event_id: int, callback: callable, args: list=None, kwargs: dict=None,
+                     up: bool=False, condition: callable=None, once: bool=False,
+                     repeat: bool=False, priority: int=0, give_key: bool=False):
         """
         Ajoute un listener sur une entrée utilisateur
-
-        Args:
-            event_id (int) : événement utilisateur correspondant
-            callback (callable) : fonction associée
-            up (bool, optional) : action lorsque la touche est relâchée
-            condition (callable, optional) : condition supplémentaire
-            once (bool, optional) : n'éxécute l'action qu'une fois
-            repeat (bool, optional) : le maintient du boutton répète l'action
-            priority (int, optional) : niveau de priorité du listener si plusieurs ont été associés au même événement
-            give_key (bool, optional) : passe la clé de l'entrée au callback
+        
+        Args :
+            event_id (int) : identifiant de l'événement (touche clavier, bouton souris, etc.)
+            callback (callable) : fonction à appeler lors du déclenchement
+            args (list) : arguments positionnels à passer au callback
+            kwargs (dict) : arguments nommés à passer au callback
+            up (bool) : si True, déclenche au relâchement ; si False, déclenche à la pression
+            condition (callable) : fonction retournant un booléen pour conditionner le déclenchement
+            once (bool) : si True, supprime le listener après la première activation
+            repeat (bool) : si True, déclenche à chaque frame tant que la touche est maintenue
+            priority (int) : priorité d'exécution (plus élevé = exécuté en premier)
+            give_key (bool) : si True, passe l'event_id en paramètre 'key' au callback
         """
+        if args is None: args = []
+        if kwargs is None: kwargs = {}
+
         listener = {
             "callback": callback,
             "up": up,
@@ -107,104 +99,294 @@ class InputsManager:
         if event_id not in self._listeners:
             self._listeners[event_id] = [listener]
             return
+
         for i, l in enumerate(self._listeners[event_id]):
             if priority > l["priority"]:
                 self._listeners[event_id].insert(i, listener)
                 return
+
         self._listeners[event_id].append(listener)
 
     def remove_listener(self, event_id: int, callback: callable):
         """
         Supprime un listener sur une entrée utilisateur
-
+        
         Args :
-            event_id (int) : entrée utilisateur
-            callback (callable) : fonction associée
+            event_id (int) : identifiant de l'événement
+            callback (callable) : fonction callback à supprimer
         """
         if event_id in self._listeners:
-            self._listeners[event_id] = [l for l in self._listeners[event_id] if l["callback"] != callback]
+            self._listeners[event_id] = [
+                l for l in self._listeners[event_id]
+                if l["callback"] != callback
+            ]
+            
+            # Nettoyer l'entrée si elle est vide
+            if not self._listeners[event_id]:
+                del self._listeners[event_id]
+
+    # ======================================== WHEN ANY ========================================
+
+    def when_any(self, callback: callable, exclude: list=None,
+                 args: list=None, kwargs: dict=None,
+                 once: bool=False, condition: callable=None,
+                 priority: int=0, give_key: bool=False):
+        """
+        Déclenche le callback lorsqu'une touche est pressée,
+        sauf celles présentes dans exclude
+        
+        Args :
+            callback (callable) : fonction à appeler lors du déclenchement
+            exclude (list) : liste des event_id à exclure
+            args (list) : arguments positionnels à passer au callback
+            kwargs (dict) : arguments nommés à passer au callback
+            once (bool) : si True, supprime le listener après la première activation
+            condition (callable) : fonction retournant un booléen pour conditionner le déclenchement
+            priority (int) : priorité d'exécution (plus élevé = exécuté en premier)
+            give_key (bool) : si True, passe l'event_id en paramètre 'key' au callback
+        """
+        if exclude is None: exclude = []
+        if args is None: args = []
+        if kwargs is None: kwargs = {}
+
+        listener = {
+            "callback": callback,
+            "exclude": set(exclude),
+            "args": args,
+            "kwargs": kwargs,
+            "once": once,
+            "condition": condition,
+            "priority": priority,
+            "give_key": give_key
+        }
+
+        for i, l in enumerate(self._any_listeners):
+            if priority > l["priority"]:
+                self._any_listeners.insert(i, listener)
+                return
+
+        self._any_listeners.append(listener)
+
+    # ======================================== WHEN ALL ========================================
+
+    def when_all(self, keys: list, callback: callable,
+                 args: list=None, kwargs: dict=None,
+                 once: bool=False, condition: callable=None,
+                 repeat: bool=False, priority: int=0):
+        """
+        Déclenche le callback lorsque toutes les touches de la liste sont pressées
+        
+        Args :
+            keys (list) : liste des event_id qui doivent être pressés simultanément
+            callback (callable) : fonction à appeler lors du déclenchement
+            args (list) : arguments positionnels à passer au callback
+            kwargs (dict) : arguments nommés à passer au callback
+            once (bool) : si True, supprime le listener après la première activation
+            condition (callable) : fonction retournant un booléen pour conditionner le déclenchement
+            repeat (bool) : si True, déclenche à chaque frame tant que le combo est maintenu
+            priority (int) : priorité d'exécution (plus élevé = exécuté en premier)
+        """
+        if args is None: args = []
+        if kwargs is None: kwargs = {}
+
+        listener = {
+            "keys": set(keys),
+            "callback": callback,
+            "args": args,
+            "kwargs": kwargs,
+            "once": once,
+            "condition": condition,
+            "repeat": repeat,
+            "priority": priority
+        }
+
+        for i, l in enumerate(self._all_listeners):
+            if priority > l["priority"]:
+                self._all_listeners.insert(i, listener)
+                return
+
+        self._all_listeners.append(listener)
+
+    # ======================================== SUPPRESSION GLOBALE ========================================
+
+    def remove_callback(self, callback: callable):
+        """
+        Supprime un callback de tous les types de listeners
+        
+        Args :
+            callback (callable) : fonction callback à supprimer partout
+        """
+        # Suppression des listeners simples
+        for event_id in list(self._listeners.keys()):
+            self._listeners[event_id] = [
+                l for l in self._listeners[event_id]
+                if l["callback"] != callback
+            ]
+            
+            # Nettoyer l'entrée si elle est vide
+            if not self._listeners[event_id]:
+                del self._listeners[event_id]
+
+        # Suppression des listeners any
+        self._any_listeners = [
+            l for l in self._any_listeners
+            if l["callback"] != callback
+        ]
+
+        # Suppression des listeners all
+        self._all_listeners = [
+            l for l in self._all_listeners
+            if l["callback"] != callback
+        ]
+
+    # ======================================== VERIFICATION ========================================
 
     def check_event(self, event):
         """
         Vérifie les actions associées à l'entrée
-
+        
         Args :
-            event : événement pygame / entrée utilisateur
+            event (pygame.event.Event) : événement pygame à traiter
         """
         event_id = self.get_id(event)
         up = event.type in [pygame.MOUSEBUTTONUP, pygame.KEYUP]
 
-        # maintient / relâchement
         if up:
             self._pressed[event_id] = False
         else:
             self._step.append(event_id)
-        
-        # listeners
+
+        # listeners simples
         to_remove = []
-        for listener in self._listeners.get(event_id, []):            
-            if listener["condition"] and not listener["condition"]() or up != listener["up"]:
+        for listener in self._listeners.get(event_id, []):
+            if (listener["condition"] and not listener["condition"]()) or up != listener["up"]:
                 continue
-            
-            if listener["give_key"]: listener["callback"](*listener["args"], **listener["kwargs"], key=event_id)
-            else: listener["callback"](*listener["args"], **listener["kwargs"])
+
+            if listener["give_key"]:
+                listener["callback"](*listener["args"], **listener["kwargs"], key=event_id)
+            else:
+                listener["callback"](*listener["args"], **listener["kwargs"])
 
             if listener["once"]:
                 to_remove.append(listener)
 
-        # suppression du listener
         for listener in to_remove:
             self._listeners[event_id].remove(listener)
-    
+            
+        # Nettoyer l'entrée si elle est vide
+        if event_id in self._listeners and not self._listeners[event_id]:
+            del self._listeners[event_id]
+
+        # WHEN ANY
+        if not up:
+            to_remove = []
+            for listener in self._any_listeners:
+                if event_id in listener["exclude"]:
+                    continue
+                if listener["condition"] and not listener["condition"]():
+                    continue
+
+                if listener["give_key"]:
+                    listener["callback"](*listener["args"], **listener["kwargs"], key=event_id)
+                else:
+                    listener["callback"](*listener["args"], **listener["kwargs"])
+
+                if listener["once"]:
+                    to_remove.append(listener)
+
+            for listener in to_remove:
+                self._any_listeners.remove(listener)
+
     def check_pressed(self):
         """
-        Vérifie les listeners de maintient
+        Vérifie les listeners de maintien (repeat et combos)
         """
+        # listeners simples repeat
         for event_id, listeners in self._listeners.items():
             if self._pressed.get(event_id, False):
                 for listener in listeners:
                     if listener["repeat"]:
                         if listener["condition"] and not listener["condition"]():
                             continue
-                        listener["callback"](*listener["args"], **listener["kwargs"])
+                        if listener["give_key"]:
+                            listener["callback"](*listener["args"], **listener["kwargs"], key=event_id)
+                        else:
+                            listener["callback"](*listener["args"], **listener["kwargs"])
+
+        # WHEN ALL
+        to_remove = []
+
+        for listener in self._all_listeners:
+            if not listener["keys"].issubset(self._pressed.keys()):
+                continue
+
+            if not all(self._pressed.get(k, False) for k in listener["keys"]):
+                continue
+
+            if listener["condition"] and not listener["condition"]():
+                continue
+
+            combo_key = frozenset(listener["keys"])
+            
+            # Avec repeat : déclenche à chaque frame
+            if listener["repeat"]:
+                if any(k in self._step for k in listener["keys"]):
+                    listener["callback"](*listener["args"], **listener["kwargs"])
+                    if listener["once"]:
+                        to_remove.append(listener)
+            # Sans repeat : déclenche une seule fois jusqu'au relâchement
+            else:
+                if combo_key not in self._triggered_combos:
+                    listener["callback"](*listener["args"], **listener["kwargs"])
+                    self._triggered_combos.add(combo_key)
+                    if listener["once"]:
+                        to_remove.append(listener)
+
+        # Nettoyer les combos qui ne sont plus actifs
+        active_combos = set()
+        for listener in self._all_listeners:
+            if listener["keys"].issubset(self._pressed.keys()):
+                if all(self._pressed.get(k, False) for k in listener["keys"]):
+                    active_combos.add(frozenset(listener["keys"]))
         
-        # ajout des nouvelles touches pressées
+        self._triggered_combos = self._triggered_combos & active_combos
+
+        for listener in to_remove:
+            self._all_listeners.remove(listener)
+
+        # mise à jour pressed
         for event_id in self._step:
             self._pressed[event_id] = True
+
         self._step = []
-    
+
     def check_all(self):
         """
-        Vérifie l'ensemble des listeners
+        Vérifie l'ensemble des listeners et traite tous les événements pygame
+        
+        Returns :
+            bool : True si l'application continue, False si elle doit s'arrêter
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 context.engine.stop()
                 return False
             self.check_event(event)
+
         self.check_pressed()
         return True
     
     def is_pressed(self, event_id: int) -> bool:
         """
         Vérifie si une touche ou un bouton est actuellement enfoncé
-
+        
         Args :
-            event_id (int) : identifiant unifié de l'entrée
+            event_id (int) : identifiant de l'événement à vérifier
+            
+        Returns :
+            bool : True si la touche/bouton est enfoncé, False sinon
         """
-        # clavier
-        pressed_keys = pygame.key.get_pressed()
-        if 0 <= event_id < len(pressed_keys):
-            return pressed_keys[event_id]
-
-        # boutons souris
-        pressed_buttons = pygame.mouse.get_pressed()
-        if 1 <= event_id <= 3:  # boutons 1 à 3
-            return pressed_buttons[event_id - 1]
-
-        # autres types
-        return False
-    
+        return self._pressed.get(event_id, False)
 
 # ======================================== INSTANCE ========================================
 inputs_manager = InputsManager()
