@@ -97,6 +97,7 @@ class EntitiesManager:
             entity (Entity) : objet de l'entité
         """
         panel = getattr(entity, '_panel', None)
+        if panel is not None: panel = str(panel)
         if panel in self._all and entity in self._all[panel]:
             self._all[panel].remove(entity)
             if not self._all[panel]: del self._all[panel]
