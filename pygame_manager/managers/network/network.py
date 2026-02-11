@@ -116,34 +116,52 @@ class NetworkManager:
     # ========================= DISCONNECT =========================
     def disconnect(self):
         """Met fin à la connexion"""
+        print("[Network] Disconnecting...")
+        
         self._connected = False
         self._game_started = False
         self._broadcast_running = False
 
-        if self._broadcast_thread:
+        if self._broadcast_thread and self._broadcast_thread.is_alive():
             self._broadcast_thread.join(timeout=2)
-        if self._heartbeat_thread:
+            
+        if self._heartbeat_thread and self._heartbeat_thread.is_alive():
             self._heartbeat_thread.join(timeout=2)
 
+        # Fermeture du socket TCP
         if self._tcp_socket:
             try:
+                self._tcp_socket.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
+            try:
                 self._tcp_socket.close()
-            except OSError:
+            except:
                 pass
             self._tcp_socket = None
 
+        # Fermeture du socket serveur
         if self._server_socket:
             try:
+                self._server_socket.shutdown(socket.SHUT_RDWR) 
+            except:
+                pass
+            try:
                 self._server_socket.close()
-            except OSError:
+            except:
                 pass
             self._server_socket = None
 
+        # Fermeture des clients
         with self._lock:
             for c in self._clients:
                 try:
+                    c.shutdown(socket.SHUT_RDWR)
+                except:
+                    pass
+                try:
                     c.close()
-                except OSError:
+                except:
                     pass
             self._clients.clear()
             self._clients_info.clear()
@@ -154,6 +172,7 @@ class NetworkManager:
         self._latest_data = None
         self._is_host = False
         self._lobby_info = {}
+        
         print("[Network] Disconnected cleanly")
 
     # ========================= UPDATE =========================
@@ -403,7 +422,11 @@ class NetworkManager:
         """Boucle de nettoyage"""
         while self._connected:
             self._cleanup_dead_clients()
-            time.sleep(self._heartbeat_interval)
+            for _ in range(10):
+                if not self._connected:
+                    break
+                time.sleep(0.1)
+        print("[Network] Heartbeat stopped")
 
     # ========================= BROADCAST =========================
     def _start_broadcast(self):
@@ -418,9 +441,16 @@ class NetworkManager:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         broadcast_addr = "255.255.255.255"
         while self._broadcast_running:
-            sock.sendto(json.dumps(self._lobby_info).encode(), (broadcast_addr, DISCOVERY_PORT))
-            time.sleep(BROADCAST_INTERVAL)
+            try:
+                sock.sendto(json.dumps(self._lobby_info).encode(), (broadcast_addr, DISCOVERY_PORT))
+            except:
+                pass
+            for _ in range(10):
+                if not self._broadcast_running:
+                    break
+                time.sleep(0.1)
         sock.close()
+        print("[Network] Broadcast stopped")
 
     def _stop_broadcast(self):
         """Arrête la diffusion UDP"""
