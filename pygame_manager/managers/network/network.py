@@ -238,14 +238,14 @@ class NetworkManager:
 
                     if not self._game_started and self.is_lobby_ready():
                         self._game_started = True
-                
-                if self._game_started:
-                    self.send({"type": "start_game"})
+                        self.send({"type": "start_game"})
+                    elif self._game_started:
+                        client.send({"type": "start_game"})
 
                 print(f"[Network] Client connected: {addr} as {role}")
 
         except BlockingIOError:
-            pass
+            return
 
     # ========================= SEND =========================
     def send(self, data: dict[str, Any]) -> bool:
