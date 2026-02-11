@@ -236,11 +236,11 @@ class NetworkManager:
                     self._lobby_info["players"] = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
                     self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
 
-                    if not self._game_started and self.is_lobby_ready():
-                        self._game_started = True
-                        self.send({"type": "start_game"})
-                    elif self._game_started:
-                        client.send({"type": "start_game"})
+                if not self._game_started and self.is_lobby_ready():
+                    self._game_started = True
+                    self.send({"type": "start_game"})
+                elif self._game_started:
+                    client.send({"type": "start_game"})
 
                 print(f"[Network] Client connected: {addr} as {role}")
 
@@ -287,7 +287,7 @@ class NetworkManager:
                     data = info["last_data"]
                     info["last_data"] = None
                     self._clients.rotate(-1)
-                    return client, data
+                    return data
                 else:
                     self._clients.rotate(-1)
         return None
