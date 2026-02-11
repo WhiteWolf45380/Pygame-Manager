@@ -284,6 +284,7 @@ class TextObject:
         if not isinstance(alpha, int) or not 0 <= alpha <= 255:
             _raise_error(self, 'set_alpha', 'Invalid alpha argument')
         self._surface.set_alpha(alpha)
+        self._shadow_surface.set_alpha(alpha)
 
     # ======================================== PREDICATS ========================================
     def collidemouse(self) -> bool:
