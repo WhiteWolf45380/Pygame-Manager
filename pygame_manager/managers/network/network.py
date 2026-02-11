@@ -219,25 +219,29 @@ class NetworkManager:
                     self._clients.append(client)
                     self._clients_info[client] = {"role": role, "last_data": None, "last_seen": time.time()}
 
-                    try:
-                        client.sendall((json.dumps({"role": role}) + "\n").encode())
-                    except (ConnectionResetError, BrokenPipeError):
-                        print(f"[Network] Failed to send role to {client}, closing")
-                        client.close()
-                        self._clients.remove(client)
-                        self._clients_info.pop(client, None)
-                        continue
+                threading.Thread(target=self._receive_loop_host, args=(client,), daemon=True).start()
 
-                    self._lobby_info["players"] = num_players + (1 if role == "player" else 0)
-                    self._lobby_info["spectators"] = num_spectators + (1 if role == "spectator" else 0)
+                try:
+                    client.sendall((json.dumps({"role": role}) + "\n").encode())
+                except (ConnectionResetError, BrokenPipeError):
+                    print(f"[Network] Failed to send role to {addr}, closing")
+                    with self._lock:
+                        client.close()
+                        if client in self._clients:
+                            self._clients.remove(client)
+                        self._clients_info.pop(client, None)
+                    continue
+
+                with self._lock:
+                    self._lobby_info["players"] = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
+                    self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
 
                     if not self._game_started and self.is_lobby_ready():
-                        self.send({"type": "start_game"})
                         self._game_started = True
-                    elif self._game_started:
-                        client.send({"type": "start_game"})
+                
+                if self._game_started:
+                    self.send({"type": "start_game"})
 
-                threading.Thread(target=self._receive_loop_host, args=(client,), daemon=True).start()
                 print(f"[Network] Client connected: {addr} as {role}")
 
         except BlockingIOError:
