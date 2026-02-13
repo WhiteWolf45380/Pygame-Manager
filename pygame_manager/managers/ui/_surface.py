@@ -520,7 +520,6 @@ class SurfaceObject:
                     self._fade_elapsed = 0.0
                     self._fade_start_alpha = self._fade_mid_alpha
                     self._fade_target_alpha = self._fade_final_alpha
-                    self._surface.set_alpha(self._fade_mid_alpha)
                 else:
                     progress = self._fade_elapsed / half_duration
                     current_alpha = int(self._fade_start_alpha + (self._fade_target_alpha - self._fade_start_alpha) * progress)
