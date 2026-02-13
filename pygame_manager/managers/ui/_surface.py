@@ -384,6 +384,7 @@ class SurfaceObject:
         self._fade_start_alpha = start_alpha
         self._fade_target_alpha = target_alpha
         self._surface.set_alpha(start_alpha)
+        self.visible = True
 
     def fade_in_out(self, duration: float, start_alpha: int = None, mid_alpha: int = 255, target_alpha: int = None):
         """
