@@ -176,14 +176,13 @@ class NetworkManager:
         print("[Network] Disconnected cleanly")
 
     # ========================= UPDATE =========================
-    def update(self):
+    def update(self, f: bool = False):
         """Récupère les lobbies (client) et Envoie sa présence (host)"""
-        self._cleanup_lobbies()
-        if not self._connected:
+        if not f and (not self._connected or not self._is_host):
             return
+        self._cleanup_lobbies()
         self._receive_lobbies()
-        if self._is_host:
-            self._accept_clients()
+        self._accept_clients()
 
     # ========================= LOBBIES =========================
     def _receive_lobbies(self):
@@ -211,6 +210,7 @@ class NetworkManager:
 
     def get_lobbies(self, **filters):
         """Renvoie la liste des lobbies"""
+        self.update(f=True)
         return [
             (ip, lobby)
             for ip, lobby in self._lobbies.items()
