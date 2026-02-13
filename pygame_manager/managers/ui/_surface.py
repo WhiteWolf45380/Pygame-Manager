@@ -315,6 +315,62 @@ class SurfaceObject:
             return False
         mouse_pos = self._panel.mouse_pos if self._panel is not None else context.mouse.get_pos()
         return self._rect.collidepoint(mouse_pos)
+    
+    # ======================================== ANIMATIONS ========================================
+    def fade_in(self, duration: float):
+        """
+        Anime l'opacité de 0 à 255 (apparition progressive)
+        
+        Args:
+            duration (float): durée de l'animation en secondes
+        """
+        if not isinstance(duration, (int, float)) or duration <= 0:
+            _raise_error(self, 'fade_in', 'Invalid duration argument')
+        
+        self._fade_active = True
+        self._fade_type = 'in'
+        self._fade_duration = float(duration)
+        self._fade_elapsed = 0.0
+        self._fade_start_alpha = 0
+        self._fade_target_alpha = 255
+        self._surface.set_alpha(0)
+
+    def fade_out(self, duration: float):
+        """
+        Anime l'opacité de 255 à 0 (disparition progressive)
+        
+        Args:
+            duration (float): durée de l'animation en secondes
+        """
+        if not isinstance(duration, (int, float)) or duration <= 0:
+            _raise_error(self, 'fade_out', 'Invalid duration argument')
+        
+        self._fade_active = True
+        self._fade_type = 'out'
+        self._fade_duration = float(duration)
+        self._fade_elapsed = 0.0
+        self._fade_start_alpha = 255
+        self._fade_target_alpha = 0
+        self._surface.set_alpha(255)
+
+    def fade_in_out(self, duration: float):
+        """
+        Anime l'opacité de 0 à 255 puis de 255 à 0 (apparition puis disparition)
+        
+        Args:
+            duration (float): durée totale de l'animation en secondes (divisée en deux pour in et out)
+        """
+        if not isinstance(duration, (int, float)) or duration <= 0:
+            _raise_error(self, 'fade_in_out', 'Invalid duration argument')
+        
+        self._fade_active = True
+        self._fade_type = 'in_out'
+        self._fade_duration = float(duration)
+        self._fade_elapsed = 0.0
+        self._fade_start_alpha = 0
+        self._fade_target_alpha = 255
+        self._fade_in_out_phase = 'in'
+        self._surface.set_alpha(0)
 
     # ======================================== METHODES DYNAMIQUES ========================================
     def kill(self):
@@ -410,7 +466,57 @@ class SurfaceObject:
                                width=self._border_width)
 
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
+    
+    def update_fade(self):
+        """Gère l'animation du fade"""
+        if not self._fade_active:
+            return
+        
+        self._fade_elapsed += context.time.dt
+        
+        if self._fade_type == 'in_out':
+            # Gestion du fade in/out en deux phases
+            half_duration = self._fade_duration / 2
+            
+            if self._fade_in_out_phase == 'in':
+                if self._fade_elapsed >= half_duration:
+                    # Passer à la phase out
+                    self._fade_in_out_phase = 'out'
+                    self._fade_elapsed = 0.0
+                    self._fade_start_alpha = 255
+                    self._fade_target_alpha = 0
+                    self._surface.set_alpha(255)
+                else:
+                    # Animation fade in
+                    progress = self._fade_elapsed / half_duration
+                    current_alpha = int(self._fade_start_alpha + (self._fade_target_alpha - self._fade_start_alpha) * progress)
+                    self._surface.set_alpha(max(0, min(255, current_alpha)))
+            
+            elif self._fade_in_out_phase == 'out':
+                if self._fade_elapsed >= half_duration:
+                    # Fin de l'animation
+                    self._surface.set_alpha(0)
+                    self._fade_active = False
+                    self._fade_in_out_phase = 'in'
+                else:
+                    # Animation fade out
+                    progress = self._fade_elapsed / half_duration
+                    current_alpha = int(self._fade_start_alpha + (self._fade_target_alpha - self._fade_start_alpha) * progress)
+                    self._surface.set_alpha(max(0, min(255, current_alpha)))
+        
+        else:
+            # Gestion fade simple (in ou out)
+            if self._fade_elapsed >= self._fade_duration:
+                # Fin de l'animation
+                self._surface.set_alpha(self._fade_target_alpha)
+                self._fade_active = False
+            else:
+                # Animation en cours
+                progress = self._fade_elapsed / self._fade_duration
+                current_alpha = int(self._fade_start_alpha + (self._fade_target_alpha - self._fade_start_alpha) * progress)
+                self._surface.set_alpha(max(0, min(255, current_alpha)))
 
+    # ======================================== HANDLERS ========================================
     def left_click(self, up: bool = False):
         """Clic gauche"""
         pass
