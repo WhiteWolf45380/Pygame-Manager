@@ -337,9 +337,9 @@ class SurfaceObject:
             start_alpha (int, optional): opacité de départ
             target_alpha (int, optional): opacité d'arrivée
         """
-        if start_alpha is not None and not isinstance(duration, (int, float)) or duration <= 0:
+        if not isinstance(duration, (int, float)) or duration <= 0:
             _raise_error(self, 'fade_in', 'Invalid duration argument')
-        if not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
+        if start_alpha is not None and not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
             _raise_error(self, 'fade_in', 'Invalid start_alpha argument')
         if not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255:
             _raise_error(self, 'fade_in', 'Invalid target_alpha argument')
