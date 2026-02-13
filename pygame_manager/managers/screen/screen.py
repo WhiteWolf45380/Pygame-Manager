@@ -47,6 +47,7 @@ class ScreenManager:
 
         # plein écran
         self._fullscreen = False
+        self._windowed_fullscreen = False
         self._windowed_width = self._window_width                                                                 # sauvegarde de la dernière largeur
         self._windowed_height = self._window_height                                                               # sauvegarde de la dernière hauteur
 
@@ -253,6 +254,12 @@ class ScreenManager:
         Vérifie l'utilisation de la vsync
         """
         return self._vsync
+    
+    def get_windowed_fullscreen(self) -> bool:
+        """
+        Vérifie l'utilisation du plein écran fenêtré
+        """
+        return self._windowed_fullscreen
 
     # ======================================== SETTERS ========================================
     def set_caption(self, caption: str):
@@ -313,6 +320,16 @@ class ScreenManager:
             self._raise_error('set_vsync', 'Value type must be boolean')
         self._vsync = value
         self.recreate()
+    
+    def set_windowed_fullscreen(self, value: bool):
+        """
+        Fixe l'utilisation du plein écran fenêtré
+
+        Args:
+            value (bool) : plein écran fenêtré ou non
+        """
+        if not isinstance(value, bool):
+            self._raise_error('set_windowed_fullscreen', 'Value type must be boolean')
     
     # ======================================== METHODES DYNAMIQUES ========================================
     def create(self, screen: tuple[int]=(1920, 1080), window: tuple[int]=(1280, 720)):
@@ -375,9 +392,14 @@ class ScreenManager:
             self._fullscreen = fullscreen
         
         if self._fullscreen:
-            # passage en plein écran
-            self._windowed_width, self._windowed_height = self._window_width, self._window_height
-            self._window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
+            if self._fullscreen:
+                if self._windowed_fullscree: # passage plein écran sans bordure
+                    self._windowed_width, self._windowed_height = self._window_width, self._window_height
+                    info = pygame.display.Info()
+                    self._window = pygame.display.set_mode((info.current_w, info.current_h), pygame.NOFRAME, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
+                else: # passage en plein écran
+                    self._windowed_width, self._windowed_height = self._window_width, self._window_height
+                    self._window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
         else:
             # passage en mode fenêtré
             info = pygame.display.Info()
