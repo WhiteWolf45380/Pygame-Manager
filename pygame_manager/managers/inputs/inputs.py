@@ -249,6 +249,7 @@ class InputsManager:
             event (pygame.event.Event) : événement pygame à traiter
         """
         event_id = self.get_id(event)
+        down = event.type in [pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN]
         up = event.type in [pygame.MOUSEBUTTONUP, pygame.KEYUP]
 
         if up:
@@ -278,7 +279,7 @@ class InputsManager:
             del self._listeners[event_id]
 
         # WHEN ANY
-        if not up:
+        if down:
             to_remove = []
             for listener in self._any_listeners:
                 if event_id in listener["exclude"]:
