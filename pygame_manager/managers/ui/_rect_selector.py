@@ -113,23 +113,15 @@ class RectSelectorObject:
         if title is not None and not isinstance(title, (str, list)): _raise_error(self, '__init__', 'Invalid title argument (must be str or list)')
         if text is not None and not isinstance(text, (str, list)): _raise_error(self, '__init__', 'Invalid text argument (must be str or list)')
         if description is not None and not isinstance(description, (str, list)): _raise_error(self, '__init__', 'Invalid description argument (must be str or list)')
-        
-        # Convertir les chaînes avec \n en listes
-        if isinstance(title, str) and '\n' in title:
-            title = title.split('\n')
-        if isinstance(text, str) and '\n' in text:
-            text = text.split('\n')
-        if isinstance(description, str) and '\n' in description:
-            description = description.split('\n')
-        
-        # Validation des listes
+        if isinstance(title, str) and '\n' in title: title = title.split('\n')
+        if isinstance(text, str) and '\n' in text: text = text.split('\n')
+        if isinstance(description, str) and '\n' in description: description = description.split('\n')
         if isinstance(title, list):
             if not all(isinstance(line, str) for line in title): _raise_error(self, '__init__', 'All title list items must be strings')
         if isinstance(text, list):
             if not all(isinstance(line, str) for line in text): _raise_error(self, '__init__', 'All text list items must be strings')
         if isinstance(description, list):
             if not all(isinstance(line, str) for line in description): _raise_error(self, '__init__', 'All description list items must be strings')
-        
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
         filling_color = _to_color(filling_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)

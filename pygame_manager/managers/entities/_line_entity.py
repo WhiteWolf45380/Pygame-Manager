@@ -40,6 +40,10 @@ class LineEntity(Entity):
 
         # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel, auto=auto)
+
+        # Etat initial
+        self._point_init = point
+        self._vector_init = vector
         
         # Objet géométrique
         self._line = context.geometry.Line(point, vector)
@@ -467,6 +471,12 @@ class LineEntity(Entity):
             bool: True si collision
         """
         return polygon._collideline(self._line)
+    
+    # ======================================== METHODES DYNAMIQUES ========================================
+    def reset(self):
+        """Remet l'entité à son état initial"""
+        self.point = self._point_init
+        self.vector = self._vector_init
     
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):

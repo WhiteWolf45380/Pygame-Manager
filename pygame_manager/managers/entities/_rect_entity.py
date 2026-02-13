@@ -53,6 +53,12 @@ class RectEntity(Entity):
 
         # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel, auto=auto)
+
+        # Etat initial
+        self._x_init = x
+        self._y_init = y
+        self._width_init = width
+        self._height_init = height
         
         # Objet géométrique
         self._rect = context.geometry.Rect(point, width, height, border_radius=border_radius)
@@ -435,6 +441,14 @@ class RectEntity(Entity):
     def collidepolygon(self, polygon) -> bool:
         """Vérifie la collision avec un polygone"""
         return polygon._colliderect(self._rect)
+
+    # ======================================== METHODES DYNAMIQUES ========================================
+    def reset(self):
+        """Remet l'entité à son état initial"""
+        self.x = self._x_init
+        self.y = self._y_init
+        self.width = self._width_init
+        self.height = self._height_init
     
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):

@@ -40,6 +40,10 @@ class CircleEntity(Entity):
 
         # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel, auto=auto)
+
+        # Etat initial
+        self._center_init = center
+        self._radius_init = radius
         
         # Objet géométrique
         self._circle = context.geometry.Circle(center, radius)
@@ -524,6 +528,12 @@ class CircleEntity(Entity):
             bool: True si collision
         """
         return polygon._collidecircle(self._circle)
+    
+    # ======================================== METHODES DYNAMIQUES ========================================
+    def reset(self):
+        """Remet l'entité à son état initial"""
+        self.center = self._center_init
+        self.radius = self._radius_init
     
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):
