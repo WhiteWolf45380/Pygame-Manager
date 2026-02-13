@@ -182,7 +182,8 @@ class NetworkManager:
             return
         self._cleanup_lobbies()
         self._receive_lobbies()
-        self._accept_clients()
+        if self._is_host:
+            self._accept_clients()
 
     # ========================= LOBBIES =========================
     def _receive_lobbies(self):
