@@ -518,7 +518,7 @@ class NetworkManager:
             num_players = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
             num_spectators = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
             players_full = num_players >= self._max_players
-            spectators_full = self._max_spectators is not None or num_spectators >= self._max_spectators
+            spectators_full = self._max_spectators is not None and num_spectators >= self._max_spectators
             return players_full and spectators_full
     
     def is_game_started(self) -> bool:
