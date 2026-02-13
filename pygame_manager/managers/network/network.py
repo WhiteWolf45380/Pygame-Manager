@@ -284,8 +284,17 @@ class NetworkManager:
             for c in clients:
                 try:
                     c.sendall(msg)
-                except (ConnectionResetError, BrokenPipeError) as e:
+                except (ConnectionResetError, BrokenPipeError, OSError) as e:
                     print(f"[Network] Warning: client {c} send failed ({e})")
+                    print(f"[Network] Removing dead client {c}")
+                    with self._lock:
+                        if c in self._clients:
+                            self._clients.remove(c)
+                        self._clients_info.pop(c, None)
+                    try:
+                        c.close()
+                    except:
+                        pass
         else:
             try:
                 self._tcp_socket.sendall(msg)
