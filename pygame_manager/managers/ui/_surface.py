@@ -339,7 +339,7 @@ class SurfaceObject:
         """
         if not isinstance(duration, (int, float)) or duration <= 0:
             _raise_error(self, 'fade_in', 'Invalid duration argument')
-        if start_alpha is not None and not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
+        if start_alpha is not None and (not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255):
             _raise_error(self, 'fade_in', 'Invalid start_alpha argument')
         if not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255:
             _raise_error(self, 'fade_in', 'Invalid target_alpha argument')
@@ -364,7 +364,7 @@ class SurfaceObject:
         """
         if not isinstance(duration, (int, float)) or duration <= 0:
             _raise_error(self, 'fade_out', 'Invalid duration argument')
-        if start_alpha is not None and not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
+        if start_alpha is not None and (not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255):
             _raise_error(self, 'fade_out', 'Invalid start_alpha argument')
         if not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255:
             _raise_error(self, 'fade_out', 'Invalid target_alpha argument')
@@ -389,11 +389,11 @@ class SurfaceObject:
         """
         if not isinstance(duration, (int, float)) or duration <= 0:
             _raise_error(self, 'fade_in_out', 'Invalid duration argument')
-        if start_alpha is not None and not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
+        if start_alpha is not None and (not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255):
             _raise_error(self, 'fade_in_out', 'Invalid start_alpha argument')
         if not isinstance(mid_alpha, int) or not 0 <= mid_alpha <= 255:
             _raise_error(self, 'fade_in_out', 'Invalid mid_alpha argument')
-        if target_alpha is not None and not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255:
+        if target_alpha is not None and (not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255):
             _raise_error(self, 'fade_in_out', 'Invalid target_alpha argument')
         
         self._fade_active = True
