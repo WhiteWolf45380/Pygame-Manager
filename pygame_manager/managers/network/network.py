@@ -262,6 +262,9 @@ class NetworkManager:
                     self.send({"type": "start_game"})
                 elif self._game_started:
                     client.send({"type": "start_game"})
+                
+                if self.is_lobby_full():
+                    self._stop_broadcast()
 
                 print(f"[Network] Client connected: {addr} as {role}")
 
