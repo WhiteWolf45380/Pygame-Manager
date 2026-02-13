@@ -393,7 +393,7 @@ class ScreenManager:
         
         if self._fullscreen:
             if self._fullscreen:
-                if self._windowed_fullscree: # passage plein écran sans bordure
+                if self._windowed_fullscreen: # passage plein écran sans bordure
                     self._windowed_width, self._windowed_height = self._window_width, self._window_height
                     info = pygame.display.Info()
                     self._window = pygame.display.set_mode((info.current_w, info.current_h), pygame.NOFRAME, pygame.HWSURFACE | pygame.DOUBLEBUF, vsync=self._vsync)
