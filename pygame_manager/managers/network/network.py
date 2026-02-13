@@ -428,6 +428,9 @@ class NetworkManager:
             if not should_disconnect:
                 self._lobby_info["players"] = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
                 self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
+
+                if not self.is_lobby_full() and not self._broadcast_running:
+                    self._start_broadcast()
         
         if should_disconnect:
             self.disconnect()
@@ -445,6 +448,8 @@ class NetworkManager:
     # ========================= BROADCAST =========================
     def _start_broadcast(self):
         """Démarre la diffusion UDP"""
+        if self._broadcast_running:
+            return
         self._broadcast_running = True
         self._broadcast_thread = threading.Thread(target=self._broadcast_loop, daemon=True)
         self._broadcast_thread.start()
@@ -457,8 +462,8 @@ class NetworkManager:
         while self._broadcast_running:
             try:
                 sock.sendto(json.dumps(self._lobby_info).encode(), (broadcast_addr, DISCOVERY_PORT))
-            except:
-                pass
+            except Exception as e:
+                print(f"[Network] Broadcast error: {e}")
             for _ in range(10):
                 if not self._broadcast_running:
                     break
@@ -512,7 +517,7 @@ class NetworkManager:
             num_players = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
             num_spectators = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
             players_full = num_players >= self._max_players
-            spectators_full = self._max_spectators is None or num_spectators >= self._max_spectators
+            spectators_full = self._max_spectators is not None or num_spectators >= self._max_spectators
             return players_full and spectators_full
     
     def is_game_started(self) -> bool:
