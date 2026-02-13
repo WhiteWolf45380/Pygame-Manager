@@ -75,8 +75,11 @@ class Engine:
 
             # Permet l'affichage à l'écran
             with self.screen:
+                # Actualisation réseau
+                self.network.update()
+
                 # Entrées utilisateur
-                self.mouse._update()
+                self.mouse.update()
                 self.inputs.check_all()
 
                 # Actualisation

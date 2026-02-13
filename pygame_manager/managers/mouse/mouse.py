@@ -24,7 +24,7 @@ class MouseManager:
         self._out = False                    # curseur en dehors de l'écran
     
     # ======================================== ACTUALISATION ========================================
-    def _update(self):
+    def update(self):
         """
         Met à jour la position du curseur
         """
@@ -39,7 +39,7 @@ class MouseManager:
         self._y = (mouse_y - context.screen._screen_resized_y_offset) / context.screen.scale                                            # conversion de la coordonée y
 
     # ======================================== AFFICHAGE ========================================
-    def _draw(self):
+    def draw(self):
         """
         Affiche le curseur curstomisé
         """

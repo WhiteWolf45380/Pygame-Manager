@@ -134,7 +134,7 @@ class ScreenManager:
             self._window.blit(self._screen_resized, (self._screen_resized_x_offset, self._screen_resized_y_offset))
 
             # affichage curseur
-            context.mouse._draw()
+            context.mouse.draw()
 
             # actualisation
             pygame.display.flip()

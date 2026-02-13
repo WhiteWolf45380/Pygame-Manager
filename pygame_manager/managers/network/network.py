@@ -178,6 +178,8 @@ class NetworkManager:
     # ========================= UPDATE =========================
     def update(self):
         """Récupère les lobbies (client) et Envoie sa présence (host)"""
+        if not self._connected:
+            return
         self._receive_lobbies()
         self._cleanup_lobbies()
         if self._is_host:
