@@ -136,6 +136,17 @@ class SurfaceObject:
         # paramètres dynamiques
         self._visible = True
 
+        # fade animation
+        self._fade_active = False
+        self._fade_type = None
+        self._fade_duration = 0.0
+        self._fade_elapsed = 0.0
+        self._fade_start_alpha = 255
+        self._fade_target_alpha = 255
+        self._fade_mid_alpha = 255
+        self._fade_final_alpha = 0
+        self._fade_in_out_phase = 'in'
+
     # ======================================== RENDU ========================================
     def _render(self):
         """Génère la surface"""
@@ -317,60 +328,83 @@ class SurfaceObject:
         return self._rect.collidepoint(mouse_pos)
     
     # ======================================== ANIMATIONS ========================================
-    def fade_in(self, duration: float):
+    def fade_in(self, duration: float, start_alpha: int = 0, target_alpha: int = 255):
         """
-        Anime l'opacité de 0 à 255 (apparition progressive)
+        Anime l'opacité (apparition progressive)
         
         Args:
             duration (float): durée de l'animation en secondes
+            start_alpha (int, optional): opacité de départ (défaut: 0)
+            target_alpha (int, optional): opacité d'arrivée (défaut: 255)
         """
         if not isinstance(duration, (int, float)) or duration <= 0:
             _raise_error(self, 'fade_in', 'Invalid duration argument')
+        if not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
+            _raise_error(self, 'fade_in', 'Invalid start_alpha argument')
+        if not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255:
+            _raise_error(self, 'fade_in', 'Invalid target_alpha argument')
         
         self._fade_active = True
         self._fade_type = 'in'
         self._fade_duration = float(duration)
         self._fade_elapsed = 0.0
-        self._fade_start_alpha = 0
-        self._fade_target_alpha = 255
-        self._surface.set_alpha(0)
+        self._fade_start_alpha = start_alpha
+        self._fade_target_alpha = target_alpha
+        self._surface.set_alpha(start_alpha)
 
-    def fade_out(self, duration: float):
+    def fade_out(self, duration: float, start_alpha: int = 255, target_alpha: int = 0):
         """
-        Anime l'opacité de 255 à 0 (disparition progressive)
+        Anime l'opacité (disparition progressive)
         
         Args:
             duration (float): durée de l'animation en secondes
+            start_alpha (int, optional): opacité de départ (défaut: 255)
+            target_alpha (int, optional): opacité d'arrivée (défaut: 0)
         """
         if not isinstance(duration, (int, float)) or duration <= 0:
             _raise_error(self, 'fade_out', 'Invalid duration argument')
+        if not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
+            _raise_error(self, 'fade_out', 'Invalid start_alpha argument')
+        if not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255:
+            _raise_error(self, 'fade_out', 'Invalid target_alpha argument')
         
         self._fade_active = True
         self._fade_type = 'out'
         self._fade_duration = float(duration)
         self._fade_elapsed = 0.0
-        self._fade_start_alpha = 255
-        self._fade_target_alpha = 0
-        self._surface.set_alpha(255)
+        self._fade_start_alpha = start_alpha
+        self._fade_target_alpha = target_alpha
+        self._surface.set_alpha(start_alpha)
 
-    def fade_in_out(self, duration: float):
+    def fade_in_out(self, duration: float, start_alpha: int = 0, mid_alpha: int = 255, target_alpha: int = 0):
         """
-        Anime l'opacité de 0 à 255 puis de 255 à 0 (apparition puis disparition)
+        Anime l'opacité (apparition puis disparition)
         
         Args:
             duration (float): durée totale de l'animation en secondes (divisée en deux pour in et out)
+            start_alpha (int, optional): opacité de départ (défaut: 0)
+            mid_alpha (int, optional): opacité maximum au milieu (défaut: 255)
+            target_alpha (int, optional): opacité finale (défaut: 0)
         """
         if not isinstance(duration, (int, float)) or duration <= 0:
             _raise_error(self, 'fade_in_out', 'Invalid duration argument')
+        if not isinstance(start_alpha, int) or not 0 <= start_alpha <= 255:
+            _raise_error(self, 'fade_in_out', 'Invalid start_alpha argument')
+        if not isinstance(mid_alpha, int) or not 0 <= mid_alpha <= 255:
+            _raise_error(self, 'fade_in_out', 'Invalid mid_alpha argument')
+        if not isinstance(target_alpha, int) or not 0 <= target_alpha <= 255:
+            _raise_error(self, 'fade_in_out', 'Invalid target_alpha argument')
         
         self._fade_active = True
         self._fade_type = 'in_out'
         self._fade_duration = float(duration)
         self._fade_elapsed = 0.0
-        self._fade_start_alpha = 0
-        self._fade_target_alpha = 255
+        self._fade_start_alpha = start_alpha
+        self._fade_target_alpha = mid_alpha
+        self._fade_mid_alpha = mid_alpha
+        self._fade_final_alpha = target_alpha
         self._fade_in_out_phase = 'in'
-        self._surface.set_alpha(0)
+        self._surface.set_alpha(start_alpha)
 
     # ======================================== METHODES DYNAMIQUES ========================================
     def kill(self):
@@ -380,6 +414,7 @@ class SurfaceObject:
     def update(self):
         """Actualisation par frame"""
         self.update_gradient()
+        self.update_fade()
 
     def draw(self):
         """Dessin par frame"""
@@ -393,7 +428,7 @@ class SurfaceObject:
         surface.blit(self._surface, self._rect)
     
     def update_gradient(self):
-        """Dégradé animé ultra-léger avec bandes"""
+        """Fluctuation du dégradé"""
         if not self._gradient or not self._gradient_fluctuation:
             return
 
@@ -468,7 +503,7 @@ class SurfaceObject:
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
     
     def update_fade(self):
-        """Gère l'animation du fade"""
+        """Animation de fondu"""
         if not self._fade_active:
             return
         
@@ -483,9 +518,9 @@ class SurfaceObject:
                     # Passer à la phase out
                     self._fade_in_out_phase = 'out'
                     self._fade_elapsed = 0.0
-                    self._fade_start_alpha = 255
-                    self._fade_target_alpha = 0
-                    self._surface.set_alpha(255)
+                    self._fade_start_alpha = self._fade_mid_alpha
+                    self._fade_target_alpha = self._fade_final_alpha
+                    self._surface.set_alpha(self._fade_mid_alpha)
                 else:
                     # Animation fade in
                     progress = self._fade_elapsed / half_duration
@@ -495,7 +530,7 @@ class SurfaceObject:
             elif self._fade_in_out_phase == 'out':
                 if self._fade_elapsed >= half_duration:
                     # Fin de l'animation
-                    self._surface.set_alpha(0)
+                    self._surface.set_alpha(self._fade_final_alpha)
                     self._fade_active = False
                     self._fade_in_out_phase = 'in'
                 else:
