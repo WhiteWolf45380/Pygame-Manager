@@ -23,17 +23,19 @@ class Panel:
             border_width: int = 0,
             border_color: pygame.Color = (0, 0, 0, 255),
             border_around: bool = False,
+            srcalpha: bool = False,
             hoverable: bool = True
             ):
         """
         Args:
-            name (str) : nom du panel (doit être unique)
-            predecessor (str, optional) : nom du panel prédecesseur
-            rect (RectObject, optional) : dimensions du panel (accepte aussi les tuples (x, y, width, height))
-            centered (bool, optional) : coordonnées à partir du centre de la surface maître
-            border_width (int, optional) : épaisseur de la bordure du panel
-            border_around (bool, optional) : affichage de la borddure à l'extérieur du panel
-            hoverable (bool, optional) : peut être survolé
+            name (str): nom du panel (doit être unique)
+            predecessor (str, optional): nom du panel prédecesseur
+            rect (RectObject, optional): dimensions du panel (accepte aussi les tuples (x, y, width, height))
+            centered (bool, optional): coordonnées à partir du centre de la surface maître
+            border_width (int, optional): épaisseur de la bordure du panel
+            border_around (bool, optional): affichage de la bordure à l'extérieur du panel
+            srcalpha (bool, optional): activation du canal alpha
+            hoverable (bool, optional): peut être survolé
         """
         rect = context.geometry._to_rect(rect, raised=False)
 
@@ -47,6 +49,7 @@ class Panel:
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color)
         if not isinstance(border_around, bool): _raise_error(self, '__init__', 'Invalid border_around argument')
+        if not isinstance(srcalpha, bool): _raise_error(self, '__init__' 'Invalid srcalhpa argument')
         if not isinstance(hoverable, bool): _raise_error(self, '__init__', 'Invalid hoverable argument')
 
         # properties
@@ -58,7 +61,7 @@ class Panel:
         self._surface_rect = rect.rect
         self._surface_width = rect.width
         self._surface_height = rect.height
-        self._surface = pygame.Surface((self._surface_width, self._surface_height))
+        self._surface = pygame.Surface((self._surface_width, self._surface_height), pygame.SRCALPHA if srcalpha else 0)
 
         # bordure
         self._border_width = border_width
