@@ -221,7 +221,7 @@ class RectButtonObject:
                         self._font = pygame.font.SysFont(self._sysfont, self._font_size)
                         self.font_type = "sysfont"
                     else:
-                        self._font = pygame.font.Font(None, self._font_size)
+                        self._font = pygame.font.font.Font(None, self._font_size)
                         self.font_type = "default"
                     
 
