@@ -111,7 +111,7 @@ class TextObject:
         # texte
         self._text: str = text
         self._font: pygame.font.Font = font if isinstance(font, pygame.font.Font) else None
-        self._sysfont: str = font if isinstance(font, str) and font in pygame.font.get_fonts() else None 
+        self._sysfont: str = font if isinstance(font, str) else None
         self._font_path: str = font_path
         self._font_color: pygame.Color = font_color
         self._font_size: int = font_size
@@ -119,15 +119,19 @@ class TextObject:
 
         # police
         if self._font is None:
-            try:
-                self._font = pygame.font.Font(self._font_path, self._font_size)
-            except Exception as _:
+            if self._font_path is not None:
+                try:
+                    self._font = pygame.font.Font(self._font_path, self._font_size)
+                except Exception as _:
+                    if self._sysfont is not None:
+                        self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                    else:
+                        self._font = pygame.font.Font(None, self._font_size)
+            else:
                 if self._sysfont is not None:
                     self._font = pygame.font.SysFont(self._sysfont, self._font_size)
                 else:
                     self._font = pygame.font.Font(None, self._font_size)
-        else:
-            self._font = font
 
         # Effets
         self._font.set_bold(bold)

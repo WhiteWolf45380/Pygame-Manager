@@ -194,7 +194,7 @@ class RectButtonObject:
         # texte
         self._text = text
         self._font = font if isinstance(font, pygame.font.Font) else None
-        self._sysfont = font if isinstance(font, str) and font in pygame.font.get_fonts() else None
+        self._sysfont = font if isinstance(font, str) else None
         self._font_path = font_path
         self._font_size = font_size
         self._font_size_ratio_limit = min(1.0, max(0.05, font_size_ratio_limit))
@@ -213,10 +213,18 @@ class RectButtonObject:
 
             self.font_type = "font"
             if self._font is None: # chargement de la police
-                try:
-                    self._font = pygame.font.Font(self._font_path, self._font_size)
-                    self.font_type = "path"
-                except Exception as _:
+                if self._font_path is not None:
+                    try:
+                        self._font = pygame.font.Font(self._font_path, self._font_size)
+                        self.font_type = "path"
+                    except Exception as _:
+                        if self._sysfont is not None:
+                            self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                            self.font_type = "sysfont"
+                        else:
+                            self._font = pygame.font.font.Font(None, self._font_size)
+                            self.font_type = "default"
+                else:
                     if self._sysfont is not None:
                         self._font = pygame.font.SysFont(self._sysfont, self._font_size)
                         self.font_type = "sysfont"
