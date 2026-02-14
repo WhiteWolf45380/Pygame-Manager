@@ -28,7 +28,7 @@ class RectButtonObject:
             icon_scale_ratio: float = 0.8,
 
             text: str = None,
-            font: pygame.font.Font | str = "bahnschrift",
+            font: pygame.font.Font | str = None,
             font_path: str = None,
             font_size: int = None,
             font_size_ratio_limit: float= 0.8,

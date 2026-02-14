@@ -14,7 +14,7 @@ class TextObject:
             text: str = "",
             anchor: str = "topleft",
 
-            font: pygame.font.Font | str = "bahnschrift",
+            font: pygame.font.Font | str = None,
             font_path: str = None,
             font_size: int = 24,
             font_color: pygame.Color = (0, 0, 0, 255),
