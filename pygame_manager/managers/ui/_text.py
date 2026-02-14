@@ -161,6 +161,7 @@ class TextObject:
         self._blinking = False
         self._blink_duration = 1.0
         self._blink_timer = 0.0
+        self._blink_oscillation_timer = 0.0
         self._blink_alpha = 255
         self._blink_alpha_min = 0
         self._blink_alpha_max = 0
@@ -355,6 +356,7 @@ class TextObject:
         self._blink_hidden_time = hidden_time
         self._blink_hidden_elapsed = 0.0
         self._blink_timer = 0.0
+        self._blink_oscillation_timer = 0.0
         self._blinking = True
         self.visible = True
     
@@ -420,12 +422,14 @@ class TextObject:
         if not self._blinking:
             return
         
+        # Timer global pour la durée totale
         self._blink_timer += context.time.dt
         if self._blink_duration is not None and self._blink_timer >= self._blink_duration:
             self._blinking = False
             self.set_alpha(self._blink_alpha_max)
             return
         
+        # Phase d'attente en position visible
         if self._blink_alpha >= self._blink_alpha_max and self._blink_visible_time > 0:
             self._blink_visible_elapsed += context.time.dt
             if self._blink_visible_elapsed < self._blink_visible_time:
@@ -434,6 +438,7 @@ class TextObject:
             else:
                 self._blink_visible_elapsed = 0.0
         
+        # Phase d'attente en position invisible
         if self._blink_alpha <= self._blink_alpha_min and self._blink_hidden_time > 0:
             self._blink_hidden_elapsed += context.time.dt
             if self._blink_hidden_elapsed < self._blink_hidden_time:
@@ -442,7 +447,9 @@ class TextObject:
             else:
                 self._blink_hidden_elapsed = 0.0
         
-        oscillation = np.sin(self._blink_timer * self._blink_speed * np.pi * 2)
+        # Oscillation (seulement quand on n'est pas en phase d'attente)
+        self._blink_oscillation_timer += context.time.dt
+        oscillation = np.sin(self._blink_oscillation_timer * self._blink_speed * np.pi * 2)
         normalized = (oscillation + 1) / 2
         self._blink_alpha = int(self._blink_alpha_min + normalized * (self._blink_alpha_max - self._blink_alpha_min))
         self.set_alpha(self._blink_alpha)
