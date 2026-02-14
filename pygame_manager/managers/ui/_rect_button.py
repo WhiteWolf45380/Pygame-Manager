@@ -193,7 +193,7 @@ class RectButtonObject:
 
         # texte
         self._text = text
-        self._font = font if isinstance(font, pygame.Font) else None
+        self._font = font if isinstance(font, pygame.font.Font) else None
         self._sysfont = font if isinstance(font, str) and font in pygame.font.get_fonts() else None
         self._font_path = font_path
         self._font_size = font_size
