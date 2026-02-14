@@ -174,6 +174,14 @@ class NetworkManager:
         self._is_host = False
         self._lobby_info = {}
 
+        # Flush du buffer UDP
+        try:
+            while True:
+                self._udp_sock.recvfrom(2048)
+        except BlockingIOError:
+            pass
+        self._lobbies = {}
+
     # ========================= UPDATE =========================
     def update(self, f: bool = False):
         """Met à jour l'état du réseau
