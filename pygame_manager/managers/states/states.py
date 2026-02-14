@@ -272,7 +272,8 @@ class StatesManager:
             self._update_transition()
         
         for layer in sorted(self._active_states):
-            name = self._active_states[layer]
+            name = self._active_states.get(layer)
+            if name is None: continue
             state_obj = self._dict[name]["state_obj"]
             state_obj.update()
         
