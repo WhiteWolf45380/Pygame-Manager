@@ -252,11 +252,7 @@ class NetworkManager:
                         "last_seen": time.time()
                     }
 
-                threading.Thread(
-                    target=self._receive_loop_host,
-                    args=(client,),
-                    daemon=True
-                ).start()
+                threading.Thread(target=self._receive_loop_host, args=(client,), daemon=True).start()
 
                 try:
                     client.sendall((json.dumps({"role": role}) + "\n").encode())
@@ -269,12 +265,8 @@ class NetworkManager:
                     continue
 
                 with self._lock:
-                    self._lobby_info["players"] = sum(
-                        1 for i in self._clients_info.values() if i["role"] == "player"
-                    ) + 1
-                    self._lobby_info["spectators"] = sum(
-                        1 for i in self._clients_info.values() if i["role"] == "spectator"
-                    )
+                    self._lobby_info["players"] = sum(1 for i in self._clients_info.values() if i["role"] == "player") + 1
+                    self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
 
                 if not self._game_started and self.is_lobby_ready():
                     self._game_started = True
@@ -533,7 +525,6 @@ class NetworkManager:
     def is_game_started(self) -> bool:
         """Vérifie si la partie est lancée"""
         return self._game_started
-
 
 # ========================= INSTANCE =========================
 network_manager = NetworkManager()
