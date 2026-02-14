@@ -14,7 +14,7 @@ class TextObject:
             text: str = "",
             anchor: str = "topleft",
 
-            font: pygame.font.Font = None,
+            font: pygame.font.Font | str = None,
             font_path: str = None,
             font_size: int = 24,
             font_color: pygame.Color = (0, 0, 0, 255),
@@ -76,7 +76,8 @@ class TextObject:
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
         if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
-        if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
+        if font is not None and not isinstance(font, (str, pygame.font.Font)): _raise_error(self, '__init__', 'Invalid font argument')
+        if isinstance(font, str) and not font in pygame.font.get_fonts(): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
         if not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
         font_color = _to_color(font_color, method='__init__')
@@ -110,6 +111,7 @@ class TextObject:
         # texte
         self._text = text
         self._font_color = font_color
+        self._font_size = font_size
         self._antialias = antialias
 
         # police
@@ -118,6 +120,8 @@ class TextObject:
                 self._font: pygame.font.Font = pygame.font.Font(font_path, font_size)
             except Exception as _:
                 self._font: pygame.font.Font = pygame.font.Font(None, font_size)
+        elif isinstance(font, str):
+            self._font = pygame.font.SysFont(font, font_size)
         else:
             self._font: pygame.font.Font = font
 
