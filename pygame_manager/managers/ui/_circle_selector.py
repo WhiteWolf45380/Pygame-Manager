@@ -30,10 +30,16 @@ class CircleSelectorObject:
             icon_keep_ratio: bool = True,
             icon_scale_ratio: float = 0.8,
 
+            title: str = None,
             text: str = None,
-            font: pygame.font.Font = None,
-            font_path: str = None,
-            font_size: int = None,
+            description: str = None,
+            title_anchor: str = "center",
+            text_anchor: str = "center",
+            description_anchor: str = "center",
+            title_size_ratio: float = 1.0,
+            text_size_ratio: float = 1.0,
+            description_size_ratio: float = 1.0,
+            padding: int = 5,
             font_color: pygame.Color = (0, 0, 0, 255),
             font_color_hover: pygame.Color = None,
             font_color_selected: pygame.Color = None,
@@ -67,10 +73,16 @@ class CircleSelectorObject:
             icon_keep_ratio (Surface, optional) : pas de déformation, ratio_locker
             icon_scale_ratio (Surface, optional) : ratio maximum par rapport aux dimensions du bouton
 
-            text (str, optional) : texte du sélecteur
-            font (Font, optional) : police du texte
-            font_path (str, optional) : chemin vers la police
-            font_size (int, optional) : taille de la police
+            title/text/description (str or list, optional) : textes du sélecteur
+                - Si str : texte sur une seule ligne (les \n sont automatiquement convertis en sauts de ligne)
+                - Si list : chaque élément de la liste est affiché sur une nouvelle ligne
+            title_anchor (str, optional) : position du title (ex: "topleft", "center", "bottomright")
+            text_anchor (str, optional) : position du text (ex: "topleft", "center", "bottomright")
+            description_anchor (str, optional) : position de la description (ex: "topleft", "center", "bottomright")
+            title_size_ratio (float, optional) : ratio multiplicateur de taille (1.0 = taille calculée par défaut)
+            text_size_ratio (float, optional) : ratio multiplicateur de taille (0.75 = 75% de la taille par défaut)
+            description_size_ratio (float, optional) : ratio multiplicateur de taille (0.55 = 55% de la taille par défaut)
+            padding (int, optional) : padding en pixels depuis les bords
             font_color (Color, optional) : couleur de la police
             font_color_hover (Color, optional) : couleur de la police lors du survol
             font_color_selected (Color, optional) : couleur de la police lorsque sélectionné
@@ -90,6 +102,18 @@ class CircleSelectorObject:
         if not isinstance(radius, Real) or radius <= 0: _raise_error(self, '__init__', 'Invalid radius argument')
         if not isinstance(selection_id, str) or not selection_id: _raise_error(self, '__init__', 'Invalid selection_id argument')
         if not isinstance(selector_id, str) or not selector_id: _raise_error(self, '__init__', 'Invalid selector_id argument')
+        if title is not None and not isinstance(title, (str, list)): _raise_error(self, '__init__', 'Invalid title argument (must be str or list)')
+        if text is not None and not isinstance(text, (str, list)): _raise_error(self, '__init__', 'Invalid text argument (must be str or list)')
+        if description is not None and not isinstance(description, (str, list)): _raise_error(self, '__init__', 'Invalid description argument (must be str or list)')
+        if isinstance(title, str) and '\n' in title: title = title.split('\n')
+        if isinstance(text, str) and '\n' in text: text = text.split('\n')
+        if isinstance(description, str) and '\n' in description: description = description.split('\n')
+        if isinstance(title, list):
+            if not all(isinstance(line, str) for line in title): _raise_error(self, '__init__', 'All title list items must be strings')
+        if isinstance(text, list):
+            if not all(isinstance(line, str) for line in text): _raise_error(self, '__init__', 'All text list items must be strings')
+        if isinstance(description, list):
+            if not all(isinstance(line, str) for line in description): _raise_error(self, '__init__', 'All description list items must be strings')
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
         filling_color = _to_color(filling_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)
@@ -99,10 +123,13 @@ class CircleSelectorObject:
         if icon_selected is not None and not isinstance(icon_selected, pygame.Surface): _raise_error(self, '__init__', 'Invalid icon_selected argument')
         if not isinstance(icon_keep_ratio, bool): _raise_error(self, '__init__', 'Invalid icon_keep_ratio argument')
         if not isinstance(icon_scale_ratio, Real): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
-        if text is not None and not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
-        if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
-        if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
-        if font_size is not None and not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
+        if not isinstance(title_anchor, str): _raise_error(self, '__init__', 'Invalid title_anchor argument')
+        if not isinstance(text_anchor, str): _raise_error(self, '__init__', 'Invalid text_anchor argument')
+        if not isinstance(description_anchor, str): _raise_error(self, '__init__', 'Invalid description_anchor argument')
+        if not isinstance(title_size_ratio, (int, float)) or title_size_ratio <= 0: _raise_error(self, '__init__', 'Invalid title_size_ratio argument (must be > 0)')
+        if not isinstance(text_size_ratio, (int, float)) or text_size_ratio <= 0: _raise_error(self, '__init__', 'Invalid text_size_ratio argument (must be > 0)')
+        if not isinstance(description_size_ratio, (int, float)) or description_size_ratio <= 0: _raise_error(self, '__init__', 'Invalid description_size_ratio argument (must be > 0)')
+        if not isinstance(padding, int) or padding < 0: _raise_error(self, '__init__', 'Invalid padding argument')
         font_color = _to_color(font_color, method='__init__')
         font_color_hover = _to_color(font_color_hover, raised=False)
         font_color_selected = _to_color(font_color_selected, raised=False)
@@ -135,6 +162,16 @@ class CircleSelectorObject:
         self._rect = pygame.Rect(x - self._radius, y - self._radius, diameter, diameter)
         self._local_center = (self._radius, self._radius)
 
+        # Zone de texte avec padding (carré inscrit dans le cercle)
+        # Pour un cercle, la zone de texte sera un carré inscrit avec padding
+        inscribed_square_side = int(diameter / 1.414)  # diameter / sqrt(2)
+        self._text_area = pygame.Rect(
+            self._radius - inscribed_square_side // 2 + padding,
+            self._radius - inscribed_square_side // 2 + padding,
+            inscribed_square_side - 2 * padding,
+            inscribed_square_side - 2 * padding
+        )
+
         # background
         self._filling = filling
         self._filling_color = filling_color
@@ -157,11 +194,11 @@ class CircleSelectorObject:
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, 2 * self._radius * self._icon_scale_ratio)
-                iheight = min(iheight, 2 * self._radius * self._icon_scale_ratio)
+                iwidth = int(min(iwidth, 2 * self._radius * self._icon_scale_ratio))
+                iheight = int(min(iheight, 2 * self._radius * self._icon_scale_ratio))
             
-            self._icon = pygame.transform.smoothscale(icon, (int(iwidth), int(iheight)))
-            self._icon_rect = self._icon.get_rect(center=self._local_rect.center)
+            self._icon = pygame.transform.smoothscale(icon, (iwidth, iheight))
+            self._icon_rect = self._icon.get_rect(center=self._local_center)
 
         self._icon_hover = self._icon
         self._icon_hover_rect = self._icon_rect
@@ -175,11 +212,11 @@ class CircleSelectorObject:
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, 2 * self._radius * self._icon_scale_ratio)
-                iheight = min(iheight, 2 * self._radius * self._icon_scale_ratio)
+                iwidth = int(min(iwidth, 2 * self._radius * self._icon_scale_ratio))
+                iheight = int(min(iheight, 2 * self._radius * self._icon_scale_ratio))
             
-            self._icon_hover = pygame.transform.smoothscale(icon_hover, (int(iwidth), int(iheight)))
-            self._icon_hover_rect = self._icon_hover.get_rect(center=self._local_rect.center)
+            self._icon_hover = pygame.transform.smoothscale(icon_hover, (iwidth, iheight))
+            self._icon_hover_rect = self._icon_hover.get_rect(center=self._local_center)
 
         self._icon_selected = self._icon
         self._icon_selected_rect = self._icon_rect
@@ -193,42 +230,126 @@ class CircleSelectorObject:
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
-                iwidth = min(iwidth, 2 * self._radius * self._icon_scale_ratio)
-                iheight = min(iheight, 2 * self._radius * self._icon_scale_ratio)
+                iwidth = int(min(iwidth, 2 * self._radius * self._icon_scale_ratio))
+                iheight = int(min(iheight, 2 * self._radius * self._icon_scale_ratio))
             
-            self._icon_selected = pygame.transform.smoothscale(icon_selected, (int(iwidth), int(iheight)))
-            self._icon_selected_rect = self._icon_selected.get_rect(center=self._local_rect.center)
+            self._icon_selected = pygame.transform.smoothscale(icon_selected, (iwidth, iheight))
+            self._icon_selected_rect = self._icon_selected.get_rect(center=self._local_center)
 
-        # texte — 3 états
-        self._text = text
-        self._font = font
-        self._font_path = font_path
-        self._font_size = font_size
+        # texte — logique avec calcul auto + ratio multiplicateur
+        self._title_anchor = title_anchor
+        self._text_anchor = text_anchor
+        self._description_anchor = description_anchor
+        self._title_size_ratio = title_size_ratio
+        self._text_size_ratio = text_size_ratio
+        self._description_size_ratio = description_size_ratio
+        self._padding = padding
         self._font_color = font_color
         self._font_color_hover = font_color_hover if font_color_hover is not None else font_color
         self._font_color_selected = font_color_selected if font_color_selected is not None else font_color
 
-        self._text_object = None
-        self._text_object_hover = None
-        self._text_object_selected = None
-        self._text_object_rect = None
-        self._text_blit = False
+        self._texts = {
+            "title": title,
+            "text": text,
+            "description": description
+        }
 
-        if self._text is not None:
-            if self._font_size is None:
-                self._font_size = max(3, int(self._radius * 0.75))
+        self._text_objects = {}
+        self._text_objects_hover = {}
+        self._text_objects_selected = {}
+        self._text_rects = {}
+        self._text_blit = any(self._texts.values())
 
-            if self._font is None:
-                try:
-                    self._font = pygame.font.Font(self._font_path, self._font_size)
-                except Exception as _:
-                    self._font = pygame.font.Font(None, self._font_size)
+        if self._text_blit:
+            # Ratios par type
+            size_ratios = {
+                "title": self._title_size_ratio,
+                "text": self._text_size_ratio * 0.75,
+                "description": self._description_size_ratio * 0.45
+            }
 
-            self._text_object = self._font.render(self._text, True, self._font_color)
-            self._text_object_hover = self._font.render(self._text, True, self._font_color_hover)
-            self._text_object_selected = self._font.render(self._text, True, self._font_color_selected)
-            self._text_object_rect = self._text_object.get_rect(center=self._local_center)
-            self._text_blit = True
+            # Zone disponible pour le texte
+            available_width = self._text_area.width
+            available_height = self._text_area.height
+
+            # Création des textes
+            for text_type, text_content in self._texts.items():
+                if text_content is None:
+                    continue
+                
+                # Calcul de la taille de base selon la hauteur disponible
+                base_font_size = int(available_height * 0.7)
+                
+                # Application du ratio multiplicateur
+                font_size = int(base_font_size * size_ratios[text_type])
+                font_size = max(5, font_size)  # Minimum 5px
+                
+                font = pygame.font.Font(None, font_size)
+                
+                # Italique pour description
+                if text_type == "description":
+                    font.set_italic(True)
+                
+                # Gestion des listes (multi-lignes)
+                if isinstance(text_content, list):
+                    # Pour les listes, ajuster la taille pour que tout rentre
+                    test_size = font_size
+                    while test_size > 5:
+                        test_font = pygame.font.Font(None, test_size)
+                        if text_type == "description":
+                            test_font.set_italic(True)
+                        
+                        line_spacing = int(test_size * 0.1)
+                        
+                        # Vérifier largeur et hauteur
+                        max_width = 0
+                        total_height = 0
+                        for i, line in enumerate(text_content):
+                            line_surf = test_font.render(line, True, (0, 0, 0))
+                            max_width = max(max_width, line_surf.get_width())
+                            total_height += line_surf.get_height()
+                            if i < len(text_content) - 1:
+                                total_height += line_spacing
+                        
+                        # Si ça rentre, on garde cette taille
+                        if max_width <= available_width and total_height <= available_height:
+                            break
+                        
+                        test_size -= 1
+                    
+                    font_size = max(5, test_size)
+                    font = pygame.font.Font(None, font_size)
+                    if text_type == "description":
+                        font.set_italic(True)
+                    
+                    self._text_objects[text_type] = self._create_multiline_surface(
+                        text_content, font, self._font_color
+                    )
+                    self._text_objects_hover[text_type] = self._create_multiline_surface(
+                        text_content, font, self._font_color_hover
+                    )
+                    self._text_objects_selected[text_type] = self._create_multiline_surface(
+                        text_content, font, self._font_color_selected
+                    )
+                else:
+                    # Texte simple - vérifier la largeur
+                    test_size = font_size
+                    test_font = font
+                    test_render = test_font.render(text_content, True, (0, 0, 0))
+                    
+                    while test_render.get_width() > available_width and test_size > 5:
+                        test_size -= 1
+                        test_font = pygame.font.Font(None, test_size)
+                        if text_type == "description":
+                            test_font.set_italic(True)
+                        test_render = test_font.render(text_content, True, (0, 0, 0))
+                    
+                    self._text_objects[text_type] = test_font.render(text_content, True, self._font_color)
+                    self._text_objects_hover[text_type] = test_font.render(text_content, True, self._font_color_hover)
+                    self._text_objects_selected[text_type] = test_font.render(text_content, True, self._font_color_selected)
+
+            # Calcul des positions
+            self._calculate_text_positions()
 
         # bordure
         self._border_width = max(0, border_width)
@@ -255,6 +376,80 @@ class CircleSelectorObject:
 
         # paramètres dynamiques
         self._visible = True
+
+    # ======================================== CREATION SURFACE MULTI-LIGNES ========================================
+    def _create_multiline_surface(self, lines: list, font: pygame.font.Font, color: pygame.Color) -> pygame.Surface:
+        """
+        Crée une surface avec plusieurs lignes de texte.
+        """
+        if not lines:
+            return pygame.Surface((1, 1), pygame.SRCALPHA)
+        
+        line_spacing = int(font.get_height() * 0.1)  # 10% d'espacement entre lignes
+        
+        # Créer les surfaces de chaque ligne
+        line_surfaces = []
+        for line in lines:
+            line_surf = font.render(line, True, color)
+            line_surfaces.append(line_surf)
+        
+        # Calculer les dimensions finales
+        final_width = max(surf.get_width() for surf in line_surfaces) if line_surfaces else 1
+        final_height = sum(surf.get_height() for surf in line_surfaces) + line_spacing * (len(lines) - 1)
+        
+        # Créer la surface finale
+        final_surface = pygame.Surface((int(final_width), int(final_height)), pygame.SRCALPHA)
+        
+        # Blit chaque ligne
+        current_y = 0
+        for surf in line_surfaces:
+            final_surface.blit(surf, (0, current_y))
+            current_y += surf.get_height() + line_spacing
+        
+        return final_surface
+
+    # ======================================== CALCUL POSITIONS TEXTE ========================================
+    def _calculate_text_positions(self):
+        """
+        Calcule les positions des textes selon leurs anchors individuels.
+        Chaque texte est positionné indépendamment dans la zone avec padding.
+        """
+        if not self._text_blit:
+            return
+
+        # Dictionnaire des anchors par type
+        anchors = {
+            "title": self._title_anchor,
+            "text": self._text_anchor,
+            "description": self._description_anchor
+        }
+
+        # Positionner chaque texte selon son anchor
+        for text_type in ["title", "text", "description"]:
+            if text_type not in self._text_objects:
+                continue
+            
+            surf = self._text_objects[text_type]
+            rect = surf.get_rect()
+            anchor = anchors[text_type]
+            
+            # Position horizontale
+            if "left" in anchor:
+                rect.left = self._text_area.left
+            elif "right" in anchor:
+                rect.right = self._text_area.right
+            else:  # center
+                rect.centerx = self._text_area.centerx
+            
+            # Position verticale
+            if "top" in anchor:
+                rect.top = self._text_area.top
+            elif "bottom" in anchor:
+                rect.bottom = self._text_area.bottom
+            else:  # center
+                rect.centery = self._text_area.centery
+            
+            self._text_rects[text_type] = rect
 
     # ======================================== GETTERS ========================================
     @property
@@ -336,33 +531,43 @@ class CircleSelectorObject:
         if self._icon is not None:
             surface.blit(self._icon, self._icon_rect)
         if self._text_blit:
-            surface.blit(self._text_object, self._text_object_rect)
+            for text_type in ["title", "text", "description"]:
+                if text_type in self._text_objects:
+                    surface.blit(self._text_objects[text_type], self._text_rects[text_type])
         if self._border_width > 0:
             pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
         return surface
 
     def load_hover(self) -> pygame.Surface:
         """Génère la surface survolée"""
-        surface = self._preloaded["default"].copy()
-        if self._filling_color_hover is not None:
-            pygame.draw.circle(surface, self._filling_color_hover, self._local_center, self._radius)
+        diameter = self._radius * 2
+        surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+        hover_color = self._filling_color_hover if self._filling_color_hover is not None else self._filling_color
+        if self._filling:
+            pygame.draw.circle(surface, hover_color, self._local_center, self._radius)
         if self._icon_hover is not None:
             surface.blit(self._icon_hover, self._icon_hover_rect)
         if self._text_blit:
-            surface.blit(self._text_object_hover, self._text_object_rect)
+            for text_type in ["title", "text", "description"]:
+                if text_type in self._text_objects_hover:
+                    surface.blit(self._text_objects_hover[text_type], self._text_rects[text_type])
         if self._border_width > 0:
             pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
         return surface
 
     def load_selected(self) -> pygame.Surface:
         """Génère la surface sélectionnée"""
-        surface = self._preloaded["default"].copy()
-        if self._filling_color_selected is not None:
-            pygame.draw.circle(surface, self._filling_color_selected, self._local_center, self._radius)
+        diameter = self._radius * 2
+        surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+        selected_color = self._filling_color_selected if self._filling_color_selected is not None else self._filling_color
+        if self._filling:
+            pygame.draw.circle(surface, selected_color, self._local_center, self._radius)
         if self._icon_selected is not None:
             surface.blit(self._icon_selected, self._icon_selected_rect)
         if self._text_blit:
-            surface.blit(self._text_object_selected, self._text_object_rect)
+            for text_type in ["title", "text", "description"]:
+                if text_type in self._text_objects_selected:
+                    surface.blit(self._text_objects_selected[text_type], self._text_rects[text_type])
         if self._border_width > 0:
             pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
         return surface
@@ -377,6 +582,7 @@ class CircleSelectorObject:
         context.ui._select(self._selection_id, self._selector_id)
         self._callback()
 
+    # ========================================  ACTUALISATION ========================================
     def update(self):
         """Actualisation par frame"""
         if not self._visible:
@@ -395,11 +601,15 @@ class CircleSelectorObject:
         surface = self._preloaded["selected" if self.selected else "hover" if self.hovered else "default"]
         surface_rect = surface.get_rect()
         if self._last_scale_ratio != self._scale_ratio:
-            self._surface = pygame.transform.smoothscale(surface, (surface_rect.width * self._scale_ratio, surface_rect.height * self._scale_ratio))
+            new_width = int(surface_rect.width * self._scale_ratio)
+            new_height = int(surface_rect.height * self._scale_ratio)
+            self._surface = pygame.transform.smoothscale(surface, (new_width, new_height))
+            self._last_scale_ratio = self._scale_ratio
         else:
             self._surface = surface
         self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
 
+     # ======================================== AFFICHAGE ========================================
     def draw(self):
         """Dessin par frame"""
         if not self._visible:
@@ -411,11 +621,12 @@ class CircleSelectorObject:
 
         surface.blit(self._surface, self._surface_rect)
     
+     # ======================================== HANDLERS ========================================
     def left_click(self, up: bool = False):
         """Clic gauche"""
         if not up:
             context.ui.select(self._selection_id, self._selector_id)
-            self.callback()
+            self._callback()
 
     def right_click(self, up: bool = False):
         """Clic droit"""

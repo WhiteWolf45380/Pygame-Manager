@@ -28,7 +28,7 @@ class RectButtonObject:
             icon_scale_ratio: float = 0.8,
 
             text: str = None,
-            font: pygame.font.Font = None,
+            font: pygame.font.Font | str = "bahnschrift",
             font_path: str = None,
             font_size: int = None,
             font_size_ratio_limit: float= 0.8,
@@ -112,7 +112,7 @@ class RectButtonObject:
         if not isinstance(icon_keep_ratio, bool): _raise_error(self, '__init__', 'Invalid icon_keep_ratio argument')
         if not isinstance(icon_scale_ratio, Real): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
         if text is not None and not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
-        if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
+        if font is not None and not isinstance(font, (pygame.font.Font, str)): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
         if font_size is not None and not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
         if not isinstance(font_size_ratio_limit, (float, int)): _raise_error(self, '__init__', 'Invalid font_size_ratio_limit argument')
@@ -193,7 +193,8 @@ class RectButtonObject:
 
         # texte
         self._text = text
-        self._font = font
+        self._font = font if isinstance(font, pygame.Font) else None
+        self._sysfont = font if isinstance(font, str) and font in pygame.font.get_fonts() else None
         self._font_path = font_path
         self._font_size = font_size
         self._font_size_ratio_limit = min(1.0, max(0.05, font_size_ratio_limit))
@@ -216,22 +217,28 @@ class RectButtonObject:
                     self._font = pygame.font.Font(self._font_path, self._font_size)
                     self.font_type = "path"
                 except Exception as _:
-                    self._font = pygame.font.Font(None, self._font_size)
-                    self.font_type = "default"
+                    if self._sysfont is not None:
+                        self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                        self.font_type = "sysfont"
+                    else:
+                        self._font = pygame.font.Font(None, self._font_size)
+                        self.font_type = "default"
+                    
 
             # Auto ajustement
             test_font_size = self._font_size
             test_font = self._font
             text_render_test = self._font.render(self._text, True, (0, 0, 0))
-            while text_render_test.get_width() / self._rect.width > self._font_size_ratio_limit:
-                test_font_size -= 1
-                if self.font_type == "font":
-                    test_font = self._font
-                elif self.font_type == "path":
-                    test_font = pygame.font.Font(self._font_path, test_font_size)
-                else:
-                    test_font = pygame.font.Font(None, test_font_size)
-                text_render_test = test_font.render(self._text, True, (0, 0, 0))
+            if self.font_type != "font":
+                while text_render_test.get_width() / self._rect.width > self._font_size_ratio_limit and test_font_size > 5:
+                    test_font_size -= 1
+                    if self.font_type == "path":
+                        test_font = pygame.font.Font(self._font_path, test_font_size)
+                    elif self.font_type == "sysfont":
+                        test_font = pygame.font.SysFont(self._sysfont, self._font_size)
+                    else:
+                        test_font = pygame.font.Font(None, test_font_size)
+                    text_render_test = test_font.render(self._text, True, (0, 0, 0))
 
             self._font_size = test_font_size
             self._font = test_font

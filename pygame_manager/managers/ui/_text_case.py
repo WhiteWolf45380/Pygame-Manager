@@ -21,7 +21,7 @@ class TextCaseObject:
             placeholder: str = None,
             max_length: int = None,
 
-            font: pygame.font.Font = None,
+            font: pygame.font.Font | str = "bahnschrift",
             font_path: str = None,
             font_size: int = None,
             font_color: pygame.Color = (0, 0, 0, 255),

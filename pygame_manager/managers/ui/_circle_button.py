@@ -26,11 +26,16 @@ class CircleButtonObject:
             icon_scale_ratio: float = 0.8,
 
             text: str = None,
-            font: pygame.font.Font = None,
+            font: pygame.font.Font | str = "bahnschrift",
             font_path: str = None,
             font_size: int = None,
+            font_size_ratio_limit: float = 0.8,
             font_color: pygame.Color = (0, 0, 0, 255),
             font_color_hover: pygame.Color | None = None,
+
+            bold: bool = False,
+            italic: bool = False,
+            underline: bool = False,
 
             border_width: int = 0,
             border_color: pygame.Color = (0, 0, 0, 255),
@@ -66,8 +71,13 @@ class CircleButtonObject:
             font (Font, optional) : police du texte
             font_path (str, optional) : chemin vers la police
             font_size (int, optional) : taille de la police
+            font_size_ratio_limit (float, optional) : limite de la taille du texte par rapport au diamètre du bouton
             font_color (Color, optional) : couleur de la police
             font_color_hover (Color, optional) : couleur de la police lors du survol
+
+            bold (bool, optional): texte en gras
+            italic (bool, optional): texte en italique
+            underline (bool, optional): texte souligné
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
@@ -96,11 +106,15 @@ class CircleButtonObject:
         if not isinstance(icon_keep_ratio, bool): _raise_error(self, '__init__', 'Invalid icon_keep_ratio argument')
         if not isinstance(icon_scale_ratio, Real): _raise_error(self, '__init__', 'Invalid icon_scale_ratio argument')
         if text is not None and not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
-        if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
+        if font is not None and not isinstance(font, (pygame.font.Font, str)): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
         if font_size is not None and not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
+        if not isinstance(font_size_ratio_limit, (float, int)): _raise_error(self, '__init__', 'Invalid font_size_ratio_limit argument')
         font_color = _to_color(font_color, method='__init__')
         font_color_hover = _to_color(font_color_hover, raised=False)
+        if not isinstance(bold, bool): _raise_error(self, '__init__', 'Invalid bold argument')
+        if not isinstance(italic, bool): _raise_error(self, '__init__', 'Invalid italic argument')
+        if not isinstance(underline, bool): _raise_error(self, '__init__', 'Invalid underline argument')
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color, method='__init__')
         border_color_hover = _to_color(border_color_hover, raised=False)
@@ -109,6 +123,7 @@ class CircleButtonObject:
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
         if not isinstance(callback_give_id, bool): _raise_error(self, '__init__', 'Invalid callback_give_id argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
+        if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
         context.ui._append(self)
@@ -172,9 +187,11 @@ class CircleButtonObject:
 
         # texte
         self._text = text
-        self._font = font
+        self._font = font if isinstance(font, pygame.Font) else None
+        self._sysfont = font if isinstance(font, str) and font in pygame.font.get_fonts() else None
         self._font_path = font_path
         self._font_size = font_size
+        self._font_size_ratio_limit = min(1.0, max(0.05, font_size_ratio_limit))
         self._font_color = font_color
         self._font_color_hover = font_color_hover if font_color_hover is not None else font_color
 
@@ -183,18 +200,56 @@ class CircleButtonObject:
         self._text_object_rect = None
         self._text_blit = False
 
-        if self._text is not None:
-            if self._font_size is None:
-                self._font_size = max(3, int(self._radius * 0.75))
+        self.font_type = None
+        if self._text is not None: # génération
+            if self._font_size is None: # taille de police auto
+                self._font_size = max(3, int(self._radius * 0.7))
 
-            if self._font is None:
+            self.font_type = "font"
+            if self._font is None: # chargement de la police
                 try:
                     self._font = pygame.font.Font(self._font_path, self._font_size)
+                    self.font_type = "path"
                 except Exception as _:
-                    self._font = pygame.font.Font(None, self._font_size)
+                    if self._sysfont is not None:
+                        self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                        self.font_type = "sysfont"
+                    else:
+                        self._font = pygame.font.Font(None, self._font_size)
+                        self.font_type = "default"
 
-            self._text_object = self._font.render(self._text, True, self._font_color)
-            self._text_object_hover = self._font.render(self._text, True, self._font_color_hover)
+            # Auto ajustement
+            test_font_size = self._font_size
+            test_font = self._font
+            text_render_test = self._font.render(self._text, True, (0, 0, 0))
+            if self.font_type != "font":
+                diameter = 2 * self._radius
+                while text_render_test.get_width() / diameter > self._font_size_ratio_limit and test_font_size > 5:
+                    test_font_size -= 1
+                    if self.font_type == "path":
+                        test_font = pygame.font.Font(self._font_path, test_font_size)
+                    elif self.font_type == "sysfont":
+                        test_font = pygame.font.SysFont(self._sysfont, test_font_size)
+                    else:
+                        test_font = pygame.font.Font(None, test_font_size)
+                    text_render_test = test_font.render(self._text, True, (0, 0, 0))
+
+            self._font_size = test_font_size
+            self._font = test_font
+            self._font_hover = test_font
+
+            # Génération (classic)
+            self._text_object = self._font.render(self._text, 1, self._font_color)
+
+            # Effets
+            self._font.set_bold(bold)
+            self._font.set_italic(italic)
+            self._font.set_underline(underline)
+            
+            # Génération (hover)
+            self._text_object_hover = self._font.render(self._text, 1, self._font_color_hover)
+
+            # Hitbox
             self._text_object_rect = self._text_object.get_rect(center=self._local_center)
             self._text_blit = True
 
@@ -217,7 +272,7 @@ class CircleButtonObject:
         # panel maître
         if isinstance(panel, str): self._panel = context.panels[panel]
         else: self._panel = panel if panel in context.panels else None
-        self._zorder = 0
+        self._zorder = zorder
 
         # préchargement
         self._preloaded = {
@@ -305,7 +360,7 @@ class CircleButtonObject:
         if self._text_blit:
             surface.blit(self._text_object, self._text_object_rect)
         if self._border_width > 0:
-            pygame.draw.circle(surface, self._border_color_hover, self._local_center, self._radius, self._border_width)
+            pygame.draw.circle(surface, self._border_color, self._local_center, self._radius, self._border_width)
         return surface
 
     def load_hover(self) -> pygame.Surface:
@@ -327,6 +382,7 @@ class CircleButtonObject:
         """Détruit l'objet"""
         context.ui._remove(self)
 
+    # ======================================== ACTUALISATION ========================================
     def update(self):
         """Actualisation par frame"""
         if not self._visible:
@@ -349,6 +405,7 @@ class CircleButtonObject:
             self._surface = surface
         self._surface_rect = self._surface.get_rect(center=self._rect.center)
 
+    # ======================================== AFFICHAGE ========================================
     def draw(self):
         """Dessin par frame"""
         if not self._visible:
@@ -360,6 +417,7 @@ class CircleButtonObject:
         
         surface.blit(self._surface, self._surface_rect)
 
+    # ======================================== HANDLERS ========================================
     def left_click(self, up: bool = False):
         """Clic gauche"""
         if self.callback is not None and not up:
