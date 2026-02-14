@@ -232,7 +232,6 @@ class RectButtonObject:
                         self._font = pygame.font.Font(None, self._font_size)
                         self.font_type = "default"
                     
-
             # Auto ajustement
             test_font_size = self._font_size
             test_font = self._font
@@ -243,7 +242,7 @@ class RectButtonObject:
                     if self.font_type == "path":
                         test_font = pygame.font.Font(self._font_path, test_font_size)
                     elif self.font_type == "sysfont":
-                        test_font = pygame.font.SysFont(self._sysfont, self._font_size)
+                        test_font = pygame.font.SysFont(self._sysfont, test_font_size)
                     else:
                         test_font = pygame.font.Font(None, test_font_size)
                     text_render_test = test_font.render(self._text, True, (0, 0, 0))
