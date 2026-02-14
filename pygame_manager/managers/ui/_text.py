@@ -104,26 +104,30 @@ class TextObject:
             context.ui._append(self)
 
         # position
-        self._x = x
-        self._y = y
-        self._anchor = anchor
+        self._x: Real = x
+        self._y: Real = y
+        self._anchor: str = anchor
 
         # texte
-        self._text = text
-        self._font_color = font_color
-        self._font_size = font_size
-        self._antialias = antialias
+        self._text: str = text
+        self._font: pygame.font.Font = font if isinstance(font, pygame.font.Font) else None
+        self._sysfont: str = font if isinstance(font, str) else None 
+        self._font_path: str = font_path
+        self._font_color: pygame.Color = font_color
+        self._font_size: int = font_size
+        self._antialias: bool = antialias
 
         # police
-        if font is None:
+        if self._font is None:
             try:
-                self._font: pygame.font.Font = pygame.font.Font(font_path, font_size)
+                self._font = pygame.font.Font(self._font_path, self._font_size)
             except Exception as _:
-                self._font: pygame.font.Font = pygame.font.Font(None, font_size)
-        elif isinstance(font, str):
-            self._font = pygame.font.SysFont(font, font_size)
+                if self._sysfont is not None:
+                    self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                else:
+                    self._font = pygame.font.Font(None, self._font_size)
         else:
-            self._font: pygame.font.Font = font
+            self._font = font
 
         # Effets
         self._font.set_bold(bold)
