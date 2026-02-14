@@ -158,6 +158,18 @@ class TextObject:
         # paramètres dynamiques
         self._visible = True
 
+        self._blinking = False
+        self._blink_duration = 1.0
+        self._blink_timer = 0.0
+        self._blink_alpha = 255
+        self._blink_alpha_min = 0
+        self._blink_alpha_max = 0
+        self._blink_speed = 1.0
+        self._blink_visible_time = 0.0
+        self._blink_visible_elapsed = 0.0
+        self._blink_hidden_time = 0.0
+        self._blink_hidden_elapsed = 0.0
+
     # ======================================== RENDU ========================================
     def _render(self):
         """Génère la surface du texte"""
@@ -313,26 +325,51 @@ class TextObject:
         self._surface = pygame.transform.smoothscale(self._surface_init, (self._surface_init.get_width() * ratio, self._surface_init.get_height() * ratio))
         self._shadow_surface = pygame.transform.smoothscale(self._shadow_surface_init, (self._shadow_surface_init.get_width() * ratio, self._shadow_surface_init.get_height() * ratio))
         self._rect = self._surface.get_rect(center=self._rect.center)
+    
+    def blink(self, alpha_min: int = 0, alpha_max: int = 255, duration: float | None = None, speed: float = 1.0, visible_time: float = 0.0, hidden_time: float = 0.0):
+        """
+        Fait clignotter le texte
 
+        Args:
+            alpha_min (int, optional): opacité minimale (default: 0)
+            alpha_max (int, optional): opacité maximale (default: 255)
+            duration (float, optional): durée totale de clignottement
+            speed (float, optional): vitesse de clignottement (default: 1.0)
+            visible_time (float, optional): durée d'attente visible (default: 0.0)
+            hiddent_time (float, optional): durée d'attente invsible (default: 0.0)
+        """
+        if not isinstance(alpha_min, int): _raise_error(self, '__blink__', 'Invalid alpha_min argument')
+        if not isinstance(alpha_max, int): _raise_error(self, '__blink__', 'Invalid alpha_max argument')
+        if duration is not None and (not isinstance(duration, (int, float)) or duration <= 0.0): _raise_error(self, '__blink__', 'Invalid duration argument')
+        if not isinstance(speed, (int, float)) or speed <= 0.0: _raise_error(self, '__init__', 'Invalid speed argument')
+        if not isinstance(visible_time, (int, float)) or visible_time < 0.0: _raise_error(self, '__init__', 'Invalid visible_time argument')
+        if not isinstance(hidden_time, (int, float)) or hidden_time < 0.0: _raise_error(self, '__init__', 'Invalid hidden_time argument')
+        alpha = self._surface.get_alpha()
+        self._blink_alpha = alpha if alpha is not None else alpha_max if self.visible else alpha_max
+        self._blink_alpha_min = alpha_min
+        self._blink_alpha_max = alpha_max
+        self._blink_duration = duration
+        self._blink_speed = speed
+        self._blink_visible_time = visible_time
+        self._blink_visible_elapsed = 0.0
+        self._blink_hidden_time = hidden_time
+        self._blink_hidden_elapsed = 0.0
+        self._blink_timer = 0.0
+        self._blinking = True
+        self.visible = True
+    
+    def stop_blink(self):
+        """Met fin au clignottement"""
+        self._blinking = False
+
+    # ======================================== ACTUALISATION ========================================
     def update(self):
         """Actualisation par frame"""
         if not self._visible:
             return
         self.update_gradient()
+        self.update_blinking()
 
-    def draw(self):
-        """Dessin par frame"""
-        if not self._visible or not self._surface:
-            return
-    
-        surface = context.screen.surface
-        if self._panel is not None and hasattr(self._panel, 'surface'):
-            surface = self._panel.surface
-        
-        if self._shadow_surface is not None:
-            surface.blit(self._shadow_surface, (self._rect.x + self._shadow_offset, self._rect.y + self._shadow_offset))
-        surface.blit(self._surface, self._rect)
-    
     def update_gradient(self):
         """Dégradé animé type 'cycles', optimisé avec numpy, avec amplitude et direction"""
         if not self._gradient or not self._gradient_fluctuation:
@@ -377,7 +414,54 @@ class TextObject:
         self._surface = gradient
         self._surface_init = self._surface.copy()
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
+    
+    def update_blinking(self):
+        """Actualise le clignottement"""
+        if not self._blinking:
+            return
+        
+        self._blink_timer += context.time.dt
+        if self._blink_duration is not None and self._blink_timer >= self._blink_duration:
+            self._blinking = False
+            self.set_alpha(self._blink_alpha_max)
+            return
+        
+        if self._blink_alpha >= self._blink_alpha_max and self._blink_visible_time > 0:
+            self._blink_visible_elapsed += context.time.dt
+            if self._blink_visible_elapsed < self._blink_visible_time:
+                self.set_alpha(self._blink_alpha_max)
+                return
+            else:
+                self._blink_visible_elapsed = 0.0
+        
+        if self._blink_alpha <= self._blink_alpha_min and self._blink_hidden_time > 0:
+            self._blink_hidden_elapsed += context.time.dt
+            if self._blink_hidden_elapsed < self._blink_hidden_time:
+                self.set_alpha(self._blink_alpha_min)
+                return
+            else:
+                self._blink_hidden_elapsed = 0.0
+        
+        oscillation = np.sin(self._blink_timer * self._blink_speed * np.pi * 2)
+        normalized = (oscillation + 1) / 2
+        self._blink_alpha = int(self._blink_alpha_min + normalized * (self._blink_alpha_max - self._blink_alpha_min))
+        self.set_alpha(self._blink_alpha)
 
+    # ======================================== AFFICHAGE ========================================
+    def draw(self):
+        """Dessin par frame"""
+        if not self._visible or not self._surface:
+            return
+    
+        surface = context.screen.surface
+        if self._panel is not None and hasattr(self._panel, 'surface'):
+            surface = self._panel.surface
+        
+        if self._shadow_surface is not None:
+            surface.blit(self._shadow_surface, (self._rect.x + self._shadow_offset, self._rect.y + self._shadow_offset))
+        surface.blit(self._surface, self._rect)
+    
+    # ======================================== HANDLERS ========================================
     def left_click(self, up: bool = False):
         """Clic gauche"""
         pass
