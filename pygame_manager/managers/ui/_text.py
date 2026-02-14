@@ -170,6 +170,7 @@ class TextObject:
         self._blink_visible_elapsed = 0.0
         self._blink_hidden_time = 0.0
         self._blink_hidden_elapsed = 0.0
+        self._blink_state = "rising"  # "rising", "paused_high", "falling", "paused_low"
 
     # ======================================== RENDU ========================================
     def _render(self):
@@ -357,6 +358,7 @@ class TextObject:
         self._blink_hidden_elapsed = 0.0
         self._blink_timer = 0.0
         self._blink_oscillation_timer = 0.0
+        self._blink_state = "rising"
         self._blinking = True
         self.visible = True
     
@@ -418,7 +420,7 @@ class TextObject:
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
     
     def update_blinking(self):
-        """Actualise le clignottement"""
+        """Actualise le clignottement avec machine à états"""
         if not self._blinking:
             return
         
@@ -429,30 +431,56 @@ class TextObject:
             self.set_alpha(self._blink_alpha_max)
             return
         
-        # Phase d'attente en position visible
-        if self._blink_alpha >= self._blink_alpha_max and self._blink_visible_time > 0:
-            self._blink_visible_elapsed += context.time.dt
-            if self._blink_visible_elapsed < self._blink_visible_time:
+        # Machine à états
+        if self._blink_state == "rising":
+            # Oscillation montante
+            self._blink_oscillation_timer += context.time.dt
+            oscillation = np.sin(self._blink_oscillation_timer * self._blink_speed * np.pi * 2)
+            normalized = (oscillation + 1) / 2
+            self._blink_alpha = int(self._blink_alpha_min + normalized * (self._blink_alpha_max - self._blink_alpha_min))
+            self.set_alpha(self._blink_alpha)
+            
+            # Détection du pic haut (sin proche de 1, normalized proche de 1)
+            if normalized >= 0.99:
+                self._blink_alpha = self._blink_alpha_max
                 self.set_alpha(self._blink_alpha_max)
-                return
-            else:
-                self._blink_visible_elapsed = 0.0
+                if self._blink_visible_time > 0:
+                    self._blink_state = "paused_high"
+                    self._blink_visible_elapsed = 0.0
+                else:
+                    self._blink_state = "falling"
         
-        # Phase d'attente en position invisible
-        if self._blink_alpha <= self._blink_alpha_min and self._blink_hidden_time > 0:
-            self._blink_hidden_elapsed += context.time.dt
-            if self._blink_hidden_elapsed < self._blink_hidden_time:
+        elif self._blink_state == "paused_high":
+            # Pause en position haute
+            self._blink_visible_elapsed += context.time.dt
+            self.set_alpha(self._blink_alpha_max)
+            if self._blink_visible_elapsed >= self._blink_visible_time:
+                self._blink_state = "falling"
+        
+        elif self._blink_state == "falling":
+            # Oscillation descendante
+            self._blink_oscillation_timer += context.time.dt
+            oscillation = np.sin(self._blink_oscillation_timer * self._blink_speed * np.pi * 2)
+            normalized = (oscillation + 1) / 2
+            self._blink_alpha = int(self._blink_alpha_min + normalized * (self._blink_alpha_max - self._blink_alpha_min))
+            self.set_alpha(self._blink_alpha)
+            
+            # Détection du pic bas (sin proche de -1, normalized proche de 0)
+            if normalized <= 0.01:
+                self._blink_alpha = self._blink_alpha_min
                 self.set_alpha(self._blink_alpha_min)
-                return
-            else:
-                self._blink_hidden_elapsed = 0.0
+                if self._blink_hidden_time > 0:
+                    self._blink_state = "paused_low"
+                    self._blink_hidden_elapsed = 0.0
+                else:
+                    self._blink_state = "rising"
         
-        # Oscillation (seulement quand on n'est pas en phase d'attente)
-        self._blink_oscillation_timer += context.time.dt
-        oscillation = np.sin(self._blink_oscillation_timer * self._blink_speed * np.pi * 2)
-        normalized = (oscillation + 1) / 2
-        self._blink_alpha = int(self._blink_alpha_min + normalized * (self._blink_alpha_max - self._blink_alpha_min))
-        self.set_alpha(self._blink_alpha)
+        elif self._blink_state == "paused_low":
+            # Pause en position basse
+            self._blink_hidden_elapsed += context.time.dt
+            self.set_alpha(self._blink_alpha_min)
+            if self._blink_hidden_elapsed >= self._blink_hidden_time:
+                self._blink_state = "rising"
 
     # ======================================== AFFICHAGE ========================================
     def draw(self):
