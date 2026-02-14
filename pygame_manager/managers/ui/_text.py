@@ -111,7 +111,7 @@ class TextObject:
         # texte
         self._text: str = text
         self._font: pygame.font.Font = font if isinstance(font, pygame.font.Font) else None
-        self._sysfont: str = font if isinstance(font, str) else None 
+        self._sysfont: str = font if isinstance(font, str) and font in pygame.font.get_fonts() else None 
         self._font_path: str = font_path
         self._font_color: pygame.Color = font_color
         self._font_size: int = font_size
