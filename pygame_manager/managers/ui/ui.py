@@ -110,23 +110,23 @@ class UiManager:
             text_obj.set_position(context.screen.centerx, current_y)
             current_y += text_obj.rect.height + self._message_spacing
 
-    # ======================================== METHODES PUBLIQUES ========================================
-    def update_filter(self):
+    # ======================================== ACTUALISATION ========================================
+    def update(self):
+        """Actualisation par frame"""
+        self._update_filter()
+        self._update_hover()
+        for obj in self._filtered:
+            if hasattr(obj, 'update') and callable(obj.update):
+                obj.update()
+        self._update_messages()
+
+    def _update_filter(self):
         """Actualisation des objects filtrés"""
         self._filtered = []
         for obj in self._objects:
             panel = getattr(obj, '_panel', None)
             if panel is not None and not context.panels.is_active(panel): continue
             self._filtered.append(obj)
-
-    def update(self):
-        """Actualisation par frame"""
-        self.update_filter()
-        self._update_hover()
-        for obj in self._filtered:
-            if hasattr(obj, 'update') and callable(obj.update):
-                obj.update()
-        self._update_messages()
     
     def _update_messages(self):
         """Actualisation des messages"""
@@ -150,6 +150,7 @@ class UiManager:
         if messages_to_remove:
             self._reposition_messages()
 
+    # ======================================== AFFICHAGE ========================================
     def draw(self):
         """Affichage pas frame"""
         for obj in self._filtered:
@@ -166,6 +167,8 @@ class UiManager:
                     context.screen.blit_last(text_obj._shadow_surface,(text_obj._rect.x + text_obj._shadow_offset, text_obj._rect.y + text_obj._shadow_offset))
                 context.screen.blit_last(text_obj._surface, text_obj._rect)
     
+    # ======================================== METHODES PUBLIQUES ========================================
+    # Objets
     def get_hovered(self) -> object | None:
         """Renvoie l'objet survolé"""
         return self._hovered_object
@@ -175,6 +178,7 @@ class UiManager:
         """Renvoie l'objet survolé"""
         return self._hovered_object
 
+    # Messages
     def sys_message(self, text: TextObject, lifetime: float = 3.0, fade_duration: float = 0.5):
         """
         Affiche un TextObject comme message système
