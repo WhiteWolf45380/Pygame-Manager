@@ -77,5 +77,4 @@ __all__ = [
     "RectSelectorObject",
     "CircleSelectorObject",
     "TextCaseObject",
-    "MessageObject",
 ]

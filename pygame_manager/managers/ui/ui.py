@@ -11,7 +11,6 @@ from ._image import ImageObject
 from ._surface import SurfaceObject
 from ._overlay import OverlayObject
 from ._scrollbar import ScrollBarObject
-from ._message import MessageObject
 
 # ======================================== GESTIONNAIRE ========================================
 class UiManager:
@@ -32,9 +31,9 @@ class UiManager:
         self._selections_limits = {}    # {"id_selection": selectors_limit}
 
         # Messages système
-        self._system_messages = []      # liste des messages système actifs
-        self._message_spacing = 10      # espacement vertical entre messages
-        self._message_base_y = 50       # position Y du premier message
+        self._system_messages = []
+        self._message_spacing = context.screen.height * 0.02
+        self._message_base_y = context.screen.height * 0.1
 
         # Ensemble des objets disponibles
         self.RectButton = RectButtonObject
@@ -48,7 +47,6 @@ class UiManager:
         self.Surface = SurfaceObject
         self.Overlay = OverlayObject
         self.ScrollBar = ScrollBarObject
-        self.Message = MessageObject
 
     def _init(self):
         """Initialisation sécurisée"""
@@ -56,13 +54,11 @@ class UiManager:
         context.inputs.add_listener(1, self._click_up, give_key=True, up=True)
         context.inputs.add_listener(3, self._click_down, give_key=True, up=False)
         context.inputs.add_listener(3, self._click_up, give_key=True, up=True)
-
         for obj in self._objects:
             if hasattr(obj, '_init') and callable(obj._init):
                 obj._init()
 
     # ======================================== METHODES PRIVEES ========================================
-    # Objets
     def _sort(self):
         """Tri des objets par zorder"""
         self._objects = sorted(self._objects, key=lambda o: getattr(o, 'zorder', 0), reverse=True)
@@ -77,10 +73,6 @@ class UiManager:
         """Suppression d'un objet"""
         if obj not in self._objects: return
         self._objects.remove(obj)
-        # Retirer des messages système si présent
-        if obj in self._system_messages:
-            self._system_messages.remove(obj)
-            self._reposition_messages()
     
     # Souris
     def _update_hover(self):
@@ -110,13 +102,13 @@ class UiManager:
         """Relâchement"""
         self._click(key, up=True)
 
-    # Messages système
     def _reposition_messages(self):
-        """Repositionne tous les messages système"""
+        """Repositionne tous les messages"""
         current_y = self._message_base_y
-        for msg in self._system_messages:
-            msg.set_position(context.screen.centerx, current_y)
-            current_y += msg.rect.height + self._message_spacing
+        for msg_data in self._system_messages:
+            text_obj = msg_data['text']
+            text_obj.set_position(context.screen.centerx, current_y)
+            current_y += text_obj.rect.height + self._message_spacing
 
     # ======================================== METHODES PUBLIQUES ========================================
     def update_filter(self):
@@ -131,40 +123,48 @@ class UiManager:
         """Actualisation par frame"""
         self.update_filter()
         self._update_hover()
-        
-        # Update des objets normaux
         for obj in self._filtered:
             if hasattr(obj, 'update') and callable(obj.update):
                 obj.update()
-        
-        # Update des messages système
+        self._update_messages()
+    
+    def _update_messages(self):
+        """Actualisation des messages"""
         messages_to_remove = []
-        for msg in self._system_messages:
-            if hasattr(msg, 'update') and callable(msg.update):
-                msg.update()
-            # Vérifier si le message doit être supprimé
-            if not msg.visible or msg._elapsed_time >= msg._lifetime:
-                messages_to_remove.append(msg)
+        for msg_data in self._system_messages:
+            text_obj = msg_data['text']
+            msg_data['elapsed'] += context.time.dt
+            
+            if msg_data['elapsed'] >= (msg_data['lifetime'] - msg_data['fade_duration']):
+                fade_elapsed = msg_data['elapsed'] - (msg_data['lifetime'] - msg_data['fade_duration'])
+                fade_progress = min(1.0, fade_elapsed / msg_data['fade_duration'])
+                alpha = int(255 * (1.0 - fade_progress))
+                text_obj.set_alpha(max(0, alpha))
+            
+            if msg_data['elapsed'] >= msg_data['lifetime']:
+                messages_to_remove.append(msg_data)
+                text_obj.kill()
         
-        # Supprimer les messages expirés
-        for msg in messages_to_remove:
-            self._system_messages.remove(msg)
-        
-        # Repositionner les messages restants
+        for msg_data in messages_to_remove:
+            self._system_messages.remove(msg_data)
         if messages_to_remove:
             self._reposition_messages()
 
     def draw(self):
         """Affichage pas frame"""
-        # Draw des objets normaux
         for obj in self._filtered:
             if hasattr(obj, 'draw') and callable(obj.draw):
                 obj.draw()
-        
-        # Draw des messages système (utilisent blit_last donc s'affichent au-dessus)
-        for msg in self._system_messages:
-            if hasattr(msg, 'draw') and callable(msg.draw):
-                msg.draw()
+        self._draw_messages()
+
+    def draw_messages(self):
+        """Affichage des messages"""
+        for msg_data in self._system_messages:
+            text_obj = msg_data['text']
+            if text_obj._surface and text_obj.visible:
+                if text_obj._shadow_surface:
+                    context.screen.blit_last(text_obj._shadow_surface,(text_obj._rect.x + text_obj._shadow_offset, text_obj._rect.y + text_obj._shadow_offset))
+                context.screen.blit_last(text_obj._surface, text_obj._rect)
     
     def get_hovered(self) -> object | None:
         """Renvoie l'objet survolé"""
@@ -175,58 +175,33 @@ class UiManager:
         """Renvoie l'objet survolé"""
         return self._hovered_object
 
-    # Messages système
-    def show_message(
-        self, 
-        text: str, 
-        sender: str = None,
-        lifetime: float = 3.0,
-        fade_duration: float = 0.5,
-        font_size: int = 16,
-        font_color: tuple = (200, 200, 200, 255),
-        sender_color: tuple = (100, 150, 255, 255),
-    ) -> MessageObject:
+    def sys_message(self, text: TextObject, lifetime: float = 3.0, fade_duration: float = 0.5):
         """
-        Affiche un message système temporaire
+        Affiche un TextObject comme message système
         
         Args:
-            text (str): contenu du message
-            sender (str, optional): expéditeur du message
-            lifetime (float, optional): durée d'affichage en secondes
-            fade_duration (float, optional): durée du fondu de sortie
-            font_size (int, optional): taille de la police
-            font_color (tuple, optional): couleur du texte
-            sender_color (tuple, optional): couleur du sender
-            
-        Returns:
-            MessageObject: l'objet message créé
+            text (TextObject): objet texte à afficher (doit avoir auto=False)
+            lifetime (float, optional): durée d'affichage en secondes (default: 3.0)
+            fade_duration (float, optional): durée du fondu en secondes (default: 0.5)
         """
-        # Calculer la position Y en fonction des messages existants
+        if not isinstance(text, TextObject):
+            raise RuntimeError("[UiManager].sys_message : text must be a TextObject")
+
+        if text in self._objects:
+            self._objects.remove(text)
+        
         y_position = self._message_base_y
-        for msg in self._system_messages:
-            y_position += msg.rect.height + self._message_spacing
+        for msg_data in self._system_messages:
+            y_position += msg_data['text'].rect.height + self._message_spacing
         
-        # Créer le message en mode système
-        message = MessageObject(
-            text=text,
-            sender=sender,
-            x=context.screen.centerx,
-            y=y_position,
-            anchor="midtop",
-            font_size=font_size,
-            font_color=font_color,
-            sender_color=sender_color,
-            lifetime=lifetime,
-            fade_duration=fade_duration,
-            system_message=True,  # Active le mode système avec blit_last
-            auto=False,  # Ne pas enregistrer dans le système normal
-            zorder=1000
-        )
+        text.set_position(context.screen.centerx, y_position)
         
-        # Ajouter à la liste des messages système
-        self._system_messages.append(message)
-        
-        return message
+        self._system_messages.append({
+            'text': text,
+            'lifetime': lifetime,
+            'fade_duration': fade_duration,
+            'elapsed': 0.0
+        })
 
     # Selectors
     def add_selection(self, id_selection: str, limit=1):

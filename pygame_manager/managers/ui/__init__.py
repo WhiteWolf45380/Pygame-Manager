@@ -11,7 +11,6 @@ from .ui import (
     RectSelectorObject,
     CircleSelectorObject,
     TextCaseObject,
-    MessageObject
 )
 
 __all__ = [
@@ -27,5 +26,4 @@ __all__ = [
     "RectSelectorObject",
     "CircleSelectorObject",
     "TextCaseObject",
-    "MessageObject"
 ]
