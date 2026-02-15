@@ -594,8 +594,12 @@ class CircleSelectorObject:
 
     def select(self):
         """Sélectionne ce sélecteur dans son groupe et lance le callback"""
-        context.ui._select(self._selection_id, self._selector_id)
+        context.ui.select(self._selection_id, self._selector_id)
         self._callback()
+
+    def unselect(self):
+        """Déselectionne ce sélecteut"""
+        context.ui.unselect(self._selection_id, self._selector_id)
 
     # ========================================  ACTUALISATION ========================================
     def update(self):
