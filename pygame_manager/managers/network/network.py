@@ -143,12 +143,16 @@ class NetworkManager:
                 self._set_error(error_msg)
                 self._tcp_socket.close()
                 self._tcp_socket = None
+                self._lobbies.pop(ip, None)
+                self._last_lobby_seen.pop(ip, None)
                 return False
             except ConnectionRefusedError:
                 error_msg = f"Connection refused by {ip}:{port}"
                 self._set_error(error_msg)
                 self._tcp_socket.close()
                 self._tcp_socket = None
+                self._lobbies.pop(ip, None)
+                self._last_lobby_seen.pop(ip, None)
                 return False
             
             self._tcp_socket.setblocking(False)
@@ -171,6 +175,8 @@ class NetworkManager:
                 except:
                     pass
                 self._tcp_socket = None
+            self._lobbies.pop(ip, None)
+            self._last_lobby_seen.pop(ip, None)
             return False
 
     # ========================= DISCONNECT =========================
