@@ -145,6 +145,7 @@ class NetworkManager:
                 self._tcp_socket = None
                 self._lobbies.pop(ip, None)
                 self._last_lobby_seen.pop(ip, None)
+                self._flush_udp_buffer()
                 return False
             except ConnectionRefusedError:
                 error_msg = f"Connection refused by {ip}:{port}"
@@ -153,6 +154,7 @@ class NetworkManager:
                 self._tcp_socket = None
                 self._lobbies.pop(ip, None)
                 self._last_lobby_seen.pop(ip, None)
+                self._flush_udp_buffer()
                 return False
             
             self._tcp_socket.setblocking(False)
@@ -177,6 +179,7 @@ class NetworkManager:
                 self._tcp_socket = None
             self._lobbies.pop(ip, None)
             self._last_lobby_seen.pop(ip, None)
+            self._flush_udp_buffer()
             return False
 
     # ========================= DISCONNECT =========================
