@@ -314,6 +314,14 @@ class NetworkManager:
             self._accept_clients()
 
     # ========================= LOBBIES =========================
+    def _flush_udp_buffer(self):
+        """Vide le buffer UDP des anciens paquets (usage interne)"""
+        try:
+            while True:
+                self._udp_sock.recvfrom(2048)
+        except BlockingIOError:
+            pass
+
     def _receive_lobbies(self):
         """Reçoit et stocke les annonces UDP de lobbies disponibles (usage interne)
         
