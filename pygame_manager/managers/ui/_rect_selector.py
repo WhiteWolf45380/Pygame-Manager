@@ -515,12 +515,12 @@ class RectSelectorObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return context.ui.get_hovered() == self._selector_id
+        return context.ui.get_hovered() == self
 
     @property
     def hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return context.ui.get_hovered() == self._selector_id
+        return context.ui.get_hovered() == self
     
     def is_selected(self) -> bool:
         """Vérifie que le sélecteur soit sélectionné"""
