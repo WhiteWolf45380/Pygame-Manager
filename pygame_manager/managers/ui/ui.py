@@ -32,8 +32,8 @@ class UiManager:
 
         # Messages système
         self._system_messages = []
-        self._message_spacing = context.screen.height * 0.02
-        self._message_base_y = context.screen.height * 0.1
+        self._message_spacing = 20
+        self._message_base_y = 100
 
         # Ensemble des objets disponibles
         self.RectButton = RectButtonObject
@@ -166,9 +166,8 @@ class UiManager:
                 if text_obj._shadow_surface:
                     context.screen.blit_last(text_obj._shadow_surface,(text_obj._rect.x + text_obj._shadow_offset, text_obj._rect.y + text_obj._shadow_offset))
                 context.screen.blit_last(text_obj._surface, text_obj._rect)
-    
-    # ======================================== METHODES PUBLIQUES ========================================
-    # Objets
+
+    # ======================================== GETTERS ========================================
     def get_hovered(self) -> object | None:
         """Renvoie l'objet survolé"""
         return self._hovered_object
@@ -177,8 +176,42 @@ class UiManager:
     def hovered(self) -> object | None:
         """Renvoie l'objet survolé"""
         return self._hovered_object
+    
+    def get_selections(self) -> list[str]:
+        """Renvoie l'ensemble des sélections"""
+        return self._selections.keys()
 
-    # Messages
+    def get_selected(self, id_selection: str) -> list[str]:
+        """Renvoie la liste des sélecteurs sélectionnés"""
+        selected = self._selections.get(id_selection, [])
+        if len(selected) == 0:
+            return None
+        elif len(selected) == 1:
+            return selected[0]
+        return selected
+    
+    def get_messages_y(self) -> int | float:
+        """Renvoie la coordonnée y initiale des messages"""
+        return self._message_base_y
+    
+    def get_messages_spacing(self) -> int | float:
+        """Renvoie l'espacement entre les messages"""
+        return self._message_spacing
+
+    # ======================================== SETTERS ========================================
+    def set_messages_y(self, y: int | float):
+        """Fixe la coordonnée y initiale des messages"""
+        if not isinstance(y, (int, float)):
+            _raise_error(self, '__init__', 'Invalid y argument')
+        self._message_base_y = y
+
+    def set_messages_spacing(self, spacing: int| float):
+        """Fixe l'espacement entre les messages"""
+        if not isinstance(spacing, (int, float)):
+            _raise_error(self, '__init__', 'Invalid spacing argument')
+        self._message_spacing = spacing
+    
+    # ======================================== METHODES PUBLIQUES ========================================
     def sys_message(self, text: TextObject, lifetime: float = 3.0, fade_duration: float = 0.5):
         """
         Affiche un TextObject comme message système
@@ -207,7 +240,6 @@ class UiManager:
             'elapsed': 0.0
         })
 
-    # Selectors
     def add_selection(self, id_selection: str, limit=1):
         """Ajoute une séléction"""
         if id_selection not in self._selections:
@@ -225,19 +257,6 @@ class UiManager:
         """Remet une séléction à None"""
         if id_selection in self._selections and id_selector in self._selections[id_selection]:
             self._selections[id_selection].remove(id_selector)
-
-    def get_selections(self) -> list[str]:
-        """Renvoie l'ensemble des sélections"""
-        return self._selections.keys()
-
-    def get_selected(self, id_selection: str) -> list[str]:
-        """Renvoie la liste des sélecteurs sélectionnés"""
-        selected = self._selections.get(id_selection, [])
-        if len(selected) == 0:
-            return None
-        elif len(selected) == 1:
-            return selected[0]
-        return selected
 
 # ======================================== INSTANCE ========================================
 ui_manager = UiManager()
