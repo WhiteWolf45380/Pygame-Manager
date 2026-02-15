@@ -25,6 +25,7 @@ class InputsManager:
         self._listeners = {}            # ensemble des listeners
         self._step = []                 # touches qui viennent d'être pressées
         self._pressed = {}              # touches pressées
+        self._released_this_frame = []  # touches relâchées dans cette frame
 
         # nouveaux systèmes
         self._any_listeners = []        # listeners globaux (any)
@@ -254,8 +255,7 @@ class InputsManager:
 
         if up:
             self._pressed[event_id] = False
-            if event_id in self._step:
-                self._step.remove(event_id)
+            self._released_this_frame.append(event_id)
         else:
             self._step.append(event_id)
 
@@ -354,9 +354,11 @@ class InputsManager:
             self._all_listeners.remove(listener)
 
         for event_id in self._step:
-            self._pressed[event_id] = True
+            if event_id not in self._released_this_frame:
+                self._pressed[event_id] = True
 
         self._step = []
+        self._released_this_frame = []
 
     def check_all(self):
         """
