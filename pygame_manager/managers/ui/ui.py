@@ -164,8 +164,8 @@ class UiManager:
             text_obj = msg_data['text']
             if text_obj._surface and text_obj.visible:
                 if text_obj._shadow_surface:
-                    context.screen.blit_last(text_obj._shadow_surface,(text_obj._rect.x + text_obj._shadow_offset, text_obj._rect.y + text_obj._shadow_offset))
-                context.screen.blit_last(text_obj._surface, text_obj._rect)
+                    context.screen.blit_last(text_obj._shadow_surface,(text_obj._rect.x + text_obj._shadow_offset, text_obj._rect.y + text_obj._shadow_offset), end_priority=0)
+                context.screen.blit_last(text_obj._surface, text_obj._rect, end_priority=1)
 
     # ======================================== GETTERS ========================================
     def get_hovered(self) -> object | None:
