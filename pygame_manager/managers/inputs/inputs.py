@@ -263,6 +263,9 @@ class InputsManager:
             if (listener["condition"] and not listener["condition"]()) or up != listener["up"]:
                 continue
 
+            if listener["repeat"] and down:
+                continue
+
             if listener["give_key"]:
                 listener["callback"](*listener["args"], **listener["kwargs"], key=event_id)
             else:
