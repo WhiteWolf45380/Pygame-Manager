@@ -38,6 +38,7 @@ from .managers.ui import (
     RectSelectorObject,
     CircleSelectorObject,
     TextCaseObject,
+    MessageObject,
 )
 
 # ========================================== EXPOSITION ==========================================
@@ -76,4 +77,5 @@ __all__ = [
     "RectSelectorObject",
     "CircleSelectorObject",
     "TextCaseObject",
+    "MessageObject",
 ]
