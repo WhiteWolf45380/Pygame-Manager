@@ -33,14 +33,17 @@ class RectSelectorObject:
             icon_scale_ratio: float = 0.8,
 
             title: str = None,
-            text: str = None,
-            description: str = None,
-            title_anchor: str = "center",
-            text_anchor: str = "center",
-            description_anchor: str = "center",
             title_size_ratio: float = 1.0,
+            title_anchor: str = "center",
+
+            text: str = None,
             text_size_ratio: float = 1.0,
+            text_anchor: str = "center",
+
+            description: str = None,
+            description_anchor: str = "center",
             description_size_ratio: float = 1.0,
+
             padding: int = 5,
             font_color: pygame.Color = (0, 0, 0, 255),
             font_color_hover: pygame.Color = None,
@@ -48,6 +51,8 @@ class RectSelectorObject:
 
             border_width: int = 0,
             border_color: pygame.Color = (0, 0, 0, 255),
+            border_color_hover: pygame.Color = None,
+            border_color_selected: pygame.Color = None,
             border_radius: int = 0,
 
             hover_scale_ratio: float = 1.0,
@@ -94,6 +99,8 @@ class RectSelectorObject:
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
+            border_color_hover (Color, optional) : couleur de la bordure lors du survol
+            border_color_selected (Color, optional) : couleur de la bordure lorsque sélectionné
             border_radius (int, optional) : rayon d'arrondissement des coins
 
             hover_scale_ratio (float, optional) : facteur de redimensionnement lors du survol
@@ -143,6 +150,8 @@ class RectSelectorObject:
         font_color_selected = _to_color(font_color_selected, raised=False)
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color, method='__init__')
+        border_color_hover = _to_color(border_color_hover, method='__init__') if border_color_hover is not None else border_color
+        border_color_selected = _to_color(border_color_selected, method='__init__') if border_color_selected is not None else border_color
         if not isinstance(border_radius, int): _raise_error(self, '__init__', 'Invalid border_radius argument')
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
@@ -237,7 +246,7 @@ class RectSelectorObject:
             self._icon_selected = pygame.transform.smoothscale(icon_selected, (iwidth, iheight))
             self._icon_selected_rect = self._icon_selected.get_rect(center=self._local_rect.center)
 
-        # texte — logique avec calcul auto + ratio multiplicateur
+        # texte
         self._title_anchor = title_anchor
         self._text_anchor = text_anchor
         self._description_anchor = description_anchor
@@ -355,6 +364,8 @@ class RectSelectorObject:
         # bordure
         self._border_width = max(0, border_width)
         self._border_color = border_color
+        self._border_color_hover = border_color_hover
+        self._border_color_selected = border_color_selected
         self._border_radius = max(0, border_radius)
 
         # effet de survol
@@ -550,7 +561,7 @@ class RectSelectorObject:
                 if text_type in self._text_objects_hover:
                     surface.blit(self._text_objects_hover[text_type], self._text_rects[text_type])
         if self._border_width > 0:
-            pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
+            pygame.draw.rect(surface, self._border_color_hover, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
 
     def load_selected(self) -> pygame.Surface:
@@ -566,7 +577,7 @@ class RectSelectorObject:
                 if text_type in self._text_objects_selected:
                     surface.blit(self._text_objects_selected[text_type], self._text_rects[text_type])
         if self._border_width > 0:
-            pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
+            pygame.draw.rect(surface, self._border_color_selected, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
 
     # ======================================== METHODES DYNAMIQUES ========================================
