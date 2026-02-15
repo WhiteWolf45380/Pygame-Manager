@@ -14,7 +14,7 @@ class MessageObject:
             y: Real = None,
             anchor: str = "midtop",
             
-            font: pygame.font.Font | str = "monospace",
+            font: pygame.font.Font | str = "arial",
             font_size: int = 16,
             font_color: pygame.Color = (200, 200, 200, 255),
             sender_color: pygame.Color = (100, 150, 255, 255),
@@ -80,9 +80,9 @@ class MessageObject:
         
         # Position par défaut (centre-haut de l'écran)
         if x is None:
-            x = context.screen.centerx
+            x = context.screen.centerx if panel is None else panel.centerx
         if y is None:
-            y = 50
+            y = context.screen.height * 0.1 if panel is None else panel.height * 0.1
         
         # Stockage des paramètres
         self._text = text
