@@ -490,11 +490,6 @@ class RectSelectorObject:
         """Renvoie le callback"""
         return self._callback
 
-    @property
-    def selected(self) -> bool:
-        """Vérifie que le sélecteur soit actif dans son groupe"""
-        return context.ui._selections.get(self._selection_id) == self._selector_id
-
     # ======================================== SETTERS ========================================
     @zorder.setter
     def zorder(self, value: int):
@@ -520,12 +515,21 @@ class RectSelectorObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return context.ui.get_hovered() == self
+        return context.ui.get_hovered() == self._selector_id
 
     @property
     def hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return context.ui.get_hovered() == self
+        return context.ui.get_hovered() == self._selector_id
+    
+    def is_selected(self) -> bool:
+        """Vérifie que le sélecteur soit sélectionné"""
+        return context.ui.get_selected(self._selection_id) == self._selector_id
+
+    @property
+    def selected(self) -> bool:
+        """Vérifie que le sélecteur soit sélectionné"""
+        return context.ui.get_selected(self._selection_id) == self._selector_id
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le sélecteur"""
@@ -590,6 +594,7 @@ class RectSelectorObject:
         context.ui._select(self._selection_id, self._selector_id)
         self._callback()
 
+    # ======================================== ACTUALISATION ========================================
     def update(self):
         """Actualisation par frame"""
         if not self._visible:
@@ -615,6 +620,7 @@ class RectSelectorObject:
             self._surface = surface
         self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
 
+    # ======================================== AFFICHAGE ========================================
     def draw(self):
         """Dessin par frame"""
         if not self._visible:
@@ -624,6 +630,7 @@ class RectSelectorObject:
             surface = self._panel.surface
         surface.blit(self._surface, self._surface_rect)
 
+    # ======================================== HANDLERS ========================================
     def left_click(self, up: bool = False):
         """Clic gauche"""
         if not up:

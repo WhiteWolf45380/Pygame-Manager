@@ -488,11 +488,6 @@ class CircleSelectorObject:
         """Renvoie le callback"""
         return self._callback
 
-    @property
-    def selected(self) -> bool:
-        """Vérifie que le sélecteur soit actif dans son groupe"""
-        return context.ui._selections.get(self._selection_id) == self._selector_id
-
     # ======================================== SETTERS ========================================
     @zorder.setter
     def zorder(self, value: int):
@@ -518,12 +513,21 @@ class CircleSelectorObject:
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return context.ui.get_hovered() == self
+        return context.ui.get_hovered() == self._selector_id
 
     @property
     def hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
-        return context.ui.get_hovered() == self
+        return context.ui.get_hovered() == self._selector_id
+    
+    def is_selected(self) -> bool:
+        """Vérifie que le sélecteur soit survolé"""
+        return context.ui.get_selected(self._selection_id) == self._selector_id
+    
+    @property
+    def selected(self) -> bool:
+        """Vérifie que le sélecteur soit actif dans son groupe"""
+        return context.ui.get_selected(self._selection_id) == self._selector_id
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le sélecteur (distance au centre <= rayon)"""
