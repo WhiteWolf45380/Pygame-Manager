@@ -158,7 +158,7 @@ class UiManager:
                 obj.draw()
         self._draw_messages()
 
-    def draw_messages(self):
+    def _draw_messages(self):
         """Affichage des messages"""
         for msg_data in self._system_messages:
             text_obj = msg_data['text']
