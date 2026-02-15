@@ -3,7 +3,7 @@ import json
 import threading
 import time
 from collections import deque
-from typing import Any
+from typing import Any, Callable
 
 DISCOVERY_PORT = 50000
 GAME_PORT = 5555
@@ -11,6 +11,7 @@ BROADCAST_INTERVAL = 1.0
 LOBBY_TIMEOUT = 3.0
 CLIENT_TIMEOUT = 5.0
 MAX_BUFFER_SIZE = 65536
+CONNECTION_TIMEOUT = 5.0
 
 
 class NetworkManager:
@@ -29,9 +30,14 @@ class NetworkManager:
         self._clients_info: dict[socket.socket, dict] = {}
         self._lock = threading.Lock()
 
-        self._latest_data = None                # client side
-        self._role_client: str | None = None  # role côté client
-        self._role_lock = threading.Lock()    # lock pour _role_client
+        self._latest_data = None
+        self._role_client: str | None = None
+        self._role_lock = threading.Lock()
+
+        # ================= ERROR HANDLING =================
+        self._last_error: str | None = None
+        self._error_callback: Callable[[str], None] | None = None
+        self._connection_lost = False
 
         # ================= UDP =================
         self._udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -101,33 +107,60 @@ class NetworkManager:
             return False
 
     # ========================= JOIN =========================
-    def join(self, ip: str, port: int | None = None) -> bool:
-        """Rejoint un lobby
+    def join(self, ip: str, port: int | None = None, timeout: float = CONNECTION_TIMEOUT) -> bool:
+        """Rejoint un lobby avec timeout
 
         Args:
             ip: Adresse IP du host
             port: Port TCP du host
+            timeout: Durée maximale d'attente (secondes)
         """
         try:
             port = port or GAME_PORT
             self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._tcp_socket.connect((ip, port))
+            self._tcp_socket.settimeout(timeout)
+            
+            try:
+                self._tcp_socket.connect((ip, port))
+            except socket.timeout:
+                error_msg = f"Connection timeout: {ip}:{port} did not respond"
+                self._set_error(error_msg)
+                self._tcp_socket.close()
+                self._tcp_socket = None
+                return False
+            except ConnectionRefusedError:
+                error_msg = f"Connection refused by {ip}:{port}"
+                self._set_error(error_msg)
+                self._tcp_socket.close()
+                self._tcp_socket = None
+                return False
+            
             self._tcp_socket.setblocking(False)
-
             self._connected = True
             self._is_host = False
+            self._connection_lost = False
+            self._last_error = None
             self._stop_broadcast()
 
             threading.Thread(target=self._receive_loop_client, daemon=True).start()
             print(f"[Network] Joined {ip}:{port}")
             return True
+            
         except Exception as e:
-            print(f"[Network] Join error: {e}")
+            error_msg = f"Failed to join {ip}:{port}: {e}"
+            self._set_error(error_msg)
+            if self._tcp_socket:
+                try:
+                    self._tcp_socket.close()
+                except:
+                    pass
+                self._tcp_socket = None
             return False
 
     # ========================= DISCONNECT =========================
     def disconnect(self):
         """Met fin à la connexion"""
+        was_connected = self._connected
         self._connected = False
         self._game_started = False
         self._broadcast_running = False
@@ -181,6 +214,58 @@ class NetworkManager:
         except BlockingIOError:
             pass
         self._lobbies = {}
+
+        if was_connected and not self._connection_lost:
+            print("[Network] Disconnected normally")
+    
+    # ========================= ERROR HANDLING =========================
+    def set_error_callback(self, callback: Callable[[str], None]):
+        """Définit un callback appelé en cas d'erreur
+        
+        Args:
+            callback: fonction appelée avec le message d'erreur
+        """
+        self._error_callback = callback
+    
+    def _set_error(self, error: str):
+        """Enregistre une erreur et appelle le callback si défini
+        
+        Args:
+            error: message d'erreur
+        """
+        self._last_error = error
+        print(f"[Network] Error: {error}")
+        if self._error_callback:
+            try:
+                self._error_callback(error)
+            except Exception as e:
+                print(f"[Network] Error callback failed: {e}")
+    
+    def get_last_error(self) -> str | None:
+        """Récupère la dernière erreur et la réinitialise
+        
+        Returns:
+            Message d'erreur ou None
+        """
+        error = self._last_error
+        self._last_error = None
+        return error
+    
+    def has_error(self) -> bool:
+        """Vérifie s'il y a une erreur en attente
+        
+        Returns:
+            True si une erreur est présente
+        """
+        return self._last_error is not None
+    
+    def is_connection_lost(self) -> bool:
+        """Vérifie si la connexion a été perdue
+        
+        Returns:
+            True si la connexion a été perdue
+        """
+        return self._connection_lost
 
     # ========================= UPDATE =========================
     def update(self, f: bool = False):
@@ -353,6 +438,8 @@ class NetworkManager:
             try:
                 chunk = self._tcp_socket.recv(4096).decode()
                 if not chunk:
+                    self._connection_lost = True
+                    self._set_error("Connection lost: host disconnected")
                     break
 
                 buffer += chunk
@@ -380,7 +467,13 @@ class NetworkManager:
 
             except BlockingIOError:
                 time.sleep(0.01)
-            except (ConnectionResetError, BrokenPipeError, OSError):
+            except (ConnectionResetError, BrokenPipeError, OSError) as e:
+                self._connection_lost = True
+                self._set_error(f"Connection lost: {e}")
+                break
+            except Exception as e:
+                self._connection_lost = True
+                self._set_error(f"Unexpected error: {e}")
                 break
 
         self.disconnect()
@@ -451,6 +544,7 @@ class NetworkManager:
                     self._clients_info.pop(client, None)
 
                     if role == "player":
+                        self._set_error(f"Player disconnected due to timeout")  # ← AJOUT
                         should_disconnect = True
                         break
 
@@ -458,6 +552,7 @@ class NetworkManager:
             self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
 
         if should_disconnect:
+            self._connection_lost = True  # ← AJOUT
             threading.Thread(target=self.disconnect, daemon=True).start()
 
     def _heartbeat_loop(self):
