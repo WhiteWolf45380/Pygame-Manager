@@ -254,6 +254,8 @@ class InputsManager:
 
         if up:
             self._pressed[event_id] = False
+            if event_id in self._step:
+                self._step.remove(event_id)
         else:
             self._step.append(event_id)
 
