@@ -253,10 +253,13 @@ class UiManager:
             if len(self._selections[id_selection]) > self._selections_limits.get(id_selection, 1):
                 self._selections[id_selection].pop(0)
 
-    def unselect(self, id_selection: str, id_selector: str):
+    def unselect(self, id_selection: str, id_selector: str = None):
         """Remet une séléction à None"""
-        if id_selection in self._selections and id_selector in self._selections[id_selection]:
-            self._selections[id_selection].remove(id_selector)
+        if id_selection in self._selections:
+            if id_selector is None:
+                self._selections[id_selection] = []
+            elif id_selector in self._selections[id_selection]:
+                self._selections[id_selection].remove(id_selector)
 
 # ======================================== INSTANCE ========================================
 ui_manager = UiManager()
