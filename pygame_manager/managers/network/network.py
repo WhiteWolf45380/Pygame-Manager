@@ -195,6 +195,20 @@ class NetworkManager:
         self._game_started = False
         self._broadcast_running = False
 
+        if self._is_host and was_connected:
+            try:
+                self.send({"type": "disconnect", "reason": "host_closed"})
+                time.sleep(0.1)
+            except:
+                pass
+
+        if not self._is_host and was_connected and self._tcp_socket:
+            try:
+                self._tcp_socket.sendall((json.dumps({"type": "disconnect", "reason": "client_closed"}) + "\n").encode())
+                time.sleep(0.05)
+            except:
+                pass
+
         if self._tcp_socket:
             try:
                 self._tcp_socket.shutdown(socket.SHUT_RDWR)
@@ -506,8 +520,8 @@ class NetworkManager:
             try:
                 chunk = self._tcp_socket.recv(4096).decode()
                 if not chunk:
-                    self._connection_lost = True
-                    self._set_error("Connection lost: host disconnected")
+                    if not self._connection_lost:
+                        print("[Network] Host disconnected normally")
                     break
 
                 buffer += chunk
@@ -524,8 +538,11 @@ class NetworkManager:
                                 self._role_client = msg["role"]
 
                         elif msg.get("type") == "start_game":
-                            # Signal de démarrage de partie
                             self._game_started = True
+
+                        elif msg.get("type") == "disconnect":
+                            print(f"[Network] Host closing: {msg.get('reason', 'unknown')}")
+                            break
 
                         else:
                             with self._lock:
@@ -572,9 +589,7 @@ class NetworkManager:
                     print(f"[Network] Client disconnected ({client_role})")
                     
                     if client_role == "player":
-                        self._set_error(f"Player disconnected")
-                        self._connection_lost = True
-                        threading.Thread(target=self.disconnect, daemon=True).start()
+                        pass 
                     break
 
                 buffer += chunk
@@ -585,6 +600,11 @@ class NetworkManager:
                     line, buffer = buffer.split("\n", 1)
                     try:
                         data = json.loads(line)
+                        
+                        if data.get("type") == "disconnect":
+                            print(f"[Network] Client closing properly ({client_role})")
+                            break
+                        
                         with self._lock:
                             info = self._clients_info.get(client)
                             if info:
@@ -597,7 +617,6 @@ class NetworkManager:
             except BlockingIOError:
                 time.sleep(0.01)
             except (ConnectionResetError, BrokenPipeError, OSError) as e:
-                # Erreur de connexion
                 print(f"[Network] Client connection error ({client_role}): {e}")
                 
                 if client_role == "player":
