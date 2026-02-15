@@ -62,22 +62,31 @@ class NetworkManager:
         self._max_spectators: int | None = None
 
     def __repr__(self):
-        """Représentation du manager"""
+        """Représentation du manager réseau"""
         return f"<NetworkManager {'host' if self._is_host else 'client'} | {'connected' if self._connected else 'idle'}>"
 
     # ========================= HOST =========================
     def host(self, port: int = GAME_PORT, max_players: int = 2, max_spectators: int | None = None, **kwargs) -> bool:
-        """Héberge un lobby
+        """Héberge un lobby sur le réseau local
+        
+        Crée un serveur TCP qui accepte les connexions entrantes et diffuse
+        les informations du lobby via UDP pour la découverte automatique.
 
         Args:
-            port: Port TCP pour le lobby
-            max_players: Nombre maximum de joueurs
-            max_spectators: Nombre maximum de spectateurs
+            port: Port TCP sur lequel écouter (défaut: 5555)
+            max_players: Nombre maximum de joueurs autorisés (défaut: 2)
+            max_spectators: Nombre maximum de spectateurs (None = illimité)
+            **kwargs: Métadonnées supplémentaires du lobby (nom, mode de jeu, etc.)
+
+        Returns:
+            True si le lobby a été créé avec succès, False sinon
         """
         try:
             self._is_host = True
             self._connected = True
             self._game_started = False
+            self._connection_lost = False
+            self._last_error = None
 
             self._max_players = max_players
             self._max_spectators = max_spectators
@@ -103,22 +112,29 @@ class NetworkManager:
             print(f"[Network] Hosting lobby {self._lobby_info}")
             return True
         except Exception as e:
-            print(f"[Network] Host error: {e}")
+            error_msg = f"Failed to host lobby: {e}"
+            self._set_error(error_msg)
             return False
 
     # ========================= JOIN =========================
     def join(self, ip: str, port: int | None = None, timeout: float = CONNECTION_TIMEOUT) -> bool:
-        """Rejoint un lobby avec timeout
+        """Rejoint un lobby distant en tant que client
+        
+        Établit une connexion TCP avec un serveur host et s'enregistre
+        en tant que joueur ou spectateur selon la disponibilité.
 
         Args:
-            ip: Adresse IP du host
-            port: Port TCP du host
-            timeout: Durée maximale d'attente (secondes)
+            ip: Adresse IP du serveur host
+            port: Port TCP du serveur (défaut: 5555)
+            timeout: Délai max pour établir la connexion en secondes (défaut: 5.0)
+
+        Returns:
+            True si la connexion a réussi, False sinon
         """
         try:
             port = port or GAME_PORT
             self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._tcp_socket.settimeout(timeout)
+            self._tcp_socket.settimeout(timeout)  # Timeout bloquant temporaire
             
             try:
                 self._tcp_socket.connect((ip, port))
@@ -159,7 +175,12 @@ class NetworkManager:
 
     # ========================= DISCONNECT =========================
     def disconnect(self):
-        """Met fin à la connexion"""
+        """Ferme toutes les connexions et réinitialise l'état réseau
+        
+        Nettoie proprement tous les sockets TCP/UDP, arrête les threads,
+        et réinitialise toutes les variables d'état. Cette méthode est
+        idempotente (peut être appelée plusieurs fois sans effet).
+        """
         was_connected = self._connected
         self._connected = False
         self._game_started = False
@@ -207,7 +228,6 @@ class NetworkManager:
         self._is_host = False
         self._lobby_info = {}
 
-        # Flush du buffer UDP
         try:
             while True:
                 self._udp_sock.recvfrom(2048)
@@ -220,18 +240,18 @@ class NetworkManager:
     
     # ========================= ERROR HANDLING =========================
     def set_error_callback(self, callback: Callable[[str], None]):
-        """Définit un callback appelé en cas d'erreur
+        """Définit une fonction appelée automatiquement en cas d'erreur réseau
         
         Args:
-            callback: fonction appelée avec le message d'erreur
+            callback: Fonction prenant un string (message d'erreur) en paramètre
         """
         self._error_callback = callback
     
     def _set_error(self, error: str):
-        """Enregistre une erreur et appelle le callback si défini
+        """Enregistre une erreur et notifie via callback (usage interne)
         
         Args:
-            error: message d'erreur
+            error: Message d'erreur décrivant le problème
         """
         self._last_error = error
         print(f"[Network] Error: {error}")
@@ -242,37 +262,40 @@ class NetworkManager:
                 print(f"[Network] Error callback failed: {e}")
     
     def get_last_error(self) -> str | None:
-        """Récupère la dernière erreur et la réinitialise
+        """Récupère et efface la dernière erreur enregistrée
         
         Returns:
-            Message d'erreur ou None
+            Message d'erreur ou None si aucune erreur
         """
         error = self._last_error
         self._last_error = None
         return error
     
     def has_error(self) -> bool:
-        """Vérifie s'il y a une erreur en attente
+        """Vérifie si une erreur est en attente de traitement
         
         Returns:
-            True si une erreur est présente
+            True si une erreur non-récupérée existe
         """
         return self._last_error is not None
     
     def is_connection_lost(self) -> bool:
-        """Vérifie si la connexion a été perdue
+        """Vérifie si la connexion a été perdue de manière inattendue
         
         Returns:
-            True si la connexion a été perdue
+            True si déconnexion inattendue (timeout, crash, etc.)
         """
         return self._connection_lost
 
     # ========================= UPDATE =========================
     def update(self, f: bool = False):
-        """Met à jour l'état du réseau
+        """Met à jour l'état du réseau (à appeler régulièrement dans la game loop)
+        
+        Nettoie les lobbies obsolètes, reçoit les annonces UDP, et accepte
+        les nouvelles connexions si on est host.
 
         Args:
-            f: Forcer la mise à jour
+            f: Force l'update même si non connecté (pour la découverte de lobbies)
         """
         if not f and (not self._connected or not self._is_host):
             return
@@ -283,7 +306,11 @@ class NetworkManager:
 
     # ========================= LOBBIES =========================
     def _receive_lobbies(self):
-        """Récupère les lobbies présents"""
+        """Reçoit et stocke les annonces UDP de lobbies disponibles (usage interne)
+        
+        Lit tous les paquets UDP disponibles sans bloquer et met à jour
+        le dictionnaire des lobbies découverts.
+        """
         try:
             while True:
                 data, addr = self._udp_sock.recvfrom(2048)
@@ -298,7 +325,7 @@ class NetworkManager:
             pass
 
     def _cleanup_lobbies(self):
-        """Nettoie les lobbies"""
+        """Supprime les lobbies qui n'ont pas émis depuis LOBBY_TIMEOUT (usage interne)"""
         now = time.time()
         for ip in list(self._lobbies.keys()):
             if now - self._last_lobby_seen[ip] > LOBBY_TIMEOUT:
@@ -306,10 +333,14 @@ class NetworkManager:
                 del self._last_lobby_seen[ip]
 
     def get_lobbies(self, **filters):
-        """Renvoie les lobbies
-
+        """Renvoie la liste des lobbies découverts avec filtrage optionnel
+        
         Args:
-            filters: filtres à appliquer
+            **filters: Paires clé-valeur pour filtrer les lobbies
+                      (ex: status="open", max_players=2)
+
+        Returns:
+            Liste de tuples (ip, lobby_info)
         """
         self.update(f=True)
         return [
@@ -320,7 +351,11 @@ class NetworkManager:
 
     # ========================= ACCEPT CLIENTS =========================
     def _accept_clients(self):
-        """Accepte les clients entrants"""
+        """Accepte les nouvelles connexions TCP entrantes (usage interne, host uniquement)
+        
+        Gère l'attribution automatique des rôles (player/spectator), lance
+        les threads de réception, et démarre la partie si le lobby est prêt.
+        """
         try:
             while True:
                 client, addr = self._server_socket.accept()
@@ -375,10 +410,13 @@ class NetworkManager:
 
     # ========================= SEND =========================
     def send(self, data: dict[str, Any]) -> bool:
-        """Envoie un message
-
+        """Envoie des données à tous les clients (host) ou au serveur (client)
+        
         Args:
-            data: dictionnaire à envoyer
+            data: Dictionnaire sérialisable en JSON
+
+        Returns:
+            True si l'envoi a réussi, False sinon
         """
         if not self._connected:
             return False
@@ -402,6 +440,7 @@ class NetworkManager:
                     except:
                         pass
         else:
+            # Client : envoyer au serveur
             try:
                 self._tcp_socket.sendall(msg)
             except (ConnectionResetError, BrokenPipeError, OSError):
@@ -411,7 +450,14 @@ class NetworkManager:
 
     # ========================= RECEIVE =========================
     def receive(self):
-        """Reçoit un message"""
+        """Récupère le prochain message reçu
+        
+        Pour le client: renvoie les données du host
+        Pour le host: renvoie les données d'un joueur (round-robin)
+
+        Returns:
+            Dictionnaire de données ou None si aucun message
+        """
         if not self._is_host:
             with self._lock:
                 data = self._latest_data
@@ -432,7 +478,12 @@ class NetworkManager:
 
     # ========================= RECEIVE LOOPS =========================
     def _receive_loop_client(self):
-        """Boucle de réception côté client"""
+        """Thread de réception côté client (usage interne)
+        
+        Lit continuellement les données du serveur, gère le buffering,
+        parse le JSON, et stocke les messages reçus. Se termine proprement
+        en cas de déconnexion.
+        """
         buffer = ""
         while self._connected:
             try:
@@ -456,6 +507,7 @@ class NetworkManager:
                                 self._role_client = msg["role"]
 
                         elif msg.get("type") == "start_game":
+                            # Signal de démarrage de partie
                             self._game_started = True
 
                         else:
@@ -479,13 +531,33 @@ class NetworkManager:
         self.disconnect()
 
     def _receive_loop_host(self, client: socket.socket):
-        """Boucle de réception côté hébergeur"""
+        """Thread de réception côté host pour un client spécifique (usage interne)
+        
+        Lit les données d'un client connecté, met à jour son timestamp,
+        et détecte les déconnexions. Si un joueur se déconnecte, déclenche
+        la fermeture du lobby.
+        
+        Args:
+            client: Socket TCP du client à surveiller
+        """
         buffer = ""
+        client_role = None
+        
+        with self._lock:
+            info = self._clients_info.get(client)
+            if info:
+                client_role = info["role"]
 
         while self._connected:
             try:
                 chunk = client.recv(4096).decode()
                 if not chunk:
+                    print(f"[Network] Client disconnected ({client_role})")
+                    
+                    if client_role == "player":
+                        self._set_error(f"Player disconnected")
+                        self._connection_lost = True
+                        threading.Thread(target=self.disconnect, daemon=True).start()
                     break
 
                 buffer += chunk
@@ -507,7 +579,14 @@ class NetworkManager:
 
             except BlockingIOError:
                 time.sleep(0.01)
-            except (ConnectionResetError, BrokenPipeError, OSError):
+            except (ConnectionResetError, BrokenPipeError, OSError) as e:
+                # Erreur de connexion
+                print(f"[Network] Client connection error ({client_role}): {e}")
+                
+                if client_role == "player":
+                    self._set_error(f"Player connection error: {e}")
+                    self._connection_lost = True
+                    threading.Thread(target=self.disconnect, daemon=True).start()
                 break
 
         with self._lock:
@@ -522,12 +601,16 @@ class NetworkManager:
 
     # ========================= HEARTBEAT / CLEANUP =========================
     def _start_heartbeat(self):
-        """Démarre le nettoyage des clients"""
-        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop,daemon=True)
+        """Démarre le thread de nettoyage périodique des clients (usage interne)"""
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
         self._heartbeat_thread.start()
 
     def _cleanup_dead_clients(self):
-        """Supprime les clients morts"""
+        """Supprime les clients qui n'ont pas répondu depuis CLIENT_TIMEOUT (usage interne)
+        
+        Vérifie chaque seconde si des clients sont inactifs. Si un joueur
+        est détecté mort (pas de données depuis 5s), ferme le lobby.
+        """
         now = time.time()
         should_disconnect = False
 
@@ -536,6 +619,8 @@ class NetworkManager:
                 info = self._clients_info.get(client)
                 if info and now - info["last_seen"] > CLIENT_TIMEOUT:
                     role = info["role"]
+                    print(f"[Network] Client timeout ({role})")
+                    
                     try:
                         client.close()
                     except:
@@ -544,7 +629,7 @@ class NetworkManager:
                     self._clients_info.pop(client, None)
 
                     if role == "player":
-                        self._set_error(f"Player disconnected due to timeout")  # ← AJOUT
+                        self._set_error(f"Player disconnected due to timeout")
                         should_disconnect = True
                         break
 
@@ -552,34 +637,38 @@ class NetworkManager:
             self._lobby_info["spectators"] = sum(1 for i in self._clients_info.values() if i["role"] == "spectator")
 
         if should_disconnect:
-            self._connection_lost = True  # ← AJOUT
+            self._connection_lost = True
             threading.Thread(target=self.disconnect, daemon=True).start()
 
     def _heartbeat_loop(self):
-        """Boucle du heartbeat"""
+        """Boucle infinie de nettoyage (tourne dans un thread dédié)"""
         while self._connected:
             self._cleanup_dead_clients()
             time.sleep(1)
 
     # ========================= BROADCAST =========================
     def _start_broadcast(self):
-        """Démarre la diffusion UDP"""
+        """Démarre le thread de diffusion UDP du lobby (usage interne)"""
         if self._broadcast_running:
             return
 
         self._broadcast_running = True
-        self._broadcast_thread = threading.Thread(target=self._broadcast_loop,daemon=True)
+        self._broadcast_thread = threading.Thread(target=self._broadcast_loop, daemon=True)
         self._broadcast_thread.start()
 
     def _broadcast_loop(self):
-        """Boucle de diffusion UDP"""
+        """Diffuse les infos du lobby via UDP toutes les secondes (usage interne)
+        
+        Envoie un broadcast UDP contenant les métadonnées du lobby
+        pour permettre la découverte automatique par les clients.
+        """
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         broadcast_addr = "255.255.255.255"
 
         while self._broadcast_running:
             try:
-                sock.sendto(json.dumps(self._lobby_info).encode(),(broadcast_addr, DISCOVERY_PORT))
+                sock.sendto(json.dumps(self._lobby_info).encode(), (broadcast_addr, DISCOVERY_PORT))
             except:
                 pass
             time.sleep(1)
@@ -587,25 +676,41 @@ class NetworkManager:
         sock.close()
 
     def _stop_broadcast(self):
-        """Arrête la diffusion UDP"""
+        """Arrête la diffusion UDP (usage interne)"""
         self._broadcast_running = False
 
     # ========================= PREDICATS =========================
     def is_hosting(self) -> bool:
-        """Vérifie si la machine est host"""
+        """Vérifie si cette instance est le serveur host
+        
+        Returns:
+            True si on héberge le lobby, False si on est client
+        """
         return self._is_host
 
     def is_connected(self) -> bool:
-        """Vérifie si la connexion est active"""
+        """Vérifie si une connexion réseau est active
+        
+        Returns:
+            True si connecté (host ou client), False sinon
+        """
         return self._connected
 
     def get_role(self) -> str | None:
-        """Récupère le rôle du client"""
+        """Récupère le rôle attribué par le serveur (client uniquement)
+        
+        Returns:
+            "player", "spectator", ou None si pas encore reçu
+        """
         with self._role_lock:
             return self._role_client
 
     def is_lobby_ready(self) -> bool:
-        """Vérifie si le lobby est prêt"""
+        """Vérifie si le lobby a atteint le nombre de joueurs requis (host uniquement)
+        
+        Returns:
+            True si assez de joueurs pour démarrer
+        """
         if not self._is_host:
             return False
         with self._lock:
@@ -613,7 +718,11 @@ class NetworkManager:
             return num_players >= self._max_players
 
     def is_lobby_full(self) -> bool:
-        """Vérifie si le lobby est plein"""
+        """Vérifie si le lobby est complètement plein (host uniquement)
+        
+        Returns:
+            True si joueurs ET spectateurs sont au max
+        """
         if not self._is_host:
             return False
         with self._lock:
@@ -626,7 +735,11 @@ class NetworkManager:
             return players_full and spectators_full
 
     def is_game_started(self) -> bool:
-        """Vérifie si la partie est lancée"""
+        """Vérifie si la partie a démarré
+        
+        Returns:
+            True si le signal start_game a été envoyé/reçu
+        """
         return self._game_started
 
 # ========================= INSTANCE =========================
