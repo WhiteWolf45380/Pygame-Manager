@@ -664,11 +664,9 @@ class RectSelectorObject:
             new_height = int(surface_rect.height * self._scale_ratio)
             self._surface = pygame.transform.smoothscale(surface, (new_width, new_height))
             self._last_scale_ratio = self._scale_ratio
-        else:
-            self._surface = surface
         
-        # centrer sur le rect original pour que le scaling soit centré
-        self._surface_rect = self._surface.get_rect(center=self._rect.center)
+            # centrer sur le rect original pour que le scaling soit centré
+            self._surface_rect = self._surface.get_rect(center=self._rect.center)
 
     # ======================================== AFFICHAGE ========================================
     def draw(self):
