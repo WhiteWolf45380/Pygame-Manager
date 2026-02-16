@@ -671,8 +671,9 @@ class RectSelectorObject:
     # ======================================== AFFICHAGE ========================================
     def draw(self):
         """Dessin par frame"""
-        if not self._visible:
+        if not self._visible or self._surface is None:
             return
+
         surface = context.screen.surface
         if self._panel is not None and hasattr(self._panel, 'surface'):
             surface = self._panel.surface
