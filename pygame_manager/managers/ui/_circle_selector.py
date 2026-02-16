@@ -397,6 +397,7 @@ class CircleSelectorObject:
 
         # paramètres dynamiques
         self._visible = True
+        self._last_status = None
 
     # ======================================== CREATION SURFACE MULTI-LIGNES ========================================
     def _create_multiline_surface(self, lines: list, font: pygame.font.Font, color: pygame.Color) -> pygame.Surface:
@@ -656,21 +657,24 @@ class CircleSelectorObject:
             self._scale_ratio = target_ratio
 
         # Redimensionnement
-        surface = self._preloaded["selected" if self.selected else "hover" if self.hovered else "default"]
+        status = "selected" if self.selected else "hover" if self.hovered else "default"
+        surface = self._preloaded[status]
         surface_rect = surface.get_rect()
         if self._last_scale_ratio != self._scale_ratio:
             new_width = int(surface_rect.width * self._scale_ratio)
             new_height = int(surface_rect.height * self._scale_ratio)
             self._surface = pygame.transform.smoothscale(surface, (new_width, new_height))
-            self._last_scale_ratio = self._scale_ratio
-        
-            # centrer sur le rect original pour que le scaling soit centré
             self._surface_rect = self._surface.get_rect(center=self._rect.center)
+            self._last_scale_ratio = self._scale_ratio
+        elif status != self._last_status:
+            self._surface = surface
+            self._surface_rect = self._surface.get_rect(center=self._rect.center)
+            self._last_status = status
 
      # ======================================== AFFICHAGE ========================================
     def draw(self):
         """Dessin par frame"""
-        if not self._visible:
+        if not self._visible or self._surface is None:
             return
 
         surface = context.screen.surface
