@@ -205,7 +205,7 @@ class RectSelectorObject:
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
-                scale_ratio = min(width_ratio, height_ratio)
+                scale_ratio = max(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
@@ -221,7 +221,7 @@ class RectSelectorObject:
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
-                scale_ratio = min(width_ratio, height_ratio)
+                scale_ratio = max(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
@@ -237,7 +237,7 @@ class RectSelectorObject:
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
-                scale_ratio = min(width_ratio, height_ratio)
+                scale_ratio = max(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
