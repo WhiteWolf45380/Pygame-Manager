@@ -28,7 +28,7 @@ class CircleSelectorObject:
             icon_hover: pygame.Surface = None,
             icon_selected: pygame.Surface = None,
             icon_keep_ratio: bool = True,
-            icon_scale_ratio: float = 0.8,
+            icon_scale_ratio: float = 1.0,
 
             title: str = None,
             title_anchor: str = "center",
