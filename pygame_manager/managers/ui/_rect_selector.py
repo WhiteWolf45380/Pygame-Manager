@@ -667,6 +667,7 @@ class RectSelectorObject:
             self._surface = pygame.transform.smoothscale(surface, (new_width, new_height))
             self._surface_rect = self._surface.get_rect(center=self._rect.center)
             self._last_scale_ratio = self._scale_ratio
+            self._last_status = status
         elif status != self._last_status:
             self._surface = surface
             self._surface_rect = self._surface.get_rect(center=self._rect.center)
