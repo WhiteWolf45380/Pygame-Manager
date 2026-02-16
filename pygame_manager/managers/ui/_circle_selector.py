@@ -28,7 +28,7 @@ class CircleSelectorObject:
             icon_hover: pygame.Surface = None,
             icon_selected: pygame.Surface = None,
             icon_keep_ratio: bool = True,
-            icon_scale_ratio: float = 1.0,
+            icon_scale_ratio: float = 0.8,
 
             title: str = None,
             title_anchor: str = "center",
@@ -54,6 +54,9 @@ class CircleSelectorObject:
 
             hover_scale_ratio: float = 1.0,
             hover_scale_duration: float = 0.0,
+
+            selected_scale_ratio: float = 1.0,
+            selected_scale_duration: float = 0.0,
 
             callback: callable = lambda: None,
             panel: object = None
@@ -99,6 +102,9 @@ class CircleSelectorObject:
 
             hover_scale_ratio (float, optional) : facteur de redimensionnement lors du survol
             hover_scale_duration (float, optional) : durée de redimensionnement (en secondes)
+
+            selected_scale_ratio (float, optional) : facteur de redimensionnement lorsque sélectionné
+            selected_scale_duration (float, optional) : durée de redimensionnement (en secondes)
 
             callback (callable, optional) : action en cas de sélection
             panel (object, optional) : panel maître
@@ -146,6 +152,8 @@ class CircleSelectorObject:
         border_color = _to_color(border_color, method='__init__')
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
+        if not isinstance(selected_scale_ratio, Real) or selected_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid selected_scale_ratio argument')
+        if not isinstance(selected_scale_duration, Real) or selected_scale_duration < 0: _raise_error(self, '__init__', 'Invalid selected_scale_duration argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
 
@@ -371,6 +379,8 @@ class CircleSelectorObject:
         self._last_scale_ratio = 1.0
         self._hover_scale_ratio = float(hover_scale_ratio)
         self._hover_scale_duration = float(hover_scale_duration)
+        self._selected_scale_ratio = float(selected_scale_ratio)
+        self._selected_scale_duration = float(selected_scale_duration)
 
         # action de clique
         self._callback = callback
@@ -626,11 +636,21 @@ class CircleSelectorObject:
         if not self._visible:
             return
         
-        # Calcul du ratio de taille
-        target_ratio = self._hover_scale_ratio if self.hovered else 1.0
-        if self._hover_scale_duration > 0:
+        # Calcul du ratio de taille cible selon l'état
+        if self.selected:
+            target_ratio = self._selected_scale_ratio
+            duration = self._selected_scale_duration
+        elif self.hovered:
+            target_ratio = self._hover_scale_ratio
+            duration = self._hover_scale_duration
+        else:
+            target_ratio = 1.0
+            duration = max(self._hover_scale_duration, self._selected_scale_duration)
+        
+        # Animation vers le ratio cible
+        if duration > 0:
             diff = target_ratio - self._scale_ratio
-            step = diff * min(context.time.dt / self._hover_scale_duration, 1.0)
+            step = diff * min(context.time.dt / duration, 1.0)
             self._scale_ratio += step
         else:
             self._scale_ratio = target_ratio
@@ -645,7 +665,9 @@ class CircleSelectorObject:
             self._last_scale_ratio = self._scale_ratio
         else:
             self._surface = surface
-        self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
+        
+        # IMPORTANT : centrer sur le rect original pour que le scaling soit centré
+        self._surface_rect = self._surface.get_rect(center=self._rect.center)
 
      # ======================================== AFFICHAGE ========================================
     def draw(self):
