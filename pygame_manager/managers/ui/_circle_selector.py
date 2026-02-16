@@ -462,6 +462,28 @@ class CircleSelectorObject:
             
             self._text_rects[text_type] = rect
 
+    # ======================================== HELPER POUR CLIPPER L'ICON ========================================
+    def _blit_icon_clipped(self, surface: pygame.Surface, icon: pygame.Surface, icon_rect: pygame.Rect):
+        """
+        Blitte l'icon en la clippant à l'intérieur du cercle.
+        """
+        if icon is None:
+            return
+        
+        diameter = self._radius * 2
+        
+        # Créer un mask circulaire
+        mask = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+        pygame.draw.circle(mask, (255, 255, 255, 255), self._local_center, self._radius)
+        
+        # Blitter l'icon sur une surface temporaire
+        temp = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
+        temp.blit(icon, icon_rect)
+        
+        # Appliquer le mask (seules les parties à l'intérieur du cercle restent visibles)
+        temp.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        surface.blit(temp, (0, 0))
+
     # ======================================== GETTERS ========================================
     @property
     def zorder(self) -> int:
@@ -543,8 +565,7 @@ class CircleSelectorObject:
         surface = pygame.Surface((diameter, diameter), pygame.SRCALPHA)
         if self._filling:
             pygame.draw.circle(surface, self._filling_color, self._local_center, self._radius)
-        if self._icon is not None:
-            surface.blit(self._icon, self._icon_rect)
+        self._blit_icon_clipped(surface, self._icon, self._icon_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects:
@@ -560,8 +581,7 @@ class CircleSelectorObject:
         hover_color = self._filling_color_hover if self._filling_color_hover is not None else self._filling_color
         if self._filling:
             pygame.draw.circle(surface, hover_color, self._local_center, self._radius)
-        if self._icon_hover is not None:
-            surface.blit(self._icon_hover, self._icon_hover_rect)
+        self._blit_icon_clipped(surface, self._icon_hover, self._icon_hover_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects_hover:
@@ -577,8 +597,7 @@ class CircleSelectorObject:
         selected_color = self._filling_color_selected if self._filling_color_selected is not None else self._filling_color
         if self._filling:
             pygame.draw.circle(surface, selected_color, self._local_center, self._radius)
-        if self._icon_selected is not None:
-            surface.blit(self._icon_selected, self._icon_selected_rect)
+        self._blit_icon_clipped(surface, self._icon_selected, self._icon_selected_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects_selected:

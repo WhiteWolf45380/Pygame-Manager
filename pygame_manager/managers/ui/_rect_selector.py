@@ -464,6 +464,33 @@ class RectSelectorObject:
             
             self._text_rects[text_type] = rect
 
+    # ======================================== HELPER POUR CLIPPER L'ICON ========================================
+    def _blit_icon_clipped(self, surface: pygame.Surface, icon: pygame.Surface, icon_rect: pygame.Rect):
+        """
+        Blitte l'icon en la clippant à l'intérieur de la forme du sélecteur.
+        """
+        if icon is None:
+            return
+        
+        if self._border_radius > 0:
+            # Créer un mask pour le rectangle avec border_radius
+            mask = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(mask, (255, 255, 255, 255), self._local_rect, border_radius=self._border_radius)
+            
+            # Blitter l'icon sur une surface temporaire
+            temp = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+            temp.blit(icon, icon_rect)
+            
+            # Appliquer le mask (seules les parties à l'intérieur du mask restent visibles)
+            temp.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+            surface.blit(temp, (0, 0))
+        else:
+            # Clipper avec un rectangle simple
+            old_clip = surface.get_clip()
+            surface.set_clip(self._local_rect)
+            surface.blit(icon, icon_rect)
+            surface.set_clip(old_clip)
+
     # ======================================== GETTERS ========================================
     @property
     def zorder(self) -> int:
@@ -542,8 +569,7 @@ class RectSelectorObject:
         surface = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
         if self._filling:
             pygame.draw.rect(surface, self._filling_color, self._local_rect, border_radius=self._border_radius)
-        if self._icon is not None:
-            surface.blit(self._icon, self._icon_rect)
+        self._blit_icon_clipped(surface, self._icon, self._icon_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects:
@@ -558,8 +584,7 @@ class RectSelectorObject:
         hover_color = self._filling_color_hover if self._filling_color_hover is not None else self._filling_color
         if self._filling:
             pygame.draw.rect(surface, hover_color, self._local_rect, border_radius=self._border_radius)
-        if self._icon_hover is not None:
-            surface.blit(self._icon_hover, self._icon_hover_rect)
+        self._blit_icon_clipped(surface, self._icon_hover, self._icon_hover_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects_hover:
@@ -574,8 +599,7 @@ class RectSelectorObject:
         selected_color = self._filling_color_selected if self._filling_color_selected is not None else self._filling_color
         if self._filling:
             pygame.draw.rect(surface, selected_color, self._local_rect, border_radius=self._border_radius)
-        if self._icon_selected is not None:
-            surface.blit(self._icon_selected, self._icon_selected_rect)
+        self._blit_icon_clipped(surface, self._icon_selected, self._icon_selected_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects_selected:
