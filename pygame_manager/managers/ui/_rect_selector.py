@@ -651,9 +651,8 @@ class RectSelectorObject:
         
         # Animation vers le ratio cible
         if duration > 0:
-            diff = target_ratio - self._scale_ratio
-            step = diff * min(context.time.dt / duration, 1.0)
-            self._scale_ratio += step
+            diff = (target_ratio - self._scale_ratio) / duration
+            self._scale_ratio += context.time.scale_value(diff)
         else:
             self._scale_ratio = target_ratio
 
@@ -668,7 +667,7 @@ class RectSelectorObject:
         else:
             self._surface = surface
         
-        # IMPORTANT : centrer sur le rect original pour que le scaling soit centré
+        # centrer sur le rect original pour que le scaling soit centré
         self._surface_rect = self._surface.get_rect(center=self._rect.center)
 
     # ======================================== AFFICHAGE ========================================

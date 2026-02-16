@@ -649,8 +649,8 @@ class CircleSelectorObject:
         
         # Animation vers le ratio cible
         if duration > 0:
-            diff = target_ratio - self._scale_ratio
-            step = diff * min(context.time.dt / duration, 1.0)
+            diff = (target_ratio - self._scale_ratio) / duration
+            step = context.time.scale_value(diff)
             self._scale_ratio += step
         else:
             self._scale_ratio = target_ratio
