@@ -6,19 +6,28 @@ from ._panel import Panel
 class PanelsManager:
     """
     Gestionnaire de panels avec système predecessor/successor.
+
+    Convention Z-order :
+        _zorder     = pre-order  DFS : [parent, child_behind, child_front, parent2, ...]
+        _draw_order = post-order DFS : [child_behind, child_front, parent, ...]
+
+        draw_back / draw_between → _zorder         : parent prépare sa surface avant les enfants
+        draw                     → _draw_order      : enfants blittent sur parent avant que parent blit sur son predecessor
+        _update_hover            → reversed(_zorder): dernier frère (topmost) checké en premier
+        reorder "forward"/"front"  → vers la fin des successors (monte, passe devant)
+        reorder "backward"/"back"  → vers le début des successors (descend, passe derrière)
     """
     def __init__(self):
         self._dict = {None: {"predecessor": None, "successors": [], "object": None}}
         self._zorder = []
+        self._draw_order = []
         self._active_panels = []
         self._hovered = None
 
         self.Panel = Panel
 
     def _raise_error(self, method: str, text: str):
-        """
-        Lève une erreur
-        """
+        """Lève une erreur"""
         raise RuntimeError(f"[{self.__class__.__name__}].{method} : {text}")
 
     def __repr__(self):
@@ -27,8 +36,11 @@ class PanelsManager:
 
     # ======================================== METHODES INTERNES ========================================
     def _update_zorder(self):
-        """Exploration récursive pour construire la liste de Z-order"""
+        """
+        Construit _zorder et _draw_order
+        """
         self._zorder = []
+        self._draw_order = []
 
         def visit(name: str):
             if name not in self._dict:
@@ -36,14 +48,15 @@ class PanelsManager:
             self._zorder.append(name)
             for child in self._dict[name]["successors"]:
                 visit(child)
+            self._draw_order.append(name)
 
         for successor in self._dict[None]["successors"]:
             visit(successor)
-        
+
         self._sort_active_panels()
 
     def _sort_active_panels(self):
-        """Tri des panels actifs selon le zorder"""
+        """Tri des panels actifs selon le zorder (pre-order)"""
         active = set(self._active_panels)
         self._active_panels = list(filter(lambda name: name in active, self._zorder))
 
@@ -59,16 +72,16 @@ class PanelsManager:
         return result
 
     def _deactivate_subtree(self, name: str):
-        """Désactive un panel et tout son sous-arbre (on_exit en ordre inverse = feuilles d'abord)"""
+        """Désactive un panel et tout son sous-arbre"""
         subtree = self._get_subtree(name)
         for panel_name in reversed(subtree):
             if panel_name in self._active_panels:
                 obj = self._dict[panel_name]["object"]
                 obj.on_exit()
                 self._active_panels.remove(panel_name)
-    
+
     def _update_hover(self):
-        """Renvoie le panel survolé par la souris"""
+        """Détecte le panel survolé"""
         for name in reversed(self._active_panels):
             obj = self._dict[name]["object"]
             if not hasattr(obj, '_surface_rect'): continue
@@ -93,7 +106,7 @@ class PanelsManager:
         if name not in self._dict:
             return None
         return self._dict[name]["object"]
-    
+
     def __getitem__(self, key):
         """Renvoie l'objet d'un panel"""
         if isinstance(key, Panel): key = str(key)
@@ -112,11 +125,11 @@ class PanelsManager:
         if name not in self._dict:
             return []
         return list(self._dict[name]["successors"])
-    
+
     def get_hovered(self) -> str | None:
         """Renvoie le panel survolé"""
         return self._hovered
-    
+
     @property
     def hovered(self) -> str | None:
         """Renvoie le panel survolé"""
@@ -146,7 +159,7 @@ class PanelsManager:
 
         self._dict[predecessor]["successors"].append(name)
         self._update_zorder()
-    
+
     # ======================================== PREDICATS ========================================
     def __contains__(self, panel: str | Panel):
         """Vérifie l'enregistrement d'un panel"""
@@ -155,7 +168,7 @@ class PanelsManager:
         if isinstance(panel, str):
             return panel in self._dict
         return panel in [data["object"] for data in self._dict.values()]
-        
+
     def is_active(self, panel: str | Panel) -> bool:
         """Vérifie qu'un panel soit actif"""
         if isinstance(panel, str):
@@ -212,7 +225,7 @@ class PanelsManager:
         Args:
             to_close (str | Iterable[str]) : panel(s) à fermer
             to_activate (str) : panel à activer
-            pruning (bool, optional) : femeture des panels successeurs
+            pruning (bool, optional) : fermeture des panels successeurs
         """
         if isinstance(to_close, str):
             to_close = [to_close]
@@ -231,14 +244,10 @@ class PanelsManager:
     # ======================================== Z-ORDER ========================================
     def reorder(self, name: str, direction: str, index: int = None):
         """
-        Réordonne un panel dans la liste des successeurs de son predecessor.
-
-        draw() itère en reversed() → index 0 = au-dessus (dessiné en dernier).
-        "forward" / "front" rapprochent donc du début de la liste (index 0).
-        "backward" / "back"  rapprochent de la fin (dessiné en premier = en dessous).
+        Réordonne un panel parmi les frères de son predecessor.
 
         Args:
-            name (str) : panel à réordoner
+            name (str) : panel à réordonner
             direction (str) : "forward", "backward", "front", "back", "index"
             index (int | None) : utilisé uniquement avec "index"
         """
@@ -256,24 +265,20 @@ class PanelsManager:
         i = successors.index(name)
 
         if direction == "forward":
-            # Vers le début = au-dessus
-            if i > 0:
-                successors[i], successors[i - 1] = successors[i - 1], successors[i]
-
-        elif direction == "backward":
-            # Vers la fin = en dessous
             if i < len(successors) - 1:
                 successors[i], successors[i + 1] = successors[i + 1], successors[i]
 
-        elif direction == "front":
-            # Tout devant = index 0
-            successors.remove(name)
-            successors.insert(0, name)
+        elif direction == "backward":
+            if i > 0:
+                successors[i], successors[i - 1] = successors[i - 1], successors[i]
 
-        elif direction == "back":
-            # Tout derrière = fin de liste
+        elif direction == "front":
             successors.remove(name)
             successors.append(name)
+
+        elif direction == "back":
+            successors.remove(name)
+            successors.insert(0, name)
 
         elif direction == "index":
             if index is None:
@@ -324,7 +329,7 @@ class PanelsManager:
 
     def relative(self, point: tuple[Real, Real], panel_name: str) -> tuple[float, float]:
         """
-        Convertit un point absol en coordonnées relatives à un panel
+        Convertit un point absolu en coordonnées relatives à un panel
 
         Args:
             point (tuple[Real, Real]) : (x, y) en coordonnées absolues
@@ -347,9 +352,7 @@ class PanelsManager:
 
     # ======================================== METHODES DYNAMIQUES ========================================
     def update(self):
-        """
-        Exécute update de tous les panels actifs
-        """
+        """Exécute update de tous les panels actifs"""
         self._update_hover()
         for name in self._active_panels:
             obj = self._dict[name]["object"]
@@ -358,41 +361,44 @@ class PanelsManager:
 
     def draw_back(self):
         """
-        Exécute draw_back de tous les panels actifs et affichés 
+        Exécute draw_back de tous les panels actifs et affichés.
         """
         for name in self._active_panels:
             predecessor = self._dict[name]["predecessor"]
             if predecessor is not None and predecessor not in self._active_panels:
                 continue
-
             obj = self._dict[name]["object"]
             if hasattr(obj, 'draw_back'):
                 obj.draw_back(obj._surface)
 
     def draw_between(self):
         """
-        Exécute draw_between de tous les panels actifs et affichés 
+        Exécute draw_between de tous les panels actifs et affichés.
         """
         for name in self._active_panels:
             predecessor = self._dict[name]["predecessor"]
             if predecessor is not None and predecessor not in self._active_panels:
                 continue
-
             obj = self._dict[name]["object"]
             if hasattr(obj, 'draw_between'):
                 obj.draw_between(obj._surface)
 
     def draw(self):
         """
-        Exécute draw de tous les panels actifs et affichés 
+        Exécute draw de tous les panels actifs et affichés.
         """
-        for name in reversed(self._active_panels):
+        active = set(self._active_panels)
+        for name in self._draw_order:
+            if name not in active:
+                continue
             predecessor = self._dict[name]["predecessor"]
-            if predecessor is not None and predecessor not in self._active_panels:
+            if predecessor is not None and predecessor not in active:
                 continue
 
-            if predecessor is not None: predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
-            else: predecessor_surface = context.screen.surface
+            if predecessor is not None:
+                predecessor_surface = getattr(self._dict[predecessor]["object"], 'surface')
+            else:
+                predecessor_surface = context.screen.surface
 
             obj = self._dict[name]["object"]
             if hasattr(obj, 'draw'):
