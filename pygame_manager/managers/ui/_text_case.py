@@ -278,18 +278,33 @@ class TextCaseObject:
     # ======================================== SCROLL TEXTE ========================================
     def _update_text_offset(self):
         """
-        Si le texte dépasse la zone disponible, on fixe son bord droit
-        sur le bord droit de la cellule (rect.width - padding).
-        blit_x = rect.width - padding - total_width  (valeur négative = débordement à gauche)
-        Si le texte rentre, blit_x = padding (aligné à gauche).
+        Ajuste _text_blit_x pour que le curseur reste toujours visible dans [padding, rect.width - padding].
+        - Si le texte rentre entièrement : aligné à gauche.
+        - Si le texte déborde : on décale juste assez pour suivre le curseur,
+          sans jamais dépasser left-anchor (padding) ni right-anchor (rect.width - padding - total_width).
         """
         available = self._rect.width - 2 * self._padding
         total_width = self._font.size(self._text)[0]
+
         if total_width <= available:
             self._text_blit_x = self._padding
-        else:
-            # bord droit du texte = rect.width - padding
-            self._text_blit_x = self._rect.width - self._padding - total_width
+            return
+
+        cursor_x_in_text = self._font.size(self._text[:self._cursor_pos])[0]
+        cursor_screen_x  = self._text_blit_x + cursor_x_in_text
+
+        # curseur sorti à gauche → on pousse le texte vers la droite
+        if cursor_screen_x < self._padding:
+            self._text_blit_x = self._padding - cursor_x_in_text
+
+        # curseur sorti à droite → on pousse le texte vers la gauche
+        elif cursor_screen_x > self._rect.width - self._padding:
+            self._text_blit_x = self._rect.width - self._padding - cursor_x_in_text
+
+        # clamp : jamais au-delà des deux extrêmes
+        blit_x_min = self._rect.width - self._padding - total_width  # right-anchor (négatif)
+        blit_x_max = self._padding                                     # left-anchor
+        self._text_blit_x = max(blit_x_min, min(blit_x_max, self._text_blit_x))
 
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
@@ -329,8 +344,10 @@ class TextCaseObject:
         inp.add_listener(pygame.K_BACKSPACE,  self._on_backspace_up,  up=True)
         inp.add_listener(pygame.K_DELETE,     self._on_delete_down)
         inp.add_listener(pygame.K_DELETE,     self._on_delete_up,     up=True)
-        inp.add_listener(pygame.K_LEFT,       self._on_left,          repeat=True)
-        inp.add_listener(pygame.K_RIGHT,      self._on_right,         repeat=True)
+        inp.add_listener(pygame.K_LEFT,        self._on_left_down)
+        inp.add_listener(pygame.K_LEFT,        self._on_left_up,   up=True)
+        inp.add_listener(pygame.K_RIGHT,       self._on_right_down)
+        inp.add_listener(pygame.K_RIGHT,       self._on_right_up,  up=True)
         inp.add_listener(pygame.K_HOME,       self._on_home)
         inp.add_listener(pygame.K_END,        self._on_end)
         inp.add_listener(pygame.K_RETURN,     self.unfocus)
@@ -345,8 +362,10 @@ class TextCaseObject:
         inp.remove_listener(pygame.K_BACKSPACE,  self._on_backspace_up)
         inp.remove_listener(pygame.K_DELETE,     self._on_delete_down)
         inp.remove_listener(pygame.K_DELETE,     self._on_delete_up)
-        inp.remove_listener(pygame.K_LEFT,       self._on_left)
-        inp.remove_listener(pygame.K_RIGHT,      self._on_right)
+        inp.remove_listener(pygame.K_LEFT,       self._on_left_down)
+        inp.remove_listener(pygame.K_LEFT,       self._on_left_up)
+        inp.remove_listener(pygame.K_RIGHT,      self._on_right_down)
+        inp.remove_listener(pygame.K_RIGHT,      self._on_right_up)
         inp.remove_listener(pygame.K_HOME,       self._on_home)
         inp.remove_listener(pygame.K_END,        self._on_end)
         inp.remove_listener(pygame.K_RETURN,     self.unfocus)
@@ -402,11 +421,31 @@ class TextCaseObject:
             self._update_text_offset()
             self._callback(self._text)
 
-    def _on_left(self):
+    def _on_left_down(self):
+        self._do_left()
+        self._held_action  = 'left'
+        self._held_timer   = 0.0
+        self._held_initial = True
+
+    def _on_left_up(self):
+        if self._held_action == 'left':
+            self._held_action = None
+
+    def _on_right_down(self):
+        self._do_right()
+        self._held_action  = 'right'
+        self._held_timer   = 0.0
+        self._held_initial = True
+
+    def _on_right_up(self):
+        if self._held_action == 'right':
+            self._held_action = None
+
+    def _do_left(self):
         self._cursor_pos = max(0, self._cursor_pos - 1)
         self._update_text_offset()
 
-    def _on_right(self):
+    def _do_right(self):
         self._cursor_pos = min(len(self._text), self._cursor_pos + 1)
         self._update_text_offset()
 
@@ -496,6 +535,10 @@ class TextCaseObject:
                     self._do_backspace()
                 elif self._held_action == 'delete':
                     self._do_delete()
+                elif self._held_action == 'left':
+                    self._do_left()
+                elif self._held_action == 'right':
+                    self._do_right()
 
         # clignotement du cursor
         if self._focused:
