@@ -11,9 +11,9 @@ class TextObject:
             self,
             x: Real = -1,
             y: Real = -1,
-            text: str = "",
             anchor: str = "topleft",
 
+            text: str = "",
             font: pygame.font.Font | str = None,
             font_path: str = None,
             font_size: int = 24,
@@ -44,9 +44,9 @@ class TextObject:
         Args:
             x (Real) : coordonnée x
             y (Real) : coordonnée y
-            text (str) : texte à afficher
             anchor (str, optional) : point d'ancrage ("topleft", "center", "midtop", etc.)
 
+            text (str) : texte à afficher
             font (Font, optional) : police du texte
             font_path (str, optional) : chemin vers la police
             font_size (int, optional) : taille de la police

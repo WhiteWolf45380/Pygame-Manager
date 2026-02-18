@@ -16,6 +16,7 @@ class TextCaseObject:
             y: Real = -1,
             width: Real = -1,
             height: Real = -1,
+            anchor: str = "topleft",
 
             text: str = "",
             placeholder: str = None,
@@ -49,10 +50,11 @@ class TextCaseObject:
         ):
         """
         Args:
-            x (Real) : coordonnée de la gauche
-            y (Real) : coordonnée du haut
+            x (Real) : coordonnée x
+            y (Real) : coordonnée y
             width (Real) : largeur
             height (Real) : hauteur
+            anchor (str, optional) : point d'ancrage ("topleft", "center", "midtop", etc.)
 
             text (str, optional) : texte initial
             placeholder (str, optional) : texte affiché quand la zone est vide
@@ -89,6 +91,7 @@ class TextCaseObject:
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
         if not isinstance(width, Real): _raise_error(self, '__init__', 'Invalid width argument')
         if not isinstance(height, Real): _raise_error(self, '__init__', 'Invalid height argument')
+        if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
         if placeholder is not None and not isinstance(placeholder, str): _raise_error(self, '__init__', 'Invalid placeholder argument')
         if max_length is not None and (not isinstance(max_length, int) or max_length <= 0): _raise_error(self, '__init__', 'Invalid max_length argument')
@@ -117,11 +120,15 @@ class TextCaseObject:
         # auto-registration
         context.ui._append(self)
 
-        # position et taille
+        # anchor + position et taille
         width = min(1920, max(5, width))
         height = min(1080, max(5, height))
-        self._rect = pygame.Rect(x, y, width, height)
+        self._anchor = anchor
         self._local_rect = pygame.Rect(0, 0, width, height)
+        # on crée un rect temporaire topleft puis on applique l'anchor
+        tmp = pygame.Rect(0, 0, width, height)
+        setattr(tmp, anchor, (x, y))
+        self._rect = tmp
 
         # texte
         self._text = text
@@ -138,7 +145,6 @@ class TextCaseObject:
         if isinstance(font, pygame.font.Font):
             self._font = font
         else:
-            # font est str (sysfont) ou None → même logique que TextObject
             self._sysfont = font if isinstance(font, str) else None
             if self._font_path is not None:
                 try:
@@ -260,6 +266,10 @@ class TextCaseObject:
         if not callable(callback):
             _raise_error(self, 'set_callback', 'Invalid callback argument')
         self._callback = callback
+
+    def set_position(self, x: Real, y: Real):
+        """Modifie la position (selon l'anchor)"""
+        setattr(self._rect, self._anchor, (x, y))
 
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
