@@ -58,7 +58,7 @@ class TextCaseObject:
             placeholder (str, optional) : texte affiché quand la zone est vide
             max_length (int, optional) : nombre maximum de caractères
 
-            font (Font, optional) : police du texte
+            font (Font | str, optional) : police pygame ou nom de sysfont
             font_path (str, optional) : chemin vers la police
             font_size (int, optional) : taille de la police
             font_color (Color, optional) : couleur du texte
@@ -82,6 +82,7 @@ class TextCaseObject:
 
             callback (callable, optional) : appelé à chaque modification du texte, reçoit le texte actuel
             panel (object, optional) : panel maître
+            zorder (int, optional) : ordre de rendu
         """
         # vérifications
         if not isinstance(x, Real): _raise_error(self, '__init__', 'Invalid x argument')
@@ -91,7 +92,8 @@ class TextCaseObject:
         if not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
         if placeholder is not None and not isinstance(placeholder, str): _raise_error(self, '__init__', 'Invalid placeholder argument')
         if max_length is not None and (not isinstance(max_length, int) or max_length <= 0): _raise_error(self, '__init__', 'Invalid max_length argument')
-        if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
+        if font is not None and not isinstance(font, (str, pygame.font.Font)): _raise_error(self, '__init__', 'Invalid font argument')
+        if isinstance(font, str) and font not in pygame.font.get_fonts(): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
         if font_size is not None and not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
         font_color = _to_color(font_color, method='__init__')
@@ -115,13 +117,6 @@ class TextCaseObject:
         # auto-registration
         context.ui._append(self)
 
-        # zorder
-        self._zorder = 0
-
-        # surface
-        self._surface = None
-        self._surface_rect = None
-
         # position et taille
         width = min(1920, max(5, width))
         height = min(1080, max(5, height))
@@ -140,13 +135,24 @@ class TextCaseObject:
         self._font_color = font_color
         self._font_color_placeholder = font_color_placeholder
 
-        if font is None:
-            try:
-                self._font = pygame.font.Font(self._font_path, self._font_size)
-            except Exception as _:
-                self._font = pygame.font.Font(None, self._font_size)
-        else:
+        if isinstance(font, pygame.font.Font):
             self._font = font
+        else:
+            # font est str (sysfont) ou None → même logique que TextObject
+            self._sysfont = font if isinstance(font, str) else None
+            if self._font_path is not None:
+                try:
+                    self._font = pygame.font.Font(self._font_path, self._font_size)
+                except Exception:
+                    if self._sysfont is not None:
+                        self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                    else:
+                        self._font = pygame.font.Font(None, self._font_size)
+            else:
+                if self._sysfont is not None:
+                    self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                else:
+                    self._font = pygame.font.Font(None, self._font_size)
 
         # background
         self._filling = filling
@@ -181,10 +187,10 @@ class TextCaseObject:
         # paramètres dynamiques
         self._visible = True
         self._focused = False
-    
-    def _init(self):
-        """Initialisation sécurisée"""
-        context.inputs.add_lister(1, self.unfocus(), args=[self], priority=1)
+
+        # surface : pré-render pour éviter un crash si draw() est appelé avant update()
+        self._surface = self._render_frame()
+        self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
 
     # ======================================== GETTERS ========================================
     @property
@@ -196,11 +202,6 @@ class TextCaseObject:
     def panel(self) -> object:
         """Renvoie le panel maître"""
         return self._panel
-    
-    @property
-    def zorder(self) -> int:
-        """Renvoie la coordonnée z"""
-        return self._zorder
 
     @property
     def visible(self) -> bool:
@@ -384,6 +385,7 @@ class TextCaseObject:
         """Actualisation par frame"""
         if not self._visible:
             return
+
         # clignotement du cursor
         if self._focused:
             self._cursor_timer += context.time.dt
@@ -394,7 +396,6 @@ class TextCaseObject:
             self._cursor_visible = True
             self._cursor_timer = 0.0
 
-        # pas de preloading : le texte change, on re-render chaque frame
         self._surface = self._render_frame()
         self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
 
@@ -412,7 +413,7 @@ class TextCaseObject:
     def left_click(self, up: bool = False):
         """Clic gauche"""
         if not up:
-            self.focuse()
+            self.focus()
 
     def right_click(self, up: bool = False):
         """Clic droit"""
