@@ -134,7 +134,7 @@ class Panel:
 
     def is_active(self) -> bool:
         """Vérifie que le panel soit actif"""
-        return context.panels.is_active(self.name)
+        return context.panels.is_active(self._name)
 
     def switch(self, to_activate: str, pruning: bool = True):
         """

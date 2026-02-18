@@ -233,6 +233,10 @@ class PanelsManager:
         """
         Réordonne un panel dans la liste des successeurs de son predecessor.
 
+        draw() itère en reversed() → index 0 = au-dessus (dessiné en dernier).
+        "forward" / "front" rapprochent donc du début de la liste (index 0).
+        "backward" / "back"  rapprochent de la fin (dessiné en premier = en dessous).
+
         Args:
             name (str) : panel à réordoner
             direction (str) : "forward", "backward", "front", "back", "index"
@@ -250,21 +254,26 @@ class PanelsManager:
             return
 
         i = successors.index(name)
-        if direction == "forward":
-            if i < len(successors) - 1:
-                successors[i], successors[i + 1] = successors[i + 1], successors[i]
 
-        elif direction == "backward":
+        if direction == "forward":
+            # Vers le début = au-dessus
             if i > 0:
                 successors[i], successors[i - 1] = successors[i - 1], successors[i]
 
-        elif direction == "front":
-            successors.remove(name)
-            successors.append(name)
+        elif direction == "backward":
+            # Vers la fin = en dessous
+            if i < len(successors) - 1:
+                successors[i], successors[i + 1] = successors[i + 1], successors[i]
 
-        elif direction == "back":
+        elif direction == "front":
+            # Tout devant = index 0
             successors.remove(name)
             successors.insert(0, name)
+
+        elif direction == "back":
+            # Tout derrière = fin de liste
+            successors.remove(name)
+            successors.append(name)
 
         elif direction == "index":
             if index is None:
