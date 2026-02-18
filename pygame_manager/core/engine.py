@@ -2,7 +2,6 @@ import pygame
 from .. import context
 from pygame_manager import managers
 
-
 class Engine:
     def __init__(self):
         # initialisation minimale
@@ -21,13 +20,12 @@ class Engine:
         self._initialized = False
         self._running = False
 
-    def init(self):
-        """
-        Initialise Pygame et lance le loader progressif si fourni
+    def _raise_error(obj: object, method: str, text: str):
+        """Lève une erreur"""
+        raise RuntimeError(f"[{obj.__class__.__name__}].{method} : {text}")
 
-        Args:
-            loader (callable) : fonction d'initialisation supplémentaire (mettre des yield entre les étapes)
-        """
+    def init(self):
+        """Initialise Pygame Manager"""
         if self._initialized: # déjà initialisé
             return self
 
@@ -45,44 +43,51 @@ class Engine:
 
         return self
 
-    def run(self, update):
+    def run(self, update, final: callable = None):
         """Lance la boucle d'éxécution"""
         # Vérifications
         if not self._initialized:
             self._raise_error("run", "Engine not initialized. Call init() first.")
         if not callable(update):
             self._raise_error("run", "update must be callable")
+        if final is not None and not callable(final):
+            self._raise_error("run", "final must be callable")
 
         # Boucle principale
         self._running = True
-        while self._running:
-            self.time.tick()
+        try:
+            while self._running:
+                self.time.tick()
 
-            # Permet l'affichage à l'écran
-            with self.screen:
-                # Actualisation réseau
-                self.network.update()
+                # Permet l'affichage à l'écran
+                with self.screen:
+                    # Actualisation réseau
+                    self.network.update()
 
-                # Entrées utilisateur
-                self.mouse.update()
-                self.inputs.check_all()
+                    # Entrées utilisateur
+                    self.mouse.update()
+                    self.inputs.check_all()
 
-                # Actualisation
-                update()
-                self.states.update()
-                self.panels.update()
-                self.entities.update()
-                self.ui.update()
+                    # Actualisation
+                    update()
+                    self.states.update()
+                    self.panels.update()
+                    self.entities.update()
+                    self.ui.update()
 
-                # Affichage
-                self.panels.draw_back()
-                self.entities.draw()
-                self.panels.draw_between()
-                self.ui.draw()
-                self.panels.draw()
-
-        # Fin d'éxécution
-        self._end()
+                    # Affichage
+                    self.panels.draw_back()
+                    self.entities.draw()
+                    self.panels.draw_between()
+                    self.ui.draw()
+                    self.panels.draw()
+        finally:
+            try:
+                if final is not None:
+                    final()
+            finally:
+                # Fin d'éxécution
+                self.end()
 
     def stop(self):
         """Mets fin à la boucle d'éxécution"""
