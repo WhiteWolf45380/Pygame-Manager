@@ -8,8 +8,14 @@ class TextCaseObject:
 
     Permet la saisie de texte par l'utilisateur.
     Supporte le focus, le cursor clignotant, et les états visuels default / hover / focus.
+    Gestion des entrées entièrement automatique via context.inputs.
     S'enregistre et s'actualise automatiquement en tant qu'objet lors de l'instanciation.
     """
+
+    # Délai initial avant répétition (secondes) et intervalle entre répétitions
+    _HOLD_INITIAL_DELAY  = 0.4
+    _HOLD_REPEAT_INTERVAL = 0.05
+
     def __init__(
             self,
             x: Real = -1,
@@ -125,7 +131,6 @@ class TextCaseObject:
         height = min(1080, max(5, height))
         self._anchor = anchor
         self._local_rect = pygame.Rect(0, 0, width, height)
-        # on crée un rect temporaire topleft puis on applique l'anchor
         tmp = pygame.Rect(0, 0, width, height)
         setattr(tmp, anchor, (x, y))
         self._rect = tmp
@@ -194,75 +199,74 @@ class TextCaseObject:
         self._visible = True
         self._focused = False
 
-        # surface : pré-render pour éviter un crash si draw() est appelé avant update()
+        # scroll horizontal (blit_x du texte : padding si ça rentre, sinon ancré à droite)
+        self._text_blit_x = self._padding
+
+        # système de répétition avec cooldown pour backspace/delete
+        self._held_action  = None   # 'backspace' | 'delete' | None
+        self._held_timer   = 0.0
+        self._held_initial = True   # True = on attend le délai initial, False = répétition
+
+        # pré-render
+        self._update_text_offset()
         self._surface = self._render_frame()
         self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
 
     # ======================================== GETTERS ========================================
     @property
     def zorder(self) -> int:
-        """Renvoie le zorder"""
         return self._zorder
 
     @property
     def panel(self) -> object:
-        """Renvoie le panel maître"""
         return self._panel
 
     @property
     def visible(self) -> bool:
-        """Vérifie la visibilité"""
         return self._visible
 
     @property
     def rect(self) -> pygame.Rect:
-        """Renvoie le rect pygame"""
         return self._rect.copy()
 
     @property
     def text(self) -> str:
-        """Renvoie le texte actuel"""
         return self._text
 
     @property
     def focused(self) -> bool:
-        """Vérifie que la zone soit en focus"""
         return self._focused
 
     @property
     def callback(self) -> callable:
-        """Renvoie le callback"""
         return self._callback
 
     # ======================================== SETTERS ========================================
     @zorder.setter
     def zorder(self, value: int):
-        """Fixe le zorder"""
         if not isinstance(value, int):
             _raise_error(self, 'set_zorder', 'Invalid zorder argument')
         self._zorder = value
 
     @visible.setter
     def visible(self, value: bool):
-        """Fixe la visibilité"""
         if not isinstance(value, bool):
             _raise_error(self, 'set_visible', 'Invalid value argument')
         self._visible = value
 
     @text.setter
     def text(self, value: str):
-        """Fixe le texte"""
         if not isinstance(value, str):
             _raise_error(self, 'set_text', 'Invalid value argument')
         if self._max_length is not None:
             value = value[:self._max_length]
         self._text = value
         self._cursor_pos = len(value)
+        self._update_text_offset()
         self._callback(self._text)
 
     @callback.setter
     def callback(self, callback: callable):
-        """Fixe le callback"""
         if not callable(callback):
             _raise_error(self, 'set_callback', 'Invalid callback argument')
         self._callback = callback
@@ -271,78 +275,158 @@ class TextCaseObject:
         """Modifie la position (selon l'anchor)"""
         setattr(self._rect, self._anchor, (x, y))
 
+    # ======================================== SCROLL TEXTE ========================================
+    def _update_text_offset(self):
+        """
+        Si le texte dépasse la zone disponible, on fixe son bord droit
+        sur le bord droit de la cellule (rect.width - padding).
+        blit_x = rect.width - padding - total_width  (valeur négative = débordement à gauche)
+        Si le texte rentre, blit_x = padding (aligné à gauche).
+        """
+        available = self._rect.width - 2 * self._padding
+        total_width = self._font.size(self._text)[0]
+        if total_width <= available:
+            self._text_blit_x = self._padding
+        else:
+            # bord droit du texte = rect.width - padding
+            self._text_blit_x = self._rect.width - self._padding - total_width
+
     # ======================================== PREDICATS ========================================
     def is_hovered(self) -> bool:
-        """Vérifie que la zone soit survolée"""
         return context.ui.get_hovered() == self
 
     @property
     def hovered(self) -> bool:
-        """Vérifie que la zone soit survolée"""
         return context.ui.get_hovered() == self
 
     def collidemouse(self) -> bool:
-        """Vérifie que la souris soit sur la zone"""
         mouse_pos = self._panel.mouse_pos if self._panel is not None else context.mouse.get_pos()
         return self._rect.collidepoint(mouse_pos)
 
     # ======================================== INTERACTION ========================================
     def focus(self):
-        """Met la zone en focus"""
+        """Met la zone en focus et enregistre les listeners clavier/souris"""
+        if self._focused:
+            return
         self._focused = True
         pygame.key.start_text_input()
+        self._register_input_listeners()
 
     def unfocus(self):
-        """Retire le focus"""
-        self._focused = False
-        pygame.key.stop_text_input()
-
-    def handle_event(self, event: pygame.event.Event):
-        """
-        Traite un événement pygame (à appeler depuis la boucle d'événements principale)
-
-        Args:
-            event (pygame.event.Event) : événement à traiter
-        """
+        """Retire le focus et supprime les listeners clavier/souris"""
         if not self._focused:
             return
+        self._focused = False
+        self._held_action = None
+        pygame.key.stop_text_input()
+        self._unregister_input_listeners()
 
-        if event.type == pygame.TEXTINPUT:
-            if self._max_length is not None and len(self._text) >= self._max_length:
-                return
-            self._text = self._text[:self._cursor_pos] + event.text + self._text[self._cursor_pos:]
-            self._cursor_pos += len(event.text)
+    # ======================================== LISTENERS AUTO ========================================
+    def _register_input_listeners(self):
+        inp = context.inputs
+        inp.add_listener(pygame.TEXTINPUT,    self._on_text_input)
+        inp.add_listener(pygame.K_BACKSPACE,  self._on_backspace_down)
+        inp.add_listener(pygame.K_BACKSPACE,  self._on_backspace_up,  up=True)
+        inp.add_listener(pygame.K_DELETE,     self._on_delete_down)
+        inp.add_listener(pygame.K_DELETE,     self._on_delete_up,     up=True)
+        inp.add_listener(pygame.K_LEFT,       self._on_left,          repeat=True)
+        inp.add_listener(pygame.K_RIGHT,      self._on_right,         repeat=True)
+        inp.add_listener(pygame.K_HOME,       self._on_home)
+        inp.add_listener(pygame.K_END,        self._on_end)
+        inp.add_listener(pygame.K_RETURN,     self.unfocus)
+        inp.add_listener(pygame.K_KP_ENTER,   self.unfocus)
+        inp.add_listener(pygame.K_ESCAPE,     self.unfocus)
+        inp.add_listener(inp.MOUSELEFT,       self._on_click_outside)
+
+    def _unregister_input_listeners(self):
+        inp = context.inputs
+        inp.remove_listener(pygame.TEXTINPUT,   self._on_text_input)
+        inp.remove_listener(pygame.K_BACKSPACE,  self._on_backspace_down)
+        inp.remove_listener(pygame.K_BACKSPACE,  self._on_backspace_up)
+        inp.remove_listener(pygame.K_DELETE,     self._on_delete_down)
+        inp.remove_listener(pygame.K_DELETE,     self._on_delete_up)
+        inp.remove_listener(pygame.K_LEFT,       self._on_left)
+        inp.remove_listener(pygame.K_RIGHT,      self._on_right)
+        inp.remove_listener(pygame.K_HOME,       self._on_home)
+        inp.remove_listener(pygame.K_END,        self._on_end)
+        inp.remove_listener(pygame.K_RETURN,     self.unfocus)
+        inp.remove_listener(pygame.K_KP_ENTER,   self.unfocus)
+        inp.remove_listener(pygame.K_ESCAPE,     self.unfocus)
+        inp.remove_listener(inp.MOUSELEFT,       self._on_click_outside)
+
+    # ---- callbacks internes ----
+
+    def _on_text_input(self):
+        event = context.inputs._current_event
+        if event is None or not hasattr(event, 'text'):
+            return
+        if self._max_length is not None and len(self._text) >= self._max_length:
+            return
+        self._text = self._text[:self._cursor_pos] + event.text + self._text[self._cursor_pos:]
+        self._cursor_pos += len(event.text)
+        self._update_text_offset()
+        self._callback(self._text)
+
+    # backspace : pression initiale + démarrage du cooldown
+    def _on_backspace_down(self):
+        self._do_backspace()
+        self._held_action  = 'backspace'
+        self._held_timer   = 0.0
+        self._held_initial = True
+
+    def _on_backspace_up(self):
+        if self._held_action == 'backspace':
+            self._held_action = None
+
+    # delete : idem
+    def _on_delete_down(self):
+        self._do_delete()
+        self._held_action  = 'delete'
+        self._held_timer   = 0.0
+        self._held_initial = True
+
+    def _on_delete_up(self):
+        if self._held_action == 'delete':
+            self._held_action = None
+
+    def _do_backspace(self):
+        if self._cursor_pos > 0:
+            self._text = self._text[:self._cursor_pos - 1] + self._text[self._cursor_pos:]
+            self._cursor_pos -= 1
+            self._update_text_offset()
             self._callback(self._text)
 
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_BACKSPACE:
-                if self._cursor_pos > 0:
-                    self._text = self._text[:self._cursor_pos - 1] + self._text[self._cursor_pos:]
-                    self._cursor_pos -= 1
-                    self._callback(self._text)
-            elif event.key == pygame.K_DELETE:
-                if self._cursor_pos < len(self._text):
-                    self._text = self._text[:self._cursor_pos] + self._text[self._cursor_pos + 1:]
-                    self._callback(self._text)
-            elif event.key == pygame.K_LEFT:
-                self._cursor_pos = max(0, self._cursor_pos - 1)
-            elif event.key == pygame.K_RIGHT:
-                self._cursor_pos = min(len(self._text), self._cursor_pos + 1)
-            elif event.key == pygame.K_HOME:
-                self._cursor_pos = 0
-            elif event.key == pygame.K_END:
-                self._cursor_pos = len(self._text)
-            elif event.key == pygame.K_RETURN:
-                self.unfocus()
+    def _do_delete(self):
+        if self._cursor_pos < len(self._text):
+            self._text = self._text[:self._cursor_pos] + self._text[self._cursor_pos + 1:]
+            self._update_text_offset()
+            self._callback(self._text)
+
+    def _on_left(self):
+        self._cursor_pos = max(0, self._cursor_pos - 1)
+        self._update_text_offset()
+
+    def _on_right(self):
+        self._cursor_pos = min(len(self._text), self._cursor_pos + 1)
+        self._update_text_offset()
+
+    def _on_home(self):
+        self._cursor_pos = 0
+        self._update_text_offset()
+
+    def _on_end(self):
+        self._cursor_pos = len(self._text)
+        self._update_text_offset()
+
+    def _on_click_outside(self):
+        if not self.collidemouse():
+            self.unfocus()
 
     # ======================================== DESSIN ========================================
     def _get_cursor_x(self) -> int:
-        """Calcule la position x du cursor en pixels (coordonnées locales)"""
-        if self._cursor_pos == 0:
-            return self._padding
-        text_before = self._text[:self._cursor_pos]
-        rendered = self._font.render(text_before, True, self._font_color)
-        return self._padding + rendered.get_width()
+        """Position x locale du curseur (en suivant le blit_x du texte)"""
+        cursor_x_in_text = self._font.size(self._text[:self._cursor_pos])[0]
+        return self._text_blit_x + cursor_x_in_text
 
     def _render_frame(self) -> pygame.Surface:
         """Génère la surface pour la frame courante selon l'état actuel"""
@@ -364,37 +448,54 @@ class TextCaseObject:
             pygame.draw.rect(surface, bg_color, self._local_rect, border_radius=self._border_radius)
 
         # texte ou placeholder
+        available = self._rect.width - 2 * self._padding
         if self._text:
             text_surface = self._font.render(self._text, True, self._font_color)
-        elif self._placeholder is not None:
-            text_surface = self._font.render(self._placeholder, True, self._font_color_placeholder)
-        else:
-            text_surface = None
-
-        if text_surface is not None:
             text_y = (self._rect.height - text_surface.get_height()) // 2
-            surface.blit(text_surface, (self._padding, text_y))
+            surface.blit(text_surface, (self._text_blit_x, text_y))
+        elif self._placeholder is not None:
+            ph_surface = self._font.render(self._placeholder, True, self._font_color_placeholder)
+            text_y = (self._rect.height - ph_surface.get_height()) // 2
+            surface.blit(ph_surface, (self._padding, text_y))
 
-        # cursor
+        # cursor (dessiné seulement dans la zone visible)
         if self._focused and self._cursor_visible:
             cursor_x = self._get_cursor_x()
-            pygame.draw.line(surface, self._cursor_color, (cursor_x, self._padding), (cursor_x, self._rect.height - self._padding), 2)
+            if self._padding <= cursor_x <= self._rect.width - self._padding:
+                pygame.draw.line(surface, self._cursor_color,
+                                 (cursor_x, self._padding),
+                                 (cursor_x, self._rect.height - self._padding), 2)
 
-        # bordure
+        # bordure (par-dessus tout pour couvrir les débordements éventuels)
         if self._border_width > 0:
-            pygame.draw.rect(surface, bd_color, self._local_rect, self._border_width, border_radius=self._border_radius)
+            pygame.draw.rect(surface, bd_color, self._local_rect, self._border_width,
+                             border_radius=self._border_radius)
 
         return surface
 
     # ======================================== METHODES DYNAMIQUES ========================================
     def kill(self):
         """Détruit l'objet"""
+        if self._focused:
+            self.unfocus()
         context.ui._remove(self)
 
     def update(self):
         """Actualisation par frame"""
         if not self._visible:
             return
+
+        # répétition avec cooldown pour backspace / delete
+        if self._held_action is not None:
+            self._held_timer += context.time.dt
+            threshold = self._HOLD_INITIAL_DELAY if self._held_initial else self._HOLD_REPEAT_INTERVAL
+            if self._held_timer >= threshold:
+                self._held_timer = 0.0
+                self._held_initial = False
+                if self._held_action == 'backspace':
+                    self._do_backspace()
+                elif self._held_action == 'delete':
+                    self._do_delete()
 
         # clignotement du cursor
         if self._focused:
@@ -421,11 +522,9 @@ class TextCaseObject:
         surface.blit(self._surface, self._surface_rect)
 
     def left_click(self, up: bool = False):
-        """Clic gauche"""
         if not up:
             self.focus()
 
     def right_click(self, up: bool = False):
-        """Clic droit"""
         if not up:
             self.unfocus()

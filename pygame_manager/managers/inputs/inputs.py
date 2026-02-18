@@ -32,6 +32,9 @@ class InputsManager:
         self._all_listeners = []        # listeners combos (all)
         self._triggered_combos = set()  # combos déjà déclenchés
 
+        # événement courant (accessible aux callbacks via context.inputs._current_event)
+        self._current_event = None
+
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
         """
@@ -121,8 +124,6 @@ class InputsManager:
                 l for l in self._listeners[event_id]
                 if l["callback"] != callback
             ]
-            
-            # Nettoyer l'entrée si elle est vide
             if not self._listeners[event_id]:
                 del self._listeners[event_id]
 
@@ -217,24 +218,19 @@ class InputsManager:
         Args :
             callback (callable) : fonction callback à supprimer partout
         """
-        # Suppression des listeners simples
         for event_id in list(self._listeners.keys()):
             self._listeners[event_id] = [
                 l for l in self._listeners[event_id]
                 if l["callback"] != callback
             ]
-            
-            # Nettoyer l'entrée si elle est vide
             if not self._listeners[event_id]:
                 del self._listeners[event_id]
 
-        # Suppression des listeners any
         self._any_listeners = [
             l for l in self._any_listeners
             if l["callback"] != callback
         ]
 
-        # Suppression des listeners all
         self._all_listeners = [
             l for l in self._all_listeners
             if l["callback"] != callback
@@ -249,8 +245,11 @@ class InputsManager:
         Args :
             event (pygame.event.Event) : événement pygame à traiter
         """
+        # stocké avant d'appeler les callbacks pour qu'ils puissent y accéder
+        self._current_event = event
+
         event_id = self.get_id(event)
-        down = event.type in [pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN]
+        down = event.type in [pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN, pygame.TEXTINPUT]
         up = event.type in [pygame.MOUSEBUTTONUP, pygame.KEYUP]
 
         if up:
@@ -279,7 +278,6 @@ class InputsManager:
         for listener in to_remove:
             self._listeners[event_id].remove(listener)
             
-        # Nettoyer l'entrée si elle est vide
         if event_id in self._listeners and not self._listeners[event_id]:
             del self._listeners[event_id]
 
@@ -302,6 +300,8 @@ class InputsManager:
 
             for listener in to_remove:
                 self._any_listeners.remove(listener)
+
+        self._current_event = None
 
     def _is_currently_pressed(self, event_id: int) -> bool:
         """Vérifie si une touche est pressée"""
