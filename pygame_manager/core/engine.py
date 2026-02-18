@@ -1,7 +1,9 @@
+# ======================================== IMPORTS ========================================
 import pygame
 from .. import context
 from pygame_manager import managers
 
+# ======================================== MOTEUR ========================================
 class Engine:
     def __init__(self):
         # initialisation minimale
@@ -20,10 +22,12 @@ class Engine:
         self._initialized = False
         self._running = False
 
+    # ======================================== METHODES INTERNES ========================================
     def _raise_error(obj: object, method: str, text: str):
         """Lève une erreur"""
         raise RuntimeError(f"[{obj.__class__.__name__}].{method} : {text}")
 
+    # ======================================== INITIALISATION ========================================
     def init(self):
         """Initialise Pygame Manager"""
         if self._initialized: # déjà initialisé
@@ -43,8 +47,15 @@ class Engine:
 
         return self
 
-    def run(self, update, final: callable = None):
-        """Lance la boucle d'éxécution"""
+    # ======================================== BOUCLE PRINCIPALE ========================================
+    def run(self, update: callable, final: callable = None):
+        """
+        Lance la boucle d'éxécution
+
+        Args:
+            update (callable): méthode d'actualisation fondamentale
+            final (callable, optional): méthode appelé lors de l'arrêt du programme
+        """
         # Vérifications
         if not self._initialized:
             self._raise_error("run", "Engine not initialized. Call init() first.")
@@ -89,6 +100,7 @@ class Engine:
                 # Fin d'éxécution
                 self.end()
 
+    # ======================================== FIN DE VIE ========================================
     def stop(self):
         """Mets fin à la boucle d'éxécution"""
         if self._running:
