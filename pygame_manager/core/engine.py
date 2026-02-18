@@ -98,7 +98,7 @@ class Engine:
                     final()
             finally:
                 # Fin d'éxécution
-                self.end()
+                self._end()
 
     # ======================================== FIN DE VIE ========================================
     def stop(self):
