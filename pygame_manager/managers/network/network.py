@@ -31,6 +31,7 @@ class NetworkManager:
         self._lock = threading.Lock()
 
         self._latest_data = None
+        self._last_known_data = None  # Persistant côté client, non effacé par receive()
         self._role_client: str | None = None
         self._role_lock = threading.Lock()
 
@@ -252,6 +253,7 @@ class NetworkManager:
             self._role_client = None
 
         self._latest_data = None
+        self._last_known_data = None
         self._is_host = False
         self._lobby_info = {}
 
@@ -412,6 +414,7 @@ class NetworkManager:
                     self._clients_info[client] = {
                         "role": role,
                         "last_data": None,
+                        "last_known": None,  # Persistant, non effacé par receive()
                         "last_seen": time.time()
                     }
 
@@ -511,6 +514,33 @@ class NetworkManager:
                 self._clients.rotate(-1)
         return None
 
+    def get_last_infos(self, role: str = "player") -> dict | list[dict] | None:
+        """
+        Récupère le dernier message connu SANS le consommer
+
+        Pour le host: renvoie une liste des dernières données connues de
+        tous les clients correspondant au rôle demandé.
+        Pour le client: renvoie les dernières données reçues du host.
+
+        Args:
+            role: Rôle des clients à interroger côté host ("player" ou "spectator").
+                  Ignoré côté client.
+
+        Returns:
+            - Client : dict ou None
+            - Host   : liste de dict (une entrée par client du rôle, None si pas encore reçu)
+        """
+        if not self._is_host:
+            with self._lock:
+                return self._last_known_data
+
+        with self._lock:
+            return [
+                info["last_known"]
+                for info in self._clients_info.values()
+                if info["role"] == role
+            ]
+
     # ========================= RECEIVE LOOPS =========================
     def _receive_loop_client(self):
         """Thread de réception côté client (usage interne)
@@ -551,6 +581,7 @@ class NetworkManager:
                         else:
                             with self._lock:
                                 self._latest_data = msg
+                                self._last_known_data = msg  # Mise à jour persistante
 
                     except json.JSONDecodeError:
                         continue
@@ -614,6 +645,7 @@ class NetworkManager:
                             if info:
                                 if info["role"] == "player":
                                     info["last_data"] = data
+                                info["last_known"] = data  # Mise à jour persistante
                                 info["last_seen"] = time.time()
                     except json.JSONDecodeError:
                         continue
