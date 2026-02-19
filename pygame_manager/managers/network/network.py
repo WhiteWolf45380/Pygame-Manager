@@ -31,7 +31,7 @@ class NetworkManager:
         self._lock = threading.Lock()
 
         self._latest_data = None
-        self._last_known_data = None  # Persistant côté client, non effacé par receive()
+        self._last_infos: dict | None = None  # Dernier dict passé à disconnect()
         self._role_client: str | None = None
         self._role_lock = threading.Lock()
 
@@ -200,6 +200,8 @@ class NetworkManager:
         infos["type"] = "disconnect"
         infos["reason"] = "host_closed" if self._is_host else "client_closed"
 
+        self._last_infos = infos  # Sauvegarde avant reset
+
         if self._is_host and was_connected:
             try:
                 self.send(infos)
@@ -253,7 +255,7 @@ class NetworkManager:
             self._role_client = None
 
         self._latest_data = None
-        self._last_known_data = None
+        self._last_infos = None
         self._is_host = False
         self._lobby_info = {}
 
@@ -414,7 +416,6 @@ class NetworkManager:
                     self._clients_info[client] = {
                         "role": role,
                         "last_data": None,
-                        "last_known": None,  # Persistant, non effacé par receive()
                         "last_seen": time.time()
                     }
 
@@ -478,7 +479,6 @@ class NetworkManager:
                     except:
                         pass
         else:
-            # Client : envoyer au serveur
             try:
                 self._tcp_socket.sendall(msg)
             except (ConnectionResetError, BrokenPipeError, OSError):
@@ -514,40 +514,17 @@ class NetworkManager:
                 self._clients.rotate(-1)
         return None
 
-    def get_last_infos(self, role: str = "player") -> dict | list[dict] | None:
-        """
-        Récupère le dernier message connu SANS le consommer
-
-        Pour le host: renvoie une liste des dernières données connues de
-        tous les clients correspondant au rôle demandé.
-        Pour le client: renvoie les dernières données reçues du host.
-
-        Args:
-            role: Rôle des clients à interroger côté host ("player" ou "spectator").
-                  Ignoré côté client.
+    def get_last_infos(self) -> dict | None:
+        """Récupère le dernier dict passé à disconnect()
 
         Returns:
-            - Client : dict ou None
-            - Host   : liste de dict (une entrée par client du rôle, None si pas encore reçu)
+            Le dict infos de la dernière déconnexion, ou None si pas encore déconnecté
         """
-        if not self._is_host:
-            with self._lock:
-                return self._last_known_data
-
-        with self._lock:
-            return [
-                info["last_known"]
-                for info in self._clients_info.values()
-                if info["role"] == role
-            ]
+        return self._last_infos
 
     # ========================= RECEIVE LOOPS =========================
     def _receive_loop_client(self):
         """Thread de réception côté client (usage interne)
-        
-        Lit continuellement les données du serveur, gère le buffering,
-        parse le JSON, et stocke les messages reçus. Se termine proprement
-        en cas de déconnexion.
         """
         buffer = ""
         while self._connected:
@@ -575,13 +552,13 @@ class NetworkManager:
                             self._game_started = True
 
                         elif msg.get("type") == "disconnect":
+                            self._last_infos = msg
                             print(f"[Network] Host closing: {msg.get('reason', 'unknown')}")
                             break
 
                         else:
                             with self._lock:
                                 self._latest_data = msg
-                                self._last_known_data = msg  # Mise à jour persistante
 
                     except json.JSONDecodeError:
                         continue
@@ -601,10 +578,6 @@ class NetworkManager:
 
     def _receive_loop_host(self, client: socket.socket):
         """Thread de réception côté host pour un client spécifique (usage interne)
-        
-        Lit les données d'un client connecté, met à jour son timestamp,
-        et détecte les déconnexions. Si un joueur se déconnecte, déclenche
-        la fermeture du lobby.
         
         Args:
             client: Socket TCP du client à surveiller
@@ -637,6 +610,7 @@ class NetworkManager:
                         data = json.loads(line)
                         
                         if data.get("type") == "disconnect":
+                            self._last_infos = data
                             print(f"[Network] Client closing properly ({client_role})")
                             break
                         
@@ -645,7 +619,6 @@ class NetworkManager:
                             if info:
                                 if info["role"] == "player":
                                     info["last_data"] = data
-                                info["last_known"] = data  # Mise à jour persistante
                                 info["last_seen"] = time.time()
                     except json.JSONDecodeError:
                         continue
