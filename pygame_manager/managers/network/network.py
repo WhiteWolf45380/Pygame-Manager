@@ -183,28 +183,32 @@ class NetworkManager:
             return False
 
     # ========================= DISCONNECT =========================
-    def disconnect(self):
+    def disconnect(self, infos: dict = None):
         """Ferme toutes les connexions et réinitialise l'état réseau
         
-        Nettoie proprement tous les sockets TCP/UDP, arrête les threads,
-        et réinitialise toutes les variables d'état. Cette méthode est
-        idempotente (peut être appelée plusieurs fois sans effet).
+        Args:
+            infos (dict, optional): dernières informations à transmettre avant arrêt de la connexion
         """
         was_connected = self._connected
         self._connected = False
         self._game_started = False
         self._broadcast_running = False
 
+        if infos is None:
+            infos = {}
+        infos["type"] = "disconnect"
+        infos["reason"] = "host_closed" if self._is_host else "client_closed"
+
         if self._is_host and was_connected:
             try:
-                self.send({"type": "disconnect", "reason": "host_closed"})
+                self.send(infos)
                 time.sleep(0.1)
             except:
                 pass
 
         if not self._is_host and was_connected and self._tcp_socket:
             try:
-                self._tcp_socket.sendall((json.dumps({"type": "disconnect", "reason": "client_closed"}) + "\n").encode())
+                self._tcp_socket.sendall((json.dumps(infos) + "\n").encode())
                 time.sleep(0.05)
             except:
                 pass
