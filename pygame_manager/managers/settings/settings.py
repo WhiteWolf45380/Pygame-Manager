@@ -1,14 +1,16 @@
+# _manager.py
 # ======================================== IMPORTS ========================================
 from ._panel import SettingsPanel
 
 # ======================================== HELPER ========================================
-def _infer_type(value: object, choices: list) -> str:
-    """Infère le type d'un paramètre depuis sa valeur"""
-    if choices:        return 'choice'
-    if isinstance(value, bool): return 'bool'   # bool avant int !
-    if isinstance(value, int):  return 'int'
-    if isinstance(value, float):return 'float'
-    return 'str'
+def _infer_widget_type(value: object, choices: list, min, max) -> str:
+    """Infère le type de widget depuis la valeur et les contraintes"""
+    if choices:                             return 'choice'
+    if isinstance(value, bool):             return 'toggle'
+    if isinstance(value, (int, float)) and min is not None and max is not None:
+                                            return 'slider'
+    if isinstance(value, (int, float)):     return 'textcase'
+    return 'textcase'
 
 # ======================================== GESTIONNAIRE DE PARAMÈTRES ========================================
 class SettingsManager:
@@ -16,13 +18,13 @@ class SettingsManager:
     Gestionnaire des paramètres
 
     Fonctionnalités :
-        créer des paramètres (avec type, catégorie, contraintes)
+        créer des paramètres (avec widget, catégorie, contraintes)
         accéder à des paramètres
         modifier des paramètres
         générer un panel de réglages via settings_manager.Panel(...)
     """
     def __init__(self):
-        # Structure interne : {name: {value, type, category, label, description, min, max, choices}}
+        # Structure interne : {name: {value, widget, category, label, description, min, max, step, choices}}
         self._settings = {}
 
         # Panel auto-généré
@@ -38,7 +40,6 @@ class SettingsManager:
         return self._settings[key]['value']
 
     def __getattr__(self, name: str):
-        # Éviter la récursion sur les attributs privés/spéciaux
         if name.startswith('_'):
             raise AttributeError(name)
         try:
@@ -59,12 +60,14 @@ class SettingsManager:
         value: object,
         *,
         category: str = "General",
-        type: str = None,
+        widget: str = None,
         label: str = None,
         description: str = None,
         min: object = None,
         max: object = None,
+        step: object = None,
         choices: list = None,
+        key_names: dict = None,
     ):
         """
         Création d'un paramètre
@@ -73,30 +76,34 @@ class SettingsManager:
             name (str)          : identifiant unique du paramètre
             value (object)      : valeur initiale
             category (str)      : catégorie d'appartenance (affiché comme onglet dans le panel)
-            type (str)          : type forcé parmi 'bool', 'int', 'float', 'str', 'choice'
-                                  (inféré automatiquement si None)
+            widget (str)        : type de widget parmi 'toggle', 'choice', 'textcase', 'slider', 'inputbutton'
+                                  (inféré automatiquement depuis la valeur si None)
             label (str)         : texte affiché dans le panel (défaut = name)
             description (str)   : sous-texte optionnel affiché sous le label
-            min (object)        : valeur minimale pour int/float
-            max (object)        : valeur maximale pour int/float
-            choices (list)      : liste des choix possibles (force type='choice')
+            min (object)        : valeur minimale pour slider/textcase numérique
+            max (object)        : valeur maximale pour slider/textcase numérique
+            step (object)       : pas d'incrément pour le slider (défaut : 1 pour int, 0.1 pour float)
+            choices (list)      : liste des choix possibles pour le widget 'choice'
+            key_names (dict)    : {int: str} noms personnalisés des touches pour 'inputbutton'
         """
         if not isinstance(name, str):
             self._raise_error('create', 'Le nom du paramètre doit être une chaîne')
         if name in self._settings:
             self._raise_error('create', f"Le paramètre '{name}' existe déjà")
 
-        inferred_type = type or _infer_type(value, choices or [])
+        widget_type = widget or _infer_widget_type(value, choices or [], min, max)
 
         self._settings[name] = {
             'value':       value,
-            'type':        inferred_type,
+            'widget':      widget_type,
             'category':    category,
             'label':       label or name,
             'description': description,
             'min':         min,
             'max':         max,
+            'step':        step,
             'choices':     choices or [],
+            'key_names':   key_names or {},
         }
 
     def remove(self, name: str):
