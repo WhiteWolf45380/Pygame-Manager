@@ -1,5 +1,5 @@
 # ======================================== IMPORTS ========================================
-from typing import Real
+from numbers import Real
 from ... import context
 import pygame
 
