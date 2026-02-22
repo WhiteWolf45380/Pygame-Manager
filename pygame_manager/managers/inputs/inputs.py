@@ -299,7 +299,8 @@ class InputsManager:
                     to_remove.append(listener)
 
             for listener in to_remove:
-                self._any_listeners.remove(listener)
+                if listener in self._any_listeners:
+                    self._any_listeners.remove(listener)
 
         self._current_event = None
 
