@@ -270,7 +270,7 @@ class InputButtonObject:
         self._cb_any = _on_any
 
         context.inputs.add_listener(pygame.K_ESCAPE, self._cb_esc, up=False, once=True, priority=99)
-        context.inputs.when_any(self._cb_any, exclude=[pygame.K_ESCAPE], up=False, once=True, priority=99, give_key=True)
+        context.inputs.when_any(self._cb_any, exclude=[pygame.K_ESCAPE], once=True, priority=99, give_key=True)
 
     def _unregister_listeners(self):
         """Retire les listeners inputs proprement"""
