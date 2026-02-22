@@ -42,6 +42,10 @@ class SegmentEntity(Entity):
 
         # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel, auto=auto)
+
+        # Etat initial
+        self._start_init = start
+        self._end_init = end
         
         # Object géométrique
         self._segment = context.geometry.Segment(start, end)
@@ -497,6 +501,12 @@ class SegmentEntity(Entity):
             bool: True si collision
         """
         return polygon._collidesegment(self._segment)
+    
+    # ======================================== METHODES DYNAMIQUES ========================================
+    def reset(self):
+        """Remet l'entité à son état initial"""
+        self.start = self._start_init
+        self.end = self._end_init
     
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):

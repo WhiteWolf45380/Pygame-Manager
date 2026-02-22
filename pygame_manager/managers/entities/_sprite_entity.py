@@ -46,6 +46,10 @@ class SpriteEntity(Entity):
         # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel, auto=auto)
 
+        # Etat initial
+        self._x_init = x
+        self._y_init = y
+
         # Image
         self._image: pygame.Surface | None = None
         self._original_image: pygame.Surface | None = None
@@ -525,6 +529,12 @@ class SpriteEntity(Entity):
             bool: True si collision
         """
         return polygon.colliderect(self._rect)
+    
+    # ======================================== METHODES DYNAMIQUES ========================================
+    def reset(self):
+        """Remet l'entité à son état initial"""
+        self.x = self._x_init
+        self.y = self._y_init
     
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):

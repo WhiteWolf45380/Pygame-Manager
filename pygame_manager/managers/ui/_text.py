@@ -11,10 +11,10 @@ class TextObject:
             self,
             x: Real = -1,
             y: Real = -1,
-            text: str = "",
             anchor: str = "topleft",
 
-            font: pygame.font.Font = None,
+            text: str = "",
+            font: pygame.font.Font | str = None,
             font_path: str = None,
             font_size: int = 24,
             font_color: pygame.Color = (0, 0, 0, 255),
@@ -44,9 +44,9 @@ class TextObject:
         Args:
             x (Real) : coordonnée x
             y (Real) : coordonnée y
-            text (str) : texte à afficher
             anchor (str, optional) : point d'ancrage ("topleft", "center", "midtop", etc.)
 
+            text (str) : texte à afficher
             font (Font, optional) : police du texte
             font_path (str, optional) : chemin vers la police
             font_size (int, optional) : taille de la police
@@ -76,7 +76,8 @@ class TextObject:
         if not isinstance(y, Real): _raise_error(self, '__init__', 'Invalid y argument')
         if not isinstance(anchor, str): _raise_error(self, '__init__', 'Invalid anchor argument')
         if not isinstance(text, str): _raise_error(self, '__init__', 'Invalid text argument')
-        if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
+        if font is not None and not isinstance(font, (str, pygame.font.Font)): _raise_error(self, '__init__', 'Invalid font argument')
+        if isinstance(font, str) and not font in pygame.font.get_fonts(): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
         if not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
         font_color = _to_color(font_color, method='__init__')
@@ -103,23 +104,34 @@ class TextObject:
             context.ui._append(self)
 
         # position
-        self._x = x
-        self._y = y
-        self._anchor = anchor
+        self._x: Real = x
+        self._y: Real = y
+        self._anchor: str = anchor
 
         # texte
-        self._text = text
-        self._font_color = font_color
-        self._antialias = antialias
+        self._text: str = text
+        self._font: pygame.font.Font = font if isinstance(font, pygame.font.Font) else None
+        self._sysfont: str = font if isinstance(font, str) else None
+        self._font_path: str = font_path
+        self._font_color: pygame.Color = font_color
+        self._font_size: int = font_size
+        self._antialias: bool = antialias
 
         # police
-        if font is None:
-            try:
-                self._font: pygame.font.Font = pygame.font.Font(font_path, font_size)
-            except Exception as _:
-                self._font: pygame.font.Font = pygame.font.Font(None, font_size)
-        else:
-            self._font: pygame.font.Font = font
+        if self._font is None:
+            if self._font_path is not None:
+                try:
+                    self._font = pygame.font.Font(self._font_path, self._font_size)
+                except Exception as _:
+                    if self._sysfont is not None:
+                        self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                    else:
+                        self._font = pygame.font.Font(None, self._font_size)
+            else:
+                if self._sysfont is not None:
+                    self._font = pygame.font.SysFont(self._sysfont, self._font_size)
+                else:
+                    self._font = pygame.font.Font(None, self._font_size)
 
         # Effets
         self._font.set_bold(bold)
@@ -157,6 +169,20 @@ class TextObject:
 
         # paramètres dynamiques
         self._visible = True
+
+        self._blinking = False
+        self._blink_duration = 1.0
+        self._blink_timer = 0.0
+        self._blink_oscillation_timer = 0.0
+        self._blink_alpha = 255
+        self._blink_alpha_min = 0
+        self._blink_alpha_max = 0
+        self._blink_speed = 1.0
+        self._blink_visible_time = 0.0
+        self._blink_visible_elapsed = 0.0
+        self._blink_hidden_time = 0.0
+        self._blink_hidden_elapsed = 0.0
+        self._blink_state = "rising"  # "rising", "paused_high", "falling", "paused_low"
 
     # ======================================== RENDU ========================================
     def _render(self):
@@ -313,26 +339,53 @@ class TextObject:
         self._surface = pygame.transform.smoothscale(self._surface_init, (self._surface_init.get_width() * ratio, self._surface_init.get_height() * ratio))
         self._shadow_surface = pygame.transform.smoothscale(self._shadow_surface_init, (self._shadow_surface_init.get_width() * ratio, self._shadow_surface_init.get_height() * ratio))
         self._rect = self._surface.get_rect(center=self._rect.center)
+    
+    def blink(self, alpha_min: int = 0, alpha_max: int = 255, duration: float | None = None, speed: float = 1.0, visible_time: float = 0.0, hidden_time: float = 0.0):
+        """
+        Fait clignotter le texte
 
+        Args:
+            alpha_min (int, optional): opacité minimale (default: 0)
+            alpha_max (int, optional): opacité maximale (default: 255)
+            duration (float, optional): durée totale de clignottement
+            speed (float, optional): vitesse de clignottement (default: 1.0)
+            visible_time (float, optional): durée d'attente visible (default: 0.0)
+            hiddent_time (float, optional): durée d'attente invsible (default: 0.0)
+        """
+        if not isinstance(alpha_min, int): _raise_error(self, '__blink__', 'Invalid alpha_min argument')
+        if not isinstance(alpha_max, int): _raise_error(self, '__blink__', 'Invalid alpha_max argument')
+        if duration is not None and (not isinstance(duration, (int, float)) or duration <= 0.0): _raise_error(self, '__blink__', 'Invalid duration argument')
+        if not isinstance(speed, (int, float)) or speed <= 0.0: _raise_error(self, '__init__', 'Invalid speed argument')
+        if not isinstance(visible_time, (int, float)) or visible_time < 0.0: _raise_error(self, '__init__', 'Invalid visible_time argument')
+        if not isinstance(hidden_time, (int, float)) or hidden_time < 0.0: _raise_error(self, '__init__', 'Invalid hidden_time argument')
+        alpha = self._surface.get_alpha()
+        self._blink_alpha = alpha if alpha is not None else alpha_max if self.visible else alpha_max
+        self._blink_alpha_min = alpha_min
+        self._blink_alpha_max = alpha_max
+        self._blink_duration = duration
+        self._blink_speed = speed
+        self._blink_visible_time = visible_time
+        self._blink_visible_elapsed = 0.0
+        self._blink_hidden_time = hidden_time
+        self._blink_hidden_elapsed = 0.0
+        self._blink_timer = 0.0
+        self._blink_oscillation_timer = 0.0
+        self._blink_state = "rising"
+        self._blinking = True
+        self.visible = True
+    
+    def stop_blink(self):
+        """Met fin au clignottement"""
+        self._blinking = False
+
+    # ======================================== ACTUALISATION ========================================
     def update(self):
         """Actualisation par frame"""
         if not self._visible:
             return
         self.update_gradient()
+        self.update_blinking()
 
-    def draw(self):
-        """Dessin par frame"""
-        if not self._visible or not self._surface:
-            return
-    
-        surface = context.screen.surface
-        if self._panel is not None and hasattr(self._panel, 'surface'):
-            surface = self._panel.surface
-        
-        if self._shadow_surface is not None:
-            surface.blit(self._shadow_surface, (self._rect.x + self._shadow_offset, self._rect.y + self._shadow_offset))
-        surface.blit(self._surface, self._rect)
-    
     def update_gradient(self):
         """Dégradé animé type 'cycles', optimisé avec numpy, avec amplitude et direction"""
         if not self._gradient or not self._gradient_fluctuation:
@@ -377,7 +430,85 @@ class TextObject:
         self._surface = gradient
         self._surface_init = self._surface.copy()
         self._rect = self._surface.get_rect(**{self._anchor: (self._x, self._y)})
+    
+    def update_blinking(self):
+        """Actualise le clignottement avec machine à états"""
+        if not self._blinking:
+            return
+        
+        # Timer global pour la durée totale
+        self._blink_timer += context.time.dt
+        if self._blink_duration is not None and self._blink_timer >= self._blink_duration:
+            self._blinking = False
+            self.set_alpha(self._blink_alpha_max)
+            return
+        
+        # Machine à états
+        if self._blink_state == "rising":
+            # Oscillation montante
+            self._blink_oscillation_timer += context.time.dt
+            oscillation = np.sin(self._blink_oscillation_timer * self._blink_speed * np.pi * 2)
+            normalized = (oscillation + 1) / 2
+            self._blink_alpha = int(self._blink_alpha_min + normalized * (self._blink_alpha_max - self._blink_alpha_min))
+            self.set_alpha(self._blink_alpha)
+            
+            # Détection du pic haut (sin proche de 1, normalized proche de 1)
+            if normalized >= 0.99:
+                self._blink_alpha = self._blink_alpha_max
+                self.set_alpha(self._blink_alpha_max)
+                if self._blink_visible_time > 0:
+                    self._blink_state = "paused_high"
+                    self._blink_visible_elapsed = 0.0
+                else:
+                    self._blink_state = "falling"
+        
+        elif self._blink_state == "paused_high":
+            # Pause en position haute
+            self._blink_visible_elapsed += context.time.dt
+            self.set_alpha(self._blink_alpha_max)
+            if self._blink_visible_elapsed >= self._blink_visible_time:
+                self._blink_state = "falling"
+        
+        elif self._blink_state == "falling":
+            # Oscillation descendante
+            self._blink_oscillation_timer += context.time.dt
+            oscillation = np.sin(self._blink_oscillation_timer * self._blink_speed * np.pi * 2)
+            normalized = (oscillation + 1) / 2
+            self._blink_alpha = int(self._blink_alpha_min + normalized * (self._blink_alpha_max - self._blink_alpha_min))
+            self.set_alpha(self._blink_alpha)
+            
+            # Détection du pic bas (sin proche de -1, normalized proche de 0)
+            if normalized <= 0.01:
+                self._blink_alpha = self._blink_alpha_min
+                self.set_alpha(self._blink_alpha_min)
+                if self._blink_hidden_time > 0:
+                    self._blink_state = "paused_low"
+                    self._blink_hidden_elapsed = 0.0
+                else:
+                    self._blink_state = "rising"
+        
+        elif self._blink_state == "paused_low":
+            # Pause en position basse
+            self._blink_hidden_elapsed += context.time.dt
+            self.set_alpha(self._blink_alpha_min)
+            if self._blink_hidden_elapsed >= self._blink_hidden_time:
+                self._blink_state = "rising"
 
+    # ======================================== AFFICHAGE ========================================
+    def draw(self):
+        """Dessin par frame"""
+        if not self._visible or not self._surface:
+            return
+    
+        surface = context.screen.surface
+        if self._panel is not None and hasattr(self._panel, 'surface'):
+            surface = self._panel.surface
+        
+        if self._shadow_surface is not None:
+            surface.blit(self._shadow_surface, (self._rect.x + self._shadow_offset, self._rect.y + self._shadow_offset))
+        surface.blit(self._surface, self._rect)
+    
+    # ======================================== HANDLERS ========================================
     def left_click(self, up: bool = False):
         """Clic gauche"""
         pass

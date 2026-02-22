@@ -25,11 +25,15 @@ class InputsManager:
         self._listeners = {}            # ensemble des listeners
         self._step = []                 # touches qui viennent d'être pressées
         self._pressed = {}              # touches pressées
+        self._released_this_frame = []  # touches relâchées dans cette frame
 
         # nouveaux systèmes
         self._any_listeners = []        # listeners globaux (any)
         self._all_listeners = []        # listeners combos (all)
         self._triggered_combos = set()  # combos déjà déclenchés
+
+        # événement courant (accessible aux callbacks via context.inputs._current_event)
+        self._current_event = None
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -120,8 +124,6 @@ class InputsManager:
                 l for l in self._listeners[event_id]
                 if l["callback"] != callback
             ]
-            
-            # Nettoyer l'entrée si elle est vide
             if not self._listeners[event_id]:
                 del self._listeners[event_id]
 
@@ -216,24 +218,19 @@ class InputsManager:
         Args :
             callback (callable) : fonction callback à supprimer partout
         """
-        # Suppression des listeners simples
         for event_id in list(self._listeners.keys()):
             self._listeners[event_id] = [
                 l for l in self._listeners[event_id]
                 if l["callback"] != callback
             ]
-            
-            # Nettoyer l'entrée si elle est vide
             if not self._listeners[event_id]:
                 del self._listeners[event_id]
 
-        # Suppression des listeners any
         self._any_listeners = [
             l for l in self._any_listeners
             if l["callback"] != callback
         ]
 
-        # Suppression des listeners all
         self._all_listeners = [
             l for l in self._all_listeners
             if l["callback"] != callback
@@ -248,11 +245,16 @@ class InputsManager:
         Args :
             event (pygame.event.Event) : événement pygame à traiter
         """
+        # stocké avant d'appeler les callbacks pour qu'ils puissent y accéder
+        self._current_event = event
+
         event_id = self.get_id(event)
+        down = event.type in [pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN, pygame.TEXTINPUT]
         up = event.type in [pygame.MOUSEBUTTONUP, pygame.KEYUP]
 
         if up:
             self._pressed[event_id] = False
+            self._released_this_frame.append(event_id)
         else:
             self._step.append(event_id)
 
@@ -260,6 +262,9 @@ class InputsManager:
         to_remove = []
         for listener in self._listeners.get(event_id, []):
             if (listener["condition"] and not listener["condition"]()) or up != listener["up"]:
+                continue
+
+            if listener["repeat"] and down:
                 continue
 
             if listener["give_key"]:
@@ -273,12 +278,11 @@ class InputsManager:
         for listener in to_remove:
             self._listeners[event_id].remove(listener)
             
-        # Nettoyer l'entrée si elle est vide
         if event_id in self._listeners and not self._listeners[event_id]:
             del self._listeners[event_id]
 
         # WHEN ANY
-        if not up:
+        if down:
             to_remove = []
             for listener in self._any_listeners:
                 if event_id in listener["exclude"]:
@@ -297,13 +301,18 @@ class InputsManager:
             for listener in to_remove:
                 self._any_listeners.remove(listener)
 
+        self._current_event = None
+
+    def _is_currently_pressed(self, event_id: int) -> bool:
+        """Vérifie si une touche est pressée"""
+        return self._pressed.get(event_id, False) or event_id in self._step
+
     def check_pressed(self):
         """
         Vérifie les listeners de maintien (repeat et combos)
         """
-        # listeners simples repeat
         for event_id, listeners in self._listeners.items():
-            if self._pressed.get(event_id, False):
+            if self._is_currently_pressed(event_id):
                 for listener in listeners:
                     if listener["repeat"]:
                         if listener["condition"] and not listener["condition"]():
@@ -313,14 +322,9 @@ class InputsManager:
                         else:
                             listener["callback"](*listener["args"], **listener["kwargs"])
 
-        # WHEN ALL
         to_remove = []
-
         for listener in self._all_listeners:
-            if not listener["keys"].issubset(self._pressed.keys()):
-                continue
-
-            if not all(self._pressed.get(k, False) for k in listener["keys"]):
+            if not all(self._is_currently_pressed(k) for k in listener["keys"]):
                 continue
 
             if listener["condition"] and not listener["condition"]():
@@ -328,13 +332,10 @@ class InputsManager:
 
             combo_key = frozenset(listener["keys"])
             
-            # Avec repeat : déclenche à chaque frame
             if listener["repeat"]:
-                if any(k in self._step for k in listener["keys"]):
-                    listener["callback"](*listener["args"], **listener["kwargs"])
-                    if listener["once"]:
-                        to_remove.append(listener)
-            # Sans repeat : déclenche une seule fois jusqu'au relâchement
+                listener["callback"](*listener["args"], **listener["kwargs"])
+                if listener["once"]:
+                    to_remove.append(listener)
             else:
                 if combo_key not in self._triggered_combos:
                     listener["callback"](*listener["args"], **listener["kwargs"])
@@ -342,23 +343,22 @@ class InputsManager:
                     if listener["once"]:
                         to_remove.append(listener)
 
-        # Nettoyer les combos qui ne sont plus actifs
         active_combos = set()
         for listener in self._all_listeners:
-            if listener["keys"].issubset(self._pressed.keys()):
-                if all(self._pressed.get(k, False) for k in listener["keys"]):
-                    active_combos.add(frozenset(listener["keys"]))
+            if all(self._is_currently_pressed(k) for k in listener["keys"]):
+                active_combos.add(frozenset(listener["keys"]))
         
         self._triggered_combos = self._triggered_combos & active_combos
 
         for listener in to_remove:
             self._all_listeners.remove(listener)
 
-        # mise à jour pressed
         for event_id in self._step:
-            self._pressed[event_id] = True
+            if event_id not in self._released_this_frame:
+                self._pressed[event_id] = True
 
         self._step = []
+        self._released_this_frame = []
 
     def check_all(self):
         """

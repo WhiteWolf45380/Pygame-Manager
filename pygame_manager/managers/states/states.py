@@ -38,6 +38,7 @@ class StatesManager:
         self._transition_new = None
         self._transition_new_layer = 0
         self._transition_pruning = True
+        self._transition_deactivate_all = False
 
     def __repr__(self):
         if self._active_states:
@@ -69,7 +70,7 @@ class StatesManager:
         self._transition_old = old
         self._transition_new = new
         self._transition_new_layer = layer
-        self._transition_pruning
+        self._transition_pruning = pruning
 
         if not self._transition_ease_out:
             self._switch_transition()
@@ -97,7 +98,7 @@ class StatesManager:
         # Ease_out
         elif self._transition_ease_out and not self._transition_ease_in:
             self._transition_alpha = progress * 255
-            if progress >= 1.0 and self._transition_new is not None:
+            if progress >= 1.0:
                 self._switch_transition()
                 self._transition_new = None
         
@@ -115,13 +116,25 @@ class StatesManager:
 
     def _switch_transition(self):
         """Passe d'un état à un autre"""
-        if self._transition_old is not None:
-            old_obj = self._dict[self._transition_old]["state_obj"]
-            old_obj.on_exit()
+        if self._transition_deactivate_all:
+            for layer in sorted(self._active_states, reverse=True):
+                self._dict[self._active_states[layer]]["state_obj"].on_exit()
+            self._active_states = {}
+            self._transition_deactivate_all = False
+            return
 
-        self._active_states[self._transition_new_layer] = self._transition_new
-        if self._transition_pruning: self._clear_upper_layers(self._transition_new_layer)
-        self._dict[self._transition_new]["state_obj"].on_enter()
+        if self._transition_old is not None:
+            self._dict[self._transition_old]["state_obj"].on_exit()
+
+        if self._transition_new is not None:
+            self._active_states[self._transition_new_layer] = self._transition_new
+            if self._transition_pruning: self._clear_upper_layers(self._transition_new_layer)
+            self._dict[self._transition_new]["state_obj"].on_enter()
+        else:
+            if self._transition_new_layer in self._active_states:
+                del self._active_states[self._transition_new_layer]
+            if self._transition_pruning:
+                self._clear_upper_layers(self._transition_new_layer)
     
     def _end_transition(self):
         """Fin de la transition"""
@@ -190,7 +203,7 @@ class StatesManager:
         }
 
     # ======================================== ACTIVATION ========================================
-    def activate(self, name: str, pruning: bool = True,transition: bool = False, ease_out: bool=True, ease_in: bool = True, duration: float = 1.0):
+    def activate(self, name: str, pruning: bool = True, transition: bool = False, ease_out: bool=True, ease_in: bool = True, duration: float = 1.0):
         """
         Active un state
         Remplace l'ancien state sur le même layer (on_exit) et ferme les layers supérieurs
@@ -221,23 +234,28 @@ class StatesManager:
             return
         self._start_transition(old, new, new_layer, ease_out=ease_out, ease_in=ease_in, duration=duration, pruning=pruning)
 
-    def deactivate(self, name: str, pruning: bool = True):
+    def deactivate(self, name: str, pruning: bool = True, fade_out: bool = False, fade_out_duration: float = 1.0):
         """
         Désactive un state
 
         Args:
             name (str) : nom de l'état à désactiver
             pruning (bool, optional) : fermeture de tous les états supérieurs
+            fade_out (bool, optional) : fondu de fermeture
+            fade_out_duration (float, optional) : durée du fondu en secondes
         """
         if name not in self._dict:
             return
 
         layer = self._dict[name]["layer"]
         if layer in self._active_states and self._active_states[layer] == name:
-            self._dict[name]["state_obj"].on_exit()
-            del self._active_states[layer]
-            if pruning:
-                self._clear_upper_layers(layer)
+            if fade_out:
+                self._start_transition(name, None, layer, ease_out=True, ease_in=False, duration=fade_out_duration, pruning=pruning)
+            else:
+                self._dict[name]["state_obj"].on_exit()
+                del self._active_states[layer]
+                if pruning:
+                    self._clear_upper_layers(layer)
 
     def deactivate_layer(self, layer: int, pruning: bool = True):
         """
@@ -254,10 +272,25 @@ class StatesManager:
             if pruning:
                 self._clear_upper_layers(layer)
 
-    def deactivate_all(self):
+    def deactivate_all(self, fade_out: bool = False, fade_out_duration: float = 1.0):
         """
         Désactive tous les states
+
+        Args:
+            fade_out (bool, optional) : fondu de fermeture
+            fade_out_duration (float, optional) : durée du fondu en secondes
         """
+        if fade_out and self._active_states:
+            self._transition_deactivate_all = True
+            self._transition_ease_out = True
+            self._transition_ease_in = False
+            self._transition_duration = fade_out_duration
+            self._transition_active = True
+            self._transition_timer = 0.0
+            self._transition_old = None
+            self._transition_new = None
+            self._transition_alpha = 0
+            return
         for layer in sorted(self._active_states, reverse=True):
             name = self._active_states[layer]
             self._dict[name]["state_obj"].on_exit()
@@ -272,7 +305,8 @@ class StatesManager:
             self._update_transition()
         
         for layer in sorted(self._active_states):
-            name = self._active_states[layer]
+            name = self._active_states.get(layer)
+            if name is None: continue
             state_obj = self._dict[name]["state_obj"]
             state_obj.update()
         

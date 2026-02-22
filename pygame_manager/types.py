@@ -38,6 +38,7 @@ from .managers.ui import (
     RectSelectorObject,
     CircleSelectorObject,
     TextCaseObject,
+    MessageObject,
 )
 
 # ========================================== EXPOSITION ==========================================

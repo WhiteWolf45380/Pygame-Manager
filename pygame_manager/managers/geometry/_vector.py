@@ -135,11 +135,11 @@ class VectorObject:
     @norm.setter
     def norm(self, norm: Real):
         """Fixe la norme du vecteur"""
-        self._v = (np.float32(norm) * self.normalized).array
+        self._v = (self.normalized * np.float32(norm)).array
 
     def set_norm(self, norm: Real):
         """Fixe la norme du vecteur"""
-        self._v = (np.float32(norm) * self.normalized).array
+        self._v = (self.normalized * np.float32(norm)).array
 
     # ======================================== OPERATIONS ========================================
     def __add__(self, vector: context.geometry.Vector) -> context.geometry.Vector:

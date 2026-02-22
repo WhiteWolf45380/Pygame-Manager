@@ -19,12 +19,13 @@ class TimeManager:
         self._clock = pygame.time.Clock()
 
         # paramètres
-        self._dt = 0.0  # temps écoulé depuis la dernière boucle (en secondes)
-        self._current_fps = 0.0 # nombre actuel de fps (en frames)
-        self._max_fps = max_fps # nombre maximal de fps
-        self._fps_buffer = [] # buffer de fps pour une moyenne lissée
-        self._time_scale = 1.0 # vitesse d'éxécution du jeu
-        self._frame_count = 0 # nombre de frames écoulées
+        self._timer = 0.0           # temps total écoulé
+        self._frame_count = 0       # nombre de frames écoulées
+        self._dt = 0.0              # temps écoulé depuis la dernière boucle (en secondes)
+        self._current_fps = 0.0     # nombre actuel de fps (en frames)
+        self._max_fps = max_fps     # nombre maximal de fps
+        self._fps_buffer = []       # buffer de fps pour une moyenne lissée
+        self._time_scale = 1.0      # vitesse d'éxécution du jeu
 
         # stocke les débuts d’animations
         self._start_times = {}
@@ -42,6 +43,13 @@ class TimeManager:
         Renvoie le temps écoulé depuis le début du programme (en ms)
         """
         return pygame.time.get_ticks()
+
+    @property
+    def timer(self):
+        """
+        Renvoie le temps total relatif
+        """
+        return self._timer
     
     @property
     def frame_count(self):
@@ -144,6 +152,7 @@ class TimeManager:
 
         # clamp pour éviter les pics de dt trop grands ou nuls
         self._dt = max(0.001, min(raw_dt, 0.07)) * self._time_scale # entre 15 et 1000 fps
+        self._timer += self._dt
 
         # calcul des fps
         if self._dt > 0:
@@ -151,8 +160,13 @@ class TimeManager:
             self._fps_buffer.append(self._current_fps)
             if len(self._fps_buffer) > 30:
                 self._fps_buffer.pop(0)
-
         return self._dt
+
+    def get_elapsed(self, t0: float) -> float:
+        """
+        Renvoie le nombre de secondes écoulées depuis t0
+        """
+        return self.timer - t0
 
     def scale_value(self, value_per_second: float) -> float:
         """

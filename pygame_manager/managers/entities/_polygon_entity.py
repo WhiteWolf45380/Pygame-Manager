@@ -38,6 +38,9 @@ class PolygonEntity(Entity):
 
         # Initialisation d'Entity
         super().__init__(zorder=zorder, panel=panel, auto=auto)
+
+        # Etat initial
+        self._points_init = points
         
         # Objet géométrique
         self._polygon = context.geometry.Polygon(*points)
@@ -484,6 +487,11 @@ class PolygonEntity(Entity):
             bool: True si collision
         """
         return self._polygon.collidepolygon(polygon)
+    
+    # ======================================== METHODES DYNAMIQUES ========================================
+    def reset(self):
+        """Remet l'entité à son état initial"""
+        self._polygon = context.geometry.Polygon(*self._points_init)
     
     # ======================================== ACTUALISATION ========================================
     def update(self, *args, **kwargs):

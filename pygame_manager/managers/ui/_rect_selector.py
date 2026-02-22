@@ -33,14 +33,17 @@ class RectSelectorObject:
             icon_scale_ratio: float = 0.8,
 
             title: str = None,
-            text: str = None,
-            description: str = None,
-            title_anchor: str = "center",
-            text_anchor: str = "center",
-            description_anchor: str = "center",
             title_size_ratio: float = 1.0,
+            title_anchor: str = "center",
+
+            text: str = None,
             text_size_ratio: float = 1.0,
+            text_anchor: str = "center",
+
+            description: str = None,
+            description_anchor: str = "center",
             description_size_ratio: float = 1.0,
+
             padding: int = 5,
             font_color: pygame.Color = (0, 0, 0, 255),
             font_color_hover: pygame.Color = None,
@@ -48,10 +51,15 @@ class RectSelectorObject:
 
             border_width: int = 0,
             border_color: pygame.Color = (0, 0, 0, 255),
+            border_color_hover: pygame.Color = None,
+            border_color_selected: pygame.Color = None,
             border_radius: int = 0,
 
             hover_scale_ratio: float = 1.0,
             hover_scale_duration: float = 0.0,
+
+            selected_scale_ratio: float = 1.0,
+            selected_scale_duration: float = 0.0,
 
             callback: callable = lambda: None,
             panel: object = None
@@ -94,10 +102,15 @@ class RectSelectorObject:
 
             border_width (int, optional) : épaisseur de la bordure
             border_color (Color, optional) : couleur de la bordure
+            border_color_hover (Color, optional) : couleur de la bordure lors du survol
+            border_color_selected (Color, optional) : couleur de la bordure lorsque sélectionné
             border_radius (int, optional) : rayon d'arrondissement des coins
 
             hover_scale_ratio (float, optional) : facteur de redimensionnement lors du survol
             hover_scale_duration (float, optional) : durée de redimensionnement (en secondes)
+
+            selected_scale_ratio (float, optional) : facteur de redimensionnement lorsque sélectionné
+            selected_scale_duration (float, optional) : durée de redimensionnement (en secondes)
 
             callback (callable, optional) : action en cas de sélection
             panel (object, optional) : panel maître
@@ -113,23 +126,15 @@ class RectSelectorObject:
         if title is not None and not isinstance(title, (str, list)): _raise_error(self, '__init__', 'Invalid title argument (must be str or list)')
         if text is not None and not isinstance(text, (str, list)): _raise_error(self, '__init__', 'Invalid text argument (must be str or list)')
         if description is not None and not isinstance(description, (str, list)): _raise_error(self, '__init__', 'Invalid description argument (must be str or list)')
-        
-        # Convertir les chaînes avec \n en listes
-        if isinstance(title, str) and '\n' in title:
-            title = title.split('\n')
-        if isinstance(text, str) and '\n' in text:
-            text = text.split('\n')
-        if isinstance(description, str) and '\n' in description:
-            description = description.split('\n')
-        
-        # Validation des listes
+        if isinstance(title, str) and '\n' in title: title = title.split('\n')
+        if isinstance(text, str) and '\n' in text: text = text.split('\n')
+        if isinstance(description, str) and '\n' in description: description = description.split('\n')
         if isinstance(title, list):
             if not all(isinstance(line, str) for line in title): _raise_error(self, '__init__', 'All title list items must be strings')
         if isinstance(text, list):
             if not all(isinstance(line, str) for line in text): _raise_error(self, '__init__', 'All text list items must be strings')
         if isinstance(description, list):
             if not all(isinstance(line, str) for line in description): _raise_error(self, '__init__', 'All description list items must be strings')
-        
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
         filling_color = _to_color(filling_color, method='__init__')
         filling_color_hover = _to_color(filling_color_hover, raised=False)
@@ -151,9 +156,13 @@ class RectSelectorObject:
         font_color_selected = _to_color(font_color_selected, raised=False)
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         border_color = _to_color(border_color, method='__init__')
+        border_color_hover = _to_color(border_color_hover, method='__init__') if border_color_hover is not None else border_color
+        border_color_selected = _to_color(border_color_selected, method='__init__') if border_color_selected is not None else border_color
         if not isinstance(border_radius, int): _raise_error(self, '__init__', 'Invalid border_radius argument')
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
         if not isinstance(hover_scale_duration, Real) or hover_scale_duration < 0: _raise_error(self, '__init__', 'Invalid hover_scale_duration argument')
+        if not isinstance(selected_scale_ratio, Real) or selected_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid selected_scale_ratio argument')
+        if not isinstance(selected_scale_duration, Real) or selected_scale_duration < 0: _raise_error(self, '__init__', 'Invalid selected_scale_duration argument')
         if not callable(callback): _raise_error(self, '__init__', 'Invalid callback argument')
         if panel is not None and not isinstance(panel, str): _raise_error(self, '__init__', 'Invalid panel argument')
 
@@ -204,7 +213,7 @@ class RectSelectorObject:
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
-                scale_ratio = min(width_ratio, height_ratio)
+                scale_ratio = max(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
@@ -220,7 +229,7 @@ class RectSelectorObject:
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
-                scale_ratio = min(width_ratio, height_ratio)
+                scale_ratio = max(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
@@ -236,7 +245,7 @@ class RectSelectorObject:
             if self._icon_keep_ratio:
                 width_ratio = (width * self._icon_scale_ratio) / iwidth
                 height_ratio = (height * self._icon_scale_ratio) / iheight
-                scale_ratio = min(width_ratio, height_ratio)
+                scale_ratio = max(width_ratio, height_ratio)
                 iwidth = int(iwidth * scale_ratio)
                 iheight = int(iheight * scale_ratio)
             else:
@@ -245,7 +254,7 @@ class RectSelectorObject:
             self._icon_selected = pygame.transform.smoothscale(icon_selected, (iwidth, iheight))
             self._icon_selected_rect = self._icon_selected.get_rect(center=self._local_rect.center)
 
-        # texte — logique avec calcul auto + ratio multiplicateur
+        # texte
         self._title_anchor = title_anchor
         self._text_anchor = text_anchor
         self._description_anchor = description_anchor
@@ -363,6 +372,8 @@ class RectSelectorObject:
         # bordure
         self._border_width = max(0, border_width)
         self._border_color = border_color
+        self._border_color_hover = border_color_hover
+        self._border_color_selected = border_color_selected
         self._border_radius = max(0, border_radius)
 
         # effet de survol
@@ -370,6 +381,8 @@ class RectSelectorObject:
         self._last_scale_ratio = 1.0
         self._hover_scale_ratio = float(hover_scale_ratio)
         self._hover_scale_duration = float(hover_scale_duration)
+        self._selected_scale_ratio = float(selected_scale_ratio)
+        self._selected_scale_duration = float(selected_scale_duration)
 
         # action de clique
         self._callback = callback
@@ -386,6 +399,7 @@ class RectSelectorObject:
 
         # paramètres dynamiques
         self._visible = True
+        self._last_status = None
 
     # ======================================== CREATION SURFACE MULTI-LIGNES ========================================
     def _create_multiline_surface(self, lines: list, font: pygame.font.Font, color: pygame.Color) -> pygame.Surface:
@@ -461,6 +475,33 @@ class RectSelectorObject:
             
             self._text_rects[text_type] = rect
 
+    # ======================================== HELPER POUR CLIPPER L'ICON ========================================
+    def _blit_icon_clipped(self, surface: pygame.Surface, icon: pygame.Surface, icon_rect: pygame.Rect):
+        """
+        Blitte l'icon en la clippant à l'intérieur de la forme du sélecteur.
+        """
+        if icon is None:
+            return
+        
+        if self._border_radius > 0:
+            # Créer un mask pour le rectangle avec border_radius
+            mask = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(mask, (255, 255, 255, 255), self._local_rect, border_radius=self._border_radius)
+            
+            # Blitter l'icon sur une surface temporaire
+            temp = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
+            temp.blit(icon, icon_rect)
+            
+            # Appliquer le mask (seules les parties à l'intérieur du mask restent visibles)
+            temp.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+            surface.blit(temp, (0, 0))
+        else:
+            # Clipper avec un rectangle simple
+            old_clip = surface.get_clip()
+            surface.set_clip(self._local_rect)
+            surface.blit(icon, icon_rect)
+            surface.set_clip(old_clip)
+
     # ======================================== GETTERS ========================================
     @property
     def zorder(self) -> int:
@@ -486,11 +527,6 @@ class RectSelectorObject:
     def callback(self) -> callable:
         """Renvoie le callback"""
         return self._callback
-
-    @property
-    def selected(self) -> bool:
-        """Vérifie que le sélecteur soit actif dans son groupe"""
-        return context.ui._selections.get(self._selection_id) == self._selector_id
 
     # ======================================== SETTERS ========================================
     @zorder.setter
@@ -523,6 +559,15 @@ class RectSelectorObject:
     def hovered(self) -> bool:
         """Vérifie que le sélecteur soit survolé"""
         return context.ui.get_hovered() == self
+    
+    def is_selected(self) -> bool:
+        """Vérifie que le sélecteur soit sélectionné"""
+        return context.ui.get_selected(self._selection_id) == self._selector_id
+
+    @property
+    def selected(self) -> bool:
+        """Vérifie que le sélecteur soit sélectionné"""
+        return context.ui.get_selected(self._selection_id) == self._selector_id
 
     def collidemouse(self) -> bool:
         """Vérifie que la souris soit sur le sélecteur"""
@@ -535,8 +580,7 @@ class RectSelectorObject:
         surface = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
         if self._filling:
             pygame.draw.rect(surface, self._filling_color, self._local_rect, border_radius=self._border_radius)
-        if self._icon is not None:
-            surface.blit(self._icon, self._icon_rect)
+        self._blit_icon_clipped(surface, self._icon, self._icon_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects:
@@ -551,14 +595,13 @@ class RectSelectorObject:
         hover_color = self._filling_color_hover if self._filling_color_hover is not None else self._filling_color
         if self._filling:
             pygame.draw.rect(surface, hover_color, self._local_rect, border_radius=self._border_radius)
-        if self._icon_hover is not None:
-            surface.blit(self._icon_hover, self._icon_hover_rect)
+        self._blit_icon_clipped(surface, self._icon_hover, self._icon_hover_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects_hover:
                     surface.blit(self._text_objects_hover[text_type], self._text_rects[text_type])
         if self._border_width > 0:
-            pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
+            pygame.draw.rect(surface, self._border_color_hover, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
 
     def load_selected(self) -> pygame.Surface:
@@ -567,14 +610,13 @@ class RectSelectorObject:
         selected_color = self._filling_color_selected if self._filling_color_selected is not None else self._filling_color
         if self._filling:
             pygame.draw.rect(surface, selected_color, self._local_rect, border_radius=self._border_radius)
-        if self._icon_selected is not None:
-            surface.blit(self._icon_selected, self._icon_selected_rect)
+        self._blit_icon_clipped(surface, self._icon_selected, self._icon_selected_rect)
         if self._text_blit:
             for text_type in ["title", "text", "description"]:
                 if text_type in self._text_objects_selected:
                     surface.blit(self._text_objects_selected[text_type], self._text_rects[text_type])
         if self._border_width > 0:
-            pygame.draw.rect(surface, self._border_color, self._local_rect, self._border_width, border_radius=self._border_radius)
+            pygame.draw.rect(surface, self._border_color_selected, self._local_rect, self._border_width, border_radius=self._border_radius)
         return surface
 
     # ======================================== METHODES DYNAMIQUES ========================================
@@ -584,48 +626,70 @@ class RectSelectorObject:
 
     def select(self):
         """Sélectionne ce sélecteur dans son groupe et lance le callback"""
-        context.ui._select(self._selection_id, self._selector_id)
+        context.ui.select(self._selection_id, self._selector_id)
         self._callback()
 
+    def unselect(self):
+        """Déselectionne ce sélecteut"""
+        context.ui.unselect(self._selection_id, self._selector_id)
+
+    # ======================================== ACTUALISATION ========================================
     def update(self):
         """Actualisation par frame"""
         if not self._visible:
             return
-        # Calcul du ratio de taille
-        target_ratio = self._hover_scale_ratio if self.hovered else 1.0
-        if self._hover_scale_duration > 0:
-            diff = target_ratio - self._scale_ratio
-            step = diff * min(context.time.dt / self._hover_scale_duration, 1.0)
-            self._scale_ratio += step
+        
+        # Calcul du ratio de taille cible selon l'état
+        if self.selected:
+            target_ratio = self._selected_scale_ratio
+            duration = self._selected_scale_duration
+        elif self.hovered:
+            target_ratio = self._hover_scale_ratio
+            duration = self._hover_scale_duration
+        else:
+            target_ratio = 1.0
+            duration = max(self._hover_scale_duration, self._selected_scale_duration)
+        
+        # Animation vers le ratio cible
+        if duration > 0:
+            diff = (target_ratio - self._scale_ratio) / duration
+            self._scale_ratio += context.time.scale_value(diff)
         else:
             self._scale_ratio = target_ratio
 
         # Redimensionnement
-        surface = self._preloaded["selected" if self.selected else "hover" if self.hovered else "default"]
+        status = "selected" if self.selected else "hover" if self.hovered else "default"
+        surface = self._preloaded[status]
         surface_rect = surface.get_rect()
         if self._last_scale_ratio != self._scale_ratio:
             new_width = int(surface_rect.width * self._scale_ratio)
             new_height = int(surface_rect.height * self._scale_ratio)
             self._surface = pygame.transform.smoothscale(surface, (new_width, new_height))
+            self._surface_rect = self._surface.get_rect(center=self._rect.center)
             self._last_scale_ratio = self._scale_ratio
-        else:
+            self._last_status = status
+        elif status != self._last_status:
             self._surface = surface
-        self._surface_rect = self._surface.get_rect(topleft=self._rect.topleft)
+            self._surface_rect = self._surface.get_rect(center=self._rect.center)
+            self._last_status = status
 
+    # ======================================== AFFICHAGE ========================================
     def draw(self):
         """Dessin par frame"""
-        if not self._visible:
+        if not self._visible or self._surface is None:
             return
+
         surface = context.screen.surface
         if self._panel is not None and hasattr(self._panel, 'surface'):
             surface = self._panel.surface
         surface.blit(self._surface, self._surface_rect)
 
+    # ======================================== HANDLERS ========================================
     def left_click(self, up: bool = False):
         """Clic gauche"""
         if not up:
-            context.ui.select(self._selection_id, self._selector_id)
-            self._callback()
+            if self.selected: self.unselect()
+            else: self.select()
 
     def right_click(self, up: bool = False):
         """Clic droit"""
