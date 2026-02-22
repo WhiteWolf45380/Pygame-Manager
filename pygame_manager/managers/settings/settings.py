@@ -1,5 +1,4 @@
 # ======================================== IMPORTS ========================================
-from typing import Real
 from ._panel import SettingsPanel
 
 # ======================================== HELPER ========================================
@@ -25,6 +24,9 @@ class SettingsManager:
     def __init__(self):
         # Structure interne : {name: {value, type, category, label, description, min, max, choices}}
         self._settings = {}
+
+        # Panel auto-généré
+        self.Panel = SettingsPanel
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -163,30 +165,6 @@ class SettingsManager:
             entry['value'][index] = value
         else:
             entry['value'] = value
-
-    # ======================================== PANEL AUTO-GÉNÉRÉ ========================================
-    def Panel(
-        self,
-        name: str,
-        x: Real,
-        y: Real,
-        width: Real,
-        height: Real,
-        **kwargs,
-    ) -> 'SettingsPanel':
-        """
-        Crée un panel de réglages auto-généré lié à ce gestionnaire.
-
-        Args :
-            name (str)    : nom du panel pygame (doit être unique)
-            x, y          : position
-            width, height : dimensions
-            **kwargs      : tous les paramètres de style/layout de SettingsPanel
-
-        Returns :
-            SettingsPanel
-        """
-        return SettingsPanel(self, name, x, y, width, height, **kwargs)
 
 # ======================================== INSTANCE ========================================
 settings_manager = SettingsManager()

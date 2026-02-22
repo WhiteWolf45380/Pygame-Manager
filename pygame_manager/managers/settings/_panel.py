@@ -14,11 +14,12 @@ class SettingsPanel:
     """
     def __init__(
         self,
-        name: str,
-        x: Real,
-        y: Real,
-        width: Real,
-        height: Real,
+        name: str = "settings",
+        # --- Position et taille ---
+        x: Real = 0,
+        y: Real = 0,
+        width: Real = 1920,
+        height: Real = 1080,
         # --- Params Panel standard ---
         predecessor: str = None,
         centered: bool = False,
@@ -52,7 +53,7 @@ class SettingsPanel:
         border_radius: int = 5,
     ):
         self._manager = context.settings
-        self._name = name
+        self._name = "settings"
         self._ui_objects = []
         self._current_category = None
 
