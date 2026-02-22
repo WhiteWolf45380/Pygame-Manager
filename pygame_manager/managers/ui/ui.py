@@ -11,6 +11,7 @@ from ._image import ImageObject
 from ._surface import SurfaceObject
 from ._overlay import OverlayObject
 from ._scrollbar import ScrollBarObject
+from ._input_button import InputButtonObject
 
 # ======================================== GESTIONNAIRE ========================================
 class UiManager:
@@ -47,6 +48,7 @@ class UiManager:
         self.Surface = SurfaceObject
         self.Overlay = OverlayObject
         self.ScrollBar = ScrollBarObject
+        self.InputButton = InputButtonObject
 
     def _init(self):
         """Initialisation sécurisée"""

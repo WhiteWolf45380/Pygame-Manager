@@ -38,7 +38,7 @@ from .managers.ui import (
     RectSelectorObject,
     CircleSelectorObject,
     TextCaseObject,
-    MessageObject,
+    InputButtonObject,
 )
 
 # ========================================== EXPOSITION ==========================================
@@ -77,4 +77,5 @@ __all__ = [
     "RectSelectorObject",
     "CircleSelectorObject",
     "TextCaseObject",
+    "InputButtonObject",
 ]
