@@ -6,11 +6,7 @@ import pygame
 # ======================================== PANEL DE PARAMÈTRES ========================================
 class SettingsPanel:
     """
-    Panel auto-généré affichant et permettant la modification des paramètres.
-
-    Utilisation :
-        panel = settings_manager.Panel("settings_panel", x=100, y=50, width=500, height=600)
-        panel.activate()
+    Panel auto-généré affichant et permettant la modification des paramètres
     """
     def __init__(
         self,
@@ -52,6 +48,46 @@ class SettingsPanel:
         font_size: int = None,
         border_radius: int = 5,
     ):
+        """
+        Args:
+            name (str)                      : nom du panel pygame (doit être unique)
+            
+            x (Real)                        : coordonnée x du coin supérieur gauche
+            y (Real)                        : coordonnée y du coin supérieur gauche
+            width (Real)                    : largeur du panel
+            height (Real)                   : hauteur du panel
+
+            predecessor (str, optional)     : nom du panel prédecesseur
+            centered (bool, optional)       : coordonnées à partir du centre de la surface maître
+            border_width (int, optional)    : épaisseur de la bordure du panel
+            border_color (Color, optional)  : couleur de la bordure du panel
+
+            background_color (Color, optional)          : couleur de fond du panel
+
+            text_color (Color, optional)                : couleur des labels de paramètres
+            text_color_description (Color, optional)    : couleur des sous-textes de description
+
+            category_color (Color, optional)            : couleur de fond des onglets inactifs
+            category_color_hover (Color, optional)      : couleur de fond des onglets au survol
+            category_color_active (Color, optional)     : couleur de fond de l'onglet actif
+            category_text_color (Color, optional)       : couleur du texte des onglets inactifs
+            category_text_color_active (Color, optional): couleur du texte de l'onglet actif
+
+            item_color (Color, optional)                : couleur de fond des lignes paires
+            item_color_alt (Color, optional)            : couleur de fond des lignes impaires
+
+            control_color (Color, optional)             : couleur de fond des contrôles
+            control_color_hover (Color, optional)       : couleur de fond des contrôles au survol
+            control_color_active (Color, optional)      : couleur de fond des contrôles actifs/sélectionnés
+
+            category_height (int, optional)             : hauteur en pixels de la barre des catégories
+            item_height (int, optional)                 : hauteur en pixels de chaque ligne de paramètre
+            item_spacing (int, optional)                : espacement en pixels entre les lignes
+            padding (int, optional)                     : marge interne gauche/droite en pixels
+            control_width_ratio (float, optional)       : ratio de la largeur du panel réservé aux contrôles (0.2 – 0.7)
+            font_size (int, optional)                   : taille de la police des labels (auto si None)
+            border_radius (int, optional)               : rayon d'arrondissement des coins des éléments
+        """
         self._manager = context.settings
         self._name = "settings"
         self._ui_objects = []
