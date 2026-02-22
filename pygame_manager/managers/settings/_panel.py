@@ -173,11 +173,13 @@ class SettingsPanel:
     def _build_category_bar(self, categories: list):
         cat_font = max(10, int(self._cat_h * 0.42))
         n        = max(1, len(categories))
-        base_w   = self._w // n
+        margin   = 3
+        total_margin = margin * (n + 1)
+        btn_w    = (self._w - total_margin) // n
 
         for i, cat in enumerate(categories):
             is_active = (cat == self._current_category)
-            w = base_w + (self._w - base_w * n if i == n - 1 else 0)
+            x = margin + i * (btn_w + margin)
 
             def _make_cb(c):
                 def _cb():
@@ -186,7 +188,7 @@ class SettingsPanel:
                 return _cb
 
             btn = context.ui.RectButton(
-                x=i * base_w, y=0, width=w, height=self._cat_h, anchor="topleft",
+                x=x, y=margin, width=btn_w, height=self._cat_h - margin, anchor="topleft",
                 filling_color=self._cat_active if is_active else self._cat_color,
                 filling_color_hover=self._cat_hover,
                 text=cat, font_size=cat_font,

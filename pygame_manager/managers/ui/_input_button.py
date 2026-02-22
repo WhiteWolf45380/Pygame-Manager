@@ -13,11 +13,14 @@ class InputButtonObject:
         - selected : en attente d'une entrée, affiche "[ ? ]"
 
     Au clic, passe en état selected et capture la prochaine touche pressée.
+    Un seul InputButton peut être selected à la fois.
     Échap en état selected assigne None et repasse en normal.
-    Le callback reçoit la touche capturée (int pygame key code, ou None).
 
     S'enregistre et s'actualise automatiquement en tant qu'objet lors de l'instanciation.
     """
+
+    _current_selected: 'InputButtonObject | None' = None
+
     def __init__(
             self,
             x: Real = -1,
@@ -69,7 +72,6 @@ class InputButtonObject:
 
             key (int, optional)                      : touche initiale assignée (pygame key code)
             key_names (dict, optional)               : dictionnaire {int: str} pour nommer les touches
-                                                       (ex: {pygame.K_SPACE: "Espace"})
                                                        si None, utilise pygame.key.name()
 
             filling (bool, optional)                 : remplissage du fond
@@ -93,7 +95,7 @@ class InputButtonObject:
             text_waiting (str, optional)                 : texte affiché en état selected (défaut "[ ? ]")
 
             hover_scale_ratio (float, optional)          : facteur de redimensionnement au survol
-            hover_scale_duration (float, optional)       : durée de l'animation de redimensionnement (secondes)
+            hover_scale_duration (float, optional)       : durée de l'animation (secondes)
 
             id (Any, optional)                           : id du bouton
             callback (callable, optional)                : appelé avec la touche capturée (int ou None)
@@ -111,19 +113,19 @@ class InputButtonObject:
         if key is not None and not isinstance(key, int): _raise_error(self, '__init__', 'Invalid key argument')
         if key_names is not None and not isinstance(key_names, dict): _raise_error(self, '__init__', 'Invalid key_names argument')
         if not isinstance(filling, bool): _raise_error(self, '__init__', 'Invalid filling argument')
-        filling_color = _to_color(filling_color, method='__init__')
-        filling_color_hover = _to_color(filling_color_hover, raised=False)
+        filling_color          = _to_color(filling_color, method='__init__')
+        filling_color_hover    = _to_color(filling_color_hover, raised=False)
         filling_color_selected = _to_color(filling_color_selected, raised=False)
-        border_color = _to_color(border_color, method='__init__')
-        border_color_hover = _to_color(border_color_hover, raised=False)
-        border_color_selected = _to_color(border_color_selected, raised=False)
+        border_color           = _to_color(border_color, method='__init__')
+        border_color_hover     = _to_color(border_color_hover, raised=False)
+        border_color_selected  = _to_color(border_color_selected, raised=False)
         if not isinstance(border_width, int): _raise_error(self, '__init__', 'Invalid border_width argument')
         if not isinstance(border_radius, int): _raise_error(self, '__init__', 'Invalid border_radius argument')
         if font is not None and not isinstance(font, pygame.font.Font): _raise_error(self, '__init__', 'Invalid font argument')
         if font_path is not None and not isinstance(font_path, str): _raise_error(self, '__init__', 'Invalid font_path argument')
         if font_size is not None and not isinstance(font_size, int): _raise_error(self, '__init__', 'Invalid font_size argument')
-        font_color = _to_color(font_color, method='__init__')
-        font_color_hover = _to_color(font_color_hover, raised=False)
+        font_color          = _to_color(font_color, method='__init__')
+        font_color_hover    = _to_color(font_color_hover, raised=False)
         font_color_selected = _to_color(font_color_selected, raised=False)
         if not isinstance(text_waiting, str): _raise_error(self, '__init__', 'Invalid text_waiting argument')
         if not isinstance(hover_scale_ratio, Real) or hover_scale_ratio <= 0: _raise_error(self, '__init__', 'Invalid hover_scale_ratio argument')
@@ -137,31 +139,29 @@ class InputButtonObject:
         context.ui._append(self)
 
         # surface
-        self._surface = None
+        self._surface      = None
         self._surface_rect = None
 
         # position et taille
-        width = min(1920, max(5, width))
+        width  = min(1920, max(5, width))
         height = min(1080, max(5, height))
         self._rect = pygame.Rect(0, 0, width, height)
         setattr(self._rect, anchor, (x, y))
 
         # touche
-        self._key = key
+        self._key       = key
         self._key_names = key_names or {}
 
-        # couleurs de fond
-        self._filling = filling
+        # couleurs
+        self._filling                = filling
         self._filling_color          = filling_color
         self._filling_color_hover    = filling_color_hover    if filling_color_hover    is not None else filling_color
         self._filling_color_selected = filling_color_selected if filling_color_selected is not None else filling_color
-
-        # bordure
-        self._border_width          = max(0, border_width)
-        self._border_color          = border_color
-        self._border_color_hover    = border_color_hover    if border_color_hover    is not None else border_color
-        self._border_color_selected = border_color_selected if border_color_selected is not None else border_color
-        self._border_radius         = max(0, border_radius)
+        self._border_width           = max(0, border_width)
+        self._border_color           = border_color
+        self._border_color_hover     = border_color_hover    if border_color_hover    is not None else border_color
+        self._border_color_selected  = border_color_selected if border_color_selected is not None else border_color
+        self._border_radius          = max(0, border_radius)
 
         # police
         self._font_size = font_size or max(3, int(height * 0.5))
@@ -177,14 +177,14 @@ class InputButtonObject:
         self._text_waiting        = text_waiting
 
         # hover scale
-        self._scale_ratio        = 1.0
-        self._last_scale_ratio   = 1.0
-        self._hover_scale_ratio  = float(hover_scale_ratio)
+        self._scale_ratio          = 1.0
+        self._last_scale_ratio     = 1.0
+        self._hover_scale_ratio    = float(hover_scale_ratio)
         self._hover_scale_duration = float(hover_scale_duration)
 
         # callback
-        self._id              = id
-        self._callback        = callback
+        self._id               = id
+        self._callback         = callback
         self._callback_give_id = callback_give_id
 
         # panel maître
@@ -196,9 +196,12 @@ class InputButtonObject:
         self._selected = False
         self._visible  = True
 
+        # références aux callbacks enregistrés dans inputs (pour pouvoir les retirer)
+        self._cb_any = None
+        self._cb_esc = None
+
     # ======================================== HELPERS ========================================
     def _key_label(self) -> str:
-        """Renvoie le nom affiché de la touche assignée"""
         if self._key is None:
             return "—"
         if self._key in self._key_names:
@@ -206,10 +209,9 @@ class InputButtonObject:
         name = pygame.key.name(self._key)
         return name.upper() if len(name) == 1 else name.capitalize()
 
-    def _render_surface(self, text: str, bg: pygame.Color, bd: pygame.Color, fc: pygame.Color) -> pygame.Surface:
-        """Génère une surface pour un état donné"""
+    def _render_surface(self, text: str, bg, bd, fc) -> pygame.Surface:
         surface = pygame.Surface((self._rect.width, self._rect.height), pygame.SRCALPHA)
-        local = pygame.Rect(0, 0, self._rect.width, self._rect.height)
+        local   = pygame.Rect(0, 0, self._rect.width, self._rect.height)
         if self._filling:
             pygame.draw.rect(surface, bg, local, border_radius=self._border_radius)
         label = self._font.render(text, True, fc)
@@ -219,13 +221,65 @@ class InputButtonObject:
         return surface
 
     def _build_surfaces(self) -> dict:
-        """Pré-calcule les trois surfaces d'état"""
         label = self._key_label()
         return {
-            "normal":   self._render_surface(label,             self._filling_color,          self._border_color,          self._font_color),
-            "hovered":  self._render_surface(label,             self._filling_color_hover,    self._border_color_hover,    self._font_color_hover),
+            "normal":   self._render_surface(label,              self._filling_color,          self._border_color,          self._font_color),
+            "hovered":  self._render_surface(label,              self._filling_color_hover,    self._border_color_hover,    self._font_color_hover),
             "selected": self._render_surface(self._text_waiting, self._filling_color_selected, self._border_color_selected, self._font_color_selected),
         }
+
+    # ======================================== SELECTION ========================================
+    @classmethod
+    def _deselect_current(cls):
+        """Désélectionne l'InputButton actuellement actif"""
+        if cls._current_selected is not None:
+            cls._current_selected._unregister_listeners()
+            cls._current_selected._selected = False
+            cls._current_selected = None
+
+    def _select(self):
+        """Passe en mode saisie et enregistre les listeners clavier"""
+        InputButtonObject._deselect_current()
+        self._selected = True
+        InputButtonObject._current_selected = self
+        self._register_listeners()
+
+    def _assign(self, key: int | None):
+        """Valide la touche, repasse en normal, déclenche le callback"""
+        self._unregister_listeners()
+        self._key      = key
+        self._selected = False
+        if InputButtonObject._current_selected is self:
+            InputButtonObject._current_selected = None
+        if self._callback_give_id:
+            self._callback(key, id=self._id)
+        else:
+            self._callback(key)
+
+    def _register_listeners(self):
+        """Enregistre les listeners inputs pour la capture de touche"""
+        # Échap → assigne None
+        def _on_esc():
+            self._assign(None)
+
+        # N'importe quelle autre touche → assigne cette touche
+        def _on_any(key: int):
+            self._assign(key)
+
+        self._cb_esc = _on_esc
+        self._cb_any = _on_any
+
+        context.inputs.add_listener(pygame.K_ESCAPE, self._cb_esc, up=False, once=True, priority=99)
+        context.inputs.when_any(self._cb_any, exclude=[pygame.K_ESCAPE], up=False, once=True, priority=99, give_key=True)
+
+    def _unregister_listeners(self):
+        """Retire les listeners inputs proprement"""
+        if self._cb_esc is not None:
+            context.inputs.remove_listener(pygame.K_ESCAPE, self._cb_esc)
+            self._cb_esc = None
+        if self._cb_any is not None:
+            context.inputs.remove_callback(self._cb_any)
+            self._cb_any = None
 
     # ======================================== GETTERS ========================================
     @property
@@ -246,12 +300,10 @@ class InputButtonObject:
 
     @property
     def key(self) -> int | None:
-        """Renvoie la touche actuellement assignée"""
         return self._key
 
     @property
     def selected(self) -> bool:
-        """Vrai si le bouton est en attente de saisie"""
         return self._selected
 
     @property
@@ -271,7 +323,6 @@ class InputButtonObject:
 
     @key.setter
     def key(self, value: int | None):
-        """Assigne une touche manuellement"""
         if value is not None and not isinstance(value, int): _raise_error(self, 'key', 'Invalid key argument')
         self._key = value
 
@@ -292,34 +343,17 @@ class InputButtonObject:
         mouse_pos = self._panel.mouse_pos if self._panel is not None else context.mouse.get_pos()
         return self._rect.collidepoint(mouse_pos)
 
-    # ======================================== INTERACTION ========================================
-    def _assign(self, key: int | None):
-        """Assigne la touche, repasse en normal et déclenche le callback"""
-        self._key      = key
-        self._selected = False
-        if self._callback_give_id:
-            self._callback(key, id=self._id)
-        else:
-            self._callback(key)
-
     # ======================================== METHODES DYNAMIQUES ========================================
     def kill(self):
+        self._unregister_listeners()
+        if InputButtonObject._current_selected is self:
+            InputButtonObject._current_selected = None
         context.ui._remove(self)
 
     def update(self):
         if not self._visible:
             return
 
-        # Capture clavier si selected
-        if self._selected:
-            for event in pygame.event.get(pygame.KEYDOWN):
-                if event.key == pygame.K_ESCAPE:
-                    self._assign(None)
-                else:
-                    self._assign(event.key)
-                break  # une seule touche à la fois
-
-        # Calcul du scale
         target_ratio = self._hover_scale_ratio if (self.hovered and not self._selected) else 1.0
         if self._hover_scale_duration > 0:
             diff = target_ratio - self._scale_ratio
@@ -327,16 +361,11 @@ class InputButtonObject:
         else:
             self._scale_ratio = target_ratio
 
-        # Choix de l'état visuel
         surfaces = self._build_surfaces()
-        if self._selected:
-            base = surfaces["selected"]
-        elif self.hovered:
-            base = surfaces["hovered"]
-        else:
-            base = surfaces["normal"]
+        if self._selected:   base = surfaces["selected"]
+        elif self.hovered:   base = surfaces["hovered"]
+        else:                base = surfaces["normal"]
 
-        # Redimensionnement
         if self._last_scale_ratio != self._scale_ratio:
             w = int(base.get_width()  * self._scale_ratio)
             h = int(base.get_height() * self._scale_ratio)
@@ -356,11 +385,9 @@ class InputButtonObject:
         surface.blit(self._surface, self._surface_rect)
 
     def left_click(self, up: bool = False):
-        """Clic gauche : active la saisie"""
-        if not up and not self._selected:
-            self._selected = True
+        if not up:
+            self._select()
 
     def right_click(self, up: bool = False):
-        """Clic droit : annule la saisie en cours"""
         if not up and self._selected:
             self._assign(None)
