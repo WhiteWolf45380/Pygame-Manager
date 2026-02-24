@@ -1,15 +1,13 @@
-# _manager.py
 # ======================================== IMPORTS ========================================
 from ._panel import SettingsPanel
 
 # ======================================== HELPER ========================================
 def _infer_widget_type(value: object, choices: list, min, max) -> str:
     """Infère le type de widget depuis la valeur et les contraintes"""
-    if choices:                             return 'choice'
-    if isinstance(value, bool):             return 'toggle'
-    if isinstance(value, (int, float)) and min is not None and max is not None:
-                                            return 'slider'
-    if isinstance(value, (int, float)):     return 'textcase'
+    if choices: return 'choice'
+    if isinstance(value, bool): return 'toggle'
+    if isinstance(value, (int, float)) and min is not None and max is not None: return 'slider'
+    if isinstance(value, (int, float)): return 'textcase'
     return 'textcase'
 
 # ======================================== GESTIONNAIRE DE PARAMÈTRES ========================================
@@ -26,9 +24,14 @@ class SettingsManager:
     def __init__(self):
         # Structure interne : {name: {value, widget, category, label, description, min, max, step, choices}}
         self._settings = {}
+        self._default_settings = {}
+        self._temporary_settings = {}
 
         # Panel auto-généré
         self.Panel = SettingsPanel
+
+        # Paramètres dynamiques
+        self._auto_apply = True
 
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str, text: str):
@@ -58,7 +61,6 @@ class SettingsManager:
         self,
         name: str,
         value: object,
-        *,
         category: str = "General",
         widget: str = None,
         label: str = None,
@@ -73,18 +75,17 @@ class SettingsManager:
         Création d'un paramètre
 
         Args :
-            name (str)          : identifiant unique du paramètre
-            value (object)      : valeur initiale
-            category (str)      : catégorie d'appartenance (affiché comme onglet dans le panel)
-            widget (str)        : type de widget parmi 'toggle', 'choice', 'textcase', 'slider', 'inputbutton'
-                                  (inféré automatiquement depuis la valeur si None)
-            label (str)         : texte affiché dans le panel (défaut = name)
-            description (str)   : sous-texte optionnel affiché sous le label
-            min (object)        : valeur minimale pour slider/textcase numérique
-            max (object)        : valeur maximale pour slider/textcase numérique
-            step (object)       : pas d'incrément pour le slider (défaut : 1 pour int, 0.1 pour float)
-            choices (list)      : liste des choix possibles pour le widget 'choice'
-            key_names (dict)    : {int: str} noms personnalisés des touches pour 'inputbutton'
+            name (str) : identifiant unique du paramètre
+            value (object) : valeur initiale
+            category (str) : catégorie d'appartenance (affiché comme onglet dans le panel)
+            widget (str) : type de widget parmi 'toggle', 'choice', 'textcase', 'slider', 'inputbutton'
+            label (str) : texte affiché dans le panel (défaut = name)
+            description (str) : sous-texte optionnel affiché sous le label
+            min (object) : valeur minimale pour slider/textcase numérique
+            max (object) : valeur maximale pour slider/textcase numérique
+            step (object) : pas d'incrément pour le slider (défaut : 1 pour int, 0.1 pour float)
+            choices (list) : liste des choix possibles pour le widget 'choice'
+            key_names (dict) : {int: str} noms personnalisés des touches pour 'inputbutton'
         """
         if not isinstance(name, str):
             self._raise_error('create', 'Le nom du paramètre doit être une chaîne')
@@ -92,18 +93,17 @@ class SettingsManager:
             self._raise_error('create', f"Le paramètre '{name}' existe déjà")
 
         widget_type = widget or _infer_widget_type(value, choices or [], min, max)
-
         self._settings[name] = {
-            'value':       value,
-            'widget':      widget_type,
-            'category':    category,
-            'label':       label or name,
+            'value': value,
+            'widget': widget_type,
+            'category': category,
+            'label': label or name,
             'description': description,
-            'min':         min,
-            'max':         max,
-            'step':        step,
-            'choices':     choices or [],
-            'key_names':   key_names or {},
+            'min': min,
+            'max': max,
+            'step': step,
+            'choices': choices or [],
+            'key_names': key_names or {},
         }
 
     def remove(self, name: str):
@@ -114,7 +114,7 @@ class SettingsManager:
             self._raise_error('remove', f"Le paramètre '{name}' n'existe pas")
         del self._settings[name]
 
-    # ======================================== ACCÈS ========================================
+    # ======================================== GETTERS ========================================
     def get(self, name: str, fallback: object = None) -> object:
         """
         Renvoie la valeur d'un paramètre
@@ -146,8 +146,12 @@ class SettingsManager:
     def get_meta(self, name: str) -> dict | None:
         """Renvoie l'entrée complète (valeur + métadonnées) d'un paramètre"""
         return self._settings.get(name)
+    
+    def get_auto_apply(self) -> bool:
+        """Vérifie l'auto-application des paramètres"""
+        return self._auto_apply
 
-    # ======================================== MODIFICATION ========================================
+    # ======================================== SETTERS ========================================
     def set(self, name: str, value: object, index: int = -1, f: bool = False):
         """
         Modification d'un paramètre
@@ -172,6 +176,21 @@ class SettingsManager:
             entry['value'][index] = value
         else:
             entry['value'] = value
+    
+    def set_auto_apply(self, value: bool):
+        """Fixe l'auto-application des paramètres"""
+        if not isinstance(value, bool):
+            self._raise_error('set_auto_apply', 'Invalid value argument')
+        self._auto_apply = value
+
+    # ======================================== METHODES DYNAMIQUES ========================================
+    def save_as_default(self):
+        """Enregistre les paramètres actuels comme les paramètres par défaut"""
+        self._default_settings = self._settings.copy()
+
+    def apply(self):
+        """Applique les modifications"""
+        self._settings = self._temporary_settings.copy()
 
 # ======================================== INSTANCE ========================================
 settings_manager = SettingsManager()
