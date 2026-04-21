@@ -1,4 +1,5 @@
 # ======================================== IMPORTS ========================================
+import pygame
 from ._core import *
 import numpy as np
 

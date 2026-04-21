@@ -66,7 +66,7 @@ class LineObject:
                 break
         return (sign * self._vector.normalized)
     
-    def get_cartesian_equation(self) -> dict[float]:
+    def get_cartesian_equation(self) -> dict[str, float]:
         """Renvoie l'équation cartésienne en 2D : ax + by + c = 0"""
         line = self.copy()
         line.reshape(2)
@@ -95,10 +95,6 @@ class LineObject:
         if not isinstance(line, context.geometry.Line): return False
         return (self._origin in line and self._vector.is_collinear(line._vector))
     
-    def __ne__(self, line: context.geometry.Line) -> bool:
-        """Vérifie la non correspondance de deux droites"""
-        return not self == line
-    
     def __contains__(self, point: context.geometry.Point) -> bool:
         """Vérifie qu'un point soit compris dans la droite"""
         return self._contains(context.geometry._to_point(point))
@@ -117,7 +113,7 @@ class LineObject:
     def _contains(self, point: context.geometry.Point) -> bool:
         """Implémentation interne de contains"""
         self._origin.equalize(point)
-        return self._vector._is_collinear(point - self)
+        return self._vector._is_collinear(point - self._origin)
     
     def is_orthogonal(self, line: context.geometry.Line) -> bool:
         """

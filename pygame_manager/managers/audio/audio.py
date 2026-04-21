@@ -1,9 +1,10 @@
+# ======================================== IMPORTS ========================================
 import random
+import threading
 try:
     import pygame
 except ImportError:
     raise RuntimeError("[AudioManager] requieres pygame to work normally\nTry to download it with : pip install pygame")
-
 
 # ======================================== GESTIONNAIRE ========================================
 class AudioManager:
@@ -13,7 +14,7 @@ class AudioManager:
     Fonctionnalités:
         Création et gestion de groupes de sons (channels, volume)
         Ajout et manipulation de sons avec variations et cooldown
-        Gestion des musiques (play, stop, volume)
+        Gestion des musiques (play, stop, volume, switch avec crossfade)
         Volumes globaux et par groupe
     """
 
@@ -22,7 +23,7 @@ class AudioManager:
         pygame.mixer.init()
         pygame.mixer.set_num_channels(0)
 
-        # groupes (=catégories) de sons
+        # groupes de sons
         self._groups = {}
         self.create_group("default", channels=5, volume=1.0) # groupe par défaut
 
@@ -36,6 +37,10 @@ class AudioManager:
 
         # paramètres globaux
         self._master_volume = 1.0
+
+        # thread de crossfade en cours (pour éviter les conflits)
+        self._switch_thread = None
+        self._switch_cancel = threading.Event()
     
     # ======================================== METHODES FONCTIONNELLES ========================================
     def _raise_error(self, method: str='', text: str=''):
@@ -372,8 +377,9 @@ class AudioManager:
         """
         if not name in self._musics:
             self._raise_error("play_music", f"Music {name} doest not exist. If you want to create it, try : create_music(name: str, path: str)")
+        self._cancel_switch()
         pygame.mixer.music.load(self._musics[name]["path"])
-        pygame.mixer.music.play(-1 if loop else 0, fade_ms=fade_ms)
+        pygame.mixer.music.play(-1 if loop else 0, fade_ms=int(fade_ms))
         self._current_music = name
         self._update_volumes()
 
@@ -384,10 +390,57 @@ class AudioManager:
         Args:
             fade_ms : fondu en fermeture en millisecondes
         """
+        self._cancel_switch()
         if fade_ms == 0:
             pygame.mixer.music.stop()
         else:
-            pygame.mixer.music.fadeout(fade_ms)
+            pygame.mixer.music.fadeout(int(fade_ms))
+
+    def switch_music(self, name: str, fade_ms: float=1000, loop: bool=True):
+        """
+        Effectue un crossfade vers une nouvelle musique.
+
+        Args:
+            name (str) : nom de la nouvelle musique
+            fade_ms (float) : durée totale du crossfade en millisecondes
+            loop (bool) : répétition de la nouvelle musique
+        """
+        if name not in self._musics:
+            self._raise_error("switch_music", f"Music {name} does not exist.")
+        if name == self._current_music:
+            return
+
+        self._cancel_switch()
+        half_s = fade_ms / 2000.0
+
+        if self._current_music is not None:
+            pygame.mixer.music.fadeout(int(fade_ms))
+
+        cancel_event = threading.Event()
+        self._switch_cancel = cancel_event
+
+        def _crossfade():
+            if cancel_event.wait(timeout=half_s):
+                return
+
+            pygame.mixer.music.load(self._musics[name]["path"])
+            pygame.mixer.music.play(-1 if loop else 0, fade_ms=int(fade_ms))
+            self._current_music = name
+            self._update_volumes()
+
+        self._switch_thread = threading.Thread(target=_crossfade, daemon=True)
+        self._switch_thread.start()
+
+    def _cancel_switch(self):
+        """
+        Annule un crossfade en cours s'il y en a un.
+        """
+        if self._switch_cancel is not None:
+            self._switch_cancel.set()
+        if self._switch_thread is not None and self._switch_thread.is_alive():
+            self._switch_thread.join(timeout=0.05)
+        self._switch_thread = None
+        self._switch_cancel = threading.Event()
 
     def update_master_volume(self, volume: float):
         """
@@ -421,55 +474,5 @@ class AudioManager:
             return
         pygame.mixer.music.set_volume(self._master_volume * self._music_volume * self._musics[self._current_music]["volume"])
 
-
 # ======================================== INSTANCE ========================================
 audio_manager = AudioManager()
-
-"""
-Exemple d'utilisation :
-
-import pygame
-from audio_manager import AudioManager
-
-pygame.init()
-
-# Initialisation
-audio = AudioManager()
-
-# Création de groupes
-audio.create_group("ui", channels=2, volume=1.0)
-audio.create_group("sfx", channels=4, volume=0.8)
-
-# Ajout de sons
-audio.add_sound("shoot", "assets/sounds/shoot.mp3", volume=1.0, cooldown=0.5, group="ui")
-audio.add_sound("footstep", "assets/sounds/footstep.mp3", volume=0.6, cooldown=0.2, group="sfx")
-
-# Ajouter des variations au son
-audio.set_sound_add("footstep", "assets/sounds/footstep2.mp3")
-audio.set_sound_add("footstep", "assets/sounds/footstep3.mp3")
-
-# Jouer des sons
-audio.play_sound("shoot")
-audio.play_sound("footstep")  # Joue une variation aléatoire
-
-# Ajouter de la musique
-audio.add_music("menu", "assets/music/menu_theme.mp3", volume=0.7)
-audio.add_music("game", "assets/music/game_theme.mp3", volume=0.8)
-
-# Jouer la musique en boucle avec fade
-audio.play_music("menu", loop=True, fade_ms=500)
-
-# Changer de musique
-audio.stop_music(fade_ms=1000)
-audio.play_music("game", loop=True, fade_ms=1000)
-
-# Modifier les volumes
-audio.update_master_volume(0.8)       # Volume global à 80%
-audio.update_music_volume(0.5)        # Volume musical à 50%
-audio.set_group_volume('ui', 0.4)     # Volume du groupe UI à 40%
-audio.set_sound_volume('shoot', 0.9)  # Volume spécifique du son
-
-# Arrêter tout
-audio.stop_sounds()
-audio.stop_music(fade_ms=1000)
-"""

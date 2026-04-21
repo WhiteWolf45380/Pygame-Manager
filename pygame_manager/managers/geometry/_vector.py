@@ -162,7 +162,7 @@ class VectorObject:
         return context.geometry.Vector(*(self.array * float(scalar)))
     
     def __rmul__(self, scalar: Real) -> context.geometry.Vector:
-        """Multiplication par un scalaire (inversé)"""
+        """Multiplication par un scalaire (inversée)"""
         if not isinstance(scalar, Real): return NotImplemented
         return context.geometry.Vector(*(self.array * float(scalar)))
     
@@ -209,10 +209,6 @@ class VectorObject:
         if vector is None:return False
         self._equalize(vector)
         return all(self[i] == vector[i] for i in range(self.dim))
-    
-    def __ne__(self, vector: context.geometry.Vector) -> bool:
-        """Vérifie la non correspondance de deux vecteurs"""
-        return not self == vector
     
     def __contains__(self, r: Real) -> bool:
         """Vérifie que le vecteur contienne une composante spécifique"""

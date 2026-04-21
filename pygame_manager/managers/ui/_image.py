@@ -58,7 +58,7 @@ class ImageObject:
         if not isinstance(zorder, int): _raise_error(self, '__init__', 'Invalid zorder argument')
 
         # auto-registration
-        self._auto_draw = auto
+        self._auto = auto
         if self._auto:
             context.ui._append(self)
 
